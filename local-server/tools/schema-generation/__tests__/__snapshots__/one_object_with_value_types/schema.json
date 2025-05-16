@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/ValueType",
+  "definitions": {
+    "ValueType": {
+      "type": "object",
+      "properties": {
+        "int": {
+          "type": "number"
+        },
+        "string": {
+          "type": "string"
+        },
+        "boolean": {
+          "type": "boolean"
+        },
+        "array": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "int",
+        "string",
+        "boolean",
+        "array"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

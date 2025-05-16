@@ -1,0 +1,5 @@
+public enum {{typeName}}: String, Codable, Sendable {
+  {{#each cases}}
+  case {{name}} = "{{value}}"
+  {{/each}}
+}

@@ -1,0 +1,74 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import Dependencies
+import Foundation
+import ServerServiceInterface
+import SwiftTesting
+import Testing
+@testable import SearchFilesTool
+
+struct SearchFilesToolTests {
+  @Test
+  func completesWithTheExpectedOutcome() async throws {
+    let server = MockServer()
+    server.onPostRequest = { path, data, _ in
+      #expect(path == "searchFiles")
+      data.expectToMatch("""
+        {
+          "directoryPath" : "/path/to/root",
+          "filePattern" : "*.swift",
+          "projectRoot" : "/path/to/root",
+          "regex" : "func*"
+        }
+        """)
+      return try JSONEncoder().encode(Schema.SearchFilesToolOutput(
+        outputForLLm: "here's some result:...",
+        results: [
+          .init(path: "somefile.swift", searchResults: [
+            .init(line: 1, text: "func foo() {\n", isMatch: true),
+          ]),
+        ],
+        rootPath: "/path/to/root",
+        hasMore: false))
+    }
+
+    let toolUse = withDependencies {
+      $0.server = server
+    } operation: {
+      let toolUse = SearchFilesTool().use(
+        toolUseId: "123",
+        input: .init(directoryPath: ".", regex: "func*", filePattern: "*.swift"),
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
+      toolUse.startExecuting()
+      return toolUse
+    }
+    let result = try await toolUse.result
+    #expect(result.hasMore == false)
+    #expect(result.results.count == 1)
+    // The path should be resolved to the absolute path
+    #expect(result.results.first?.path == "/path/to/root/somefile.swift")
+  }
+
+  @Test
+  func completesWithAFailureWhenSomethingWentWrong() async throws {
+    let server = MockServer()
+    server.onPostRequest = { _, _, _ in
+      throw APIError("unavailable")
+    }
+
+    let toolUse = withDependencies {
+      $0.server = server
+    } operation: {
+      let toolUse = SearchFilesTool().use(
+        toolUseId: "123",
+        input: .init(directoryPath: ".", regex: "func*", filePattern: "*.swift"),
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
+      toolUse.startExecuting()
+      return toolUse
+    }
+    await #expect(throws: APIError.self, performing: {
+      try await toolUse.result
+    })
+  }
+}

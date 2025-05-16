@@ -1,0 +1,17 @@
+//  Copyright Xcompanion. All rights reserved.
+//  Licensed under the XXX License. See License.txt in the project root for license information.
+
+#include "./Xcompanion.shared.xcconfig"
+
+// Shared release configuration for all targets
+RELEASE_SUFFIX =
+SHARED_USER_DEFAULTS_SUITE = $(RELEASE_SHARED_USER_DEFAULTS_SUITE)
+
+// Bundle identifiers
+HOST_APP_BUNDLE_IDENTIFIER = $(RELEASE_APP_BUNDLE_IDENTIFIER)
+XCODE_EXTENSION_BUNDLE_IDENTIFIER = com.xcompanion.Xcompanion.Extension
+
+// This cannot be identical to the App's product name. So we add an invisible utf8 character (not visible in Xcode).
+XCODE_EXTENSION_PRODUCT_NAME = ؜Xcompanion
+
+INFOPLIST_KEY_UserDefaultsSharedSuiteName = $(SHARED_USER_DEFAULTS_SUITE)

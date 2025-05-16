@@ -1,0 +1,41 @@
+#! /bin/bash
+
+# Fail on errors
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+current_dir=$(pwd)
+
+if [ -z "$repo_root" ]; then
+    echo "Not a git repository"
+    exit 1
+fi
+
+# Get list of staged files (excluding removed ones)
+staged_files=$(git diff --cached --name-only --diff-filter=d)
+
+# Execute commands directly instead of in subshells
+cd "$repo_root/local-server"
+yarn tsc
+yarn lint:fix
+yarn test
+
+cd "$repo_root/app"
+make sync-dependencies
+make lint
+
+cd "$repo_root/app/modules"
+# swift package clean
+swift test -Xswiftc -suppress-warnings --quiet
+
+cd "$repo_root"
+
+# Re-add the previously staged files
+OIFS="$IFS" 
+IFS=$'\n' # only break on new lines
+for file in $staged_files; do
+    git add "$file"
+done
+IFS="$OIFS"
+
+cd "$current_dir"

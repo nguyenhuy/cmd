@@ -1,0 +1,21 @@
+// swiftformat:disable all
+// This file is generated from ./local-server/src/server/schemas/{{originalFile}}.ts by `yarn export-schema-swift`.
+// Do not edit it manually.
+
+import Foundation
+import JSONFoundation
+
+extension Schema {
+  {{#each topLevelDefinitions}}
+    {{#if isObjectType}}
+  {{> objectType}}
+    {{else if isOneOfType}}
+  {{> oneOfType}}
+    {{else}}
+  {{> enumType}}
+    {{/if}}
+    {{#unless @last}}
+
+    {{/unless}}
+  {{/each}}
+}

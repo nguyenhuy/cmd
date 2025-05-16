@@ -1,0 +1,134 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import ConcurrencyFoundation
+import Foundation
+#if DEBUG
+public typealias ServerResponse = Data
+
+public final class MockServer: Server {
+
+  public init() { }
+
+  public var onGetRequest: @Sendable (_ path: String, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws
+    -> ServerResponse
+  {
+    get { _onGetRequest.value }
+    set { _onGetRequest.mutate { $0 = newValue } }
+  }
+
+  public var onPostRequest: @Sendable (
+    _ path: String,
+    _ data: Data,
+    _ onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    async throws -> ServerResponse
+  {
+    get { _onPostRequest.value }
+    set { _onPostRequest.mutate { $0 = newValue } }
+  }
+
+  public func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> ServerResponse {
+    try await throwingWhenCancelled(onReceiveJSONData) { onReceiveJSONData in
+      try await self.onGetRequest(path, onReceiveJSONData)
+    }
+  }
+
+  public func postRequest(
+    path: String,
+    data: Data,
+    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    async throws -> ServerResponse
+  {
+    try await throwingWhenCancelled(onReceiveJSONData) { onReceiveJSONData in
+      try await self.onPostRequest(path, data, onReceiveJSONData)
+    }
+  }
+
+  private let _onGetRequest =
+    Atomic<@Sendable (_ path: String, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> ServerResponse>
+      .init { _, _ in
+        throw URLError(.badServerResponse)
+      }
+
+  private let _onPostRequest =
+    Atomic<
+      @Sendable (_ path: String, _ data: Data, _ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws
+        -> ServerResponse
+    >
+    .init { _, _, _ in
+      throw URLError(.badServerResponse)
+    }
+
+  /// Wraps the provided stub in one that will throw and stop send data chunk if the task is cancelled.
+  private func throwingWhenCancelled(
+    _ onReceiveJSONData: (@Sendable (Data) -> Void)?,
+    _ sendRequest: @escaping @Sendable (_ onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> ServerResponse)
+    async throws -> ServerResponse
+  {
+    enum State {
+      case initial
+      case pending(CheckedContinuation<ServerResponse, Error>)
+      case completed(Result<ServerResponse, Error>)
+    }
+
+    let state = Atomic<State>(.initial)
+    // Resume the continuation if this has not been done already.
+    let resume: @Sendable (Result<ServerResponse, Error>) -> Void = { result in
+      let continuation: CheckedContinuation<ServerResponse, Error>? = state.mutate { state in
+        switch state {
+        case .initial:
+          state = .completed(result)
+          return nil
+
+        case .pending(let continuation):
+          state = .completed(result)
+          return continuation
+
+        case .completed:
+          return nil
+        }
+      }
+      continuation?.resume(with: result)
+    }
+
+    return try await withTaskCancellationHandler(operation: {
+      try await withCheckedThrowingContinuation { continuation in
+        let result: Result<ServerResponse, Error>? = state.mutate { state in
+          switch state {
+          case .initial:
+            state = .pending(continuation)
+            return nil
+
+          case .pending:
+            fatalError("invalid state, continuation set twice.")
+
+          case .completed(let result):
+            return result
+          }
+        }
+        if let result {
+          continuation.resume(with: result)
+        }
+
+        Task {
+          do {
+            let value = try await sendRequest { data in
+              if case .completed = state.value {
+                // Do not send the data chunk if the task has already completed.
+              } else {
+                onReceiveJSONData?(data)
+              }
+            }
+            resume(.success(value))
+          } catch {
+            resume(.failure(error))
+          }
+        }
+      }
+    }, onCancel: {
+      resume(.failure(CancellationError()))
+    })
+  }
+
+}
+#endif

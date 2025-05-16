@@ -1,0 +1,144 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import AppFoundation
+@preconcurrency import AppKit
+@preconcurrency import Combine
+import ConcurrencyFoundation
+import DependencyFoundation
+import Foundation
+import LoggingServiceInterface
+import PermissionsServiceInterface
+import ShellServiceInterface
+import ThreadSafe
+
+// MARK: - DefaultPermissionsService
+
+@ThreadSafe
+final class DefaultPermissionsService: PermissionsService {
+
+  init(
+    shellService: ShellService,
+    userDefaults _: UserDefaults,
+    bundle: Bundle,
+    isAccessibilityPermissionGranted: @MainActor @escaping @Sendable () -> Bool,
+    requestAccessibilityPermission: @MainActor @escaping @Sendable () -> Void,
+    pollIntervalNS: UInt64 = 1_000_000_000)
+  {
+    self.shellService = shellService
+    self.isAccessibilityPermissionGranted = isAccessibilityPermissionGranted
+    self.requestAccessibilityPermission = requestAccessibilityPermission
+    self.pollIntervalNS = pollIntervalNS
+    self.bundle = bundle
+  }
+
+  func request(permission: RequestablePermission) {
+    switch permission {
+    case .accessibility:
+      Task { @MainActor in
+        requestAccessibilityPermission()
+      }
+    }
+  }
+
+  func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?, Never> {
+    switch permission {
+    case .accessibility:
+      let isPolling: Bool = safelyMutate { state in
+        let isPolling = state.isPollingAccessibilityPermissionStatus
+        state.isPollingAccessibilityPermissionStatus = true
+        return isPolling
+      }
+      if !isPolling {
+        pollAccessibilityPermissionStatus()
+      }
+      return accessibilityPermissionStatus
+        .readonly(removingDuplicate: true)
+
+    case .xcodeExtension:
+      let isPolling: Bool = safelyMutate { state in
+        let isPolling = state.isPollingXcodeExtensionPermissionStatus
+        state.isPollingXcodeExtensionPermissionStatus = true
+        return isPolling
+      }
+      if !isPolling {
+        Task { await pollXcodeExtensionPermissionStatus() }
+      }
+      return xcodeExtensionPermissionStatus
+        .readonly(removingDuplicate: true)
+    }
+  }
+
+  private let shellService: ShellService
+  private let bundle: Bundle
+
+  private var isPollingAccessibilityPermissionStatus = false
+  private var isPollingXcodeExtensionPermissionStatus = false
+
+  private let pollIntervalNS: UInt64
+  private let isAccessibilityPermissionGranted: @MainActor @Sendable () -> Bool
+  private let requestAccessibilityPermission: @MainActor @Sendable () -> Void
+  private let accessibilityPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
+  private let xcodeExtensionPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
+
+  private func pollAccessibilityPermissionStatus() {
+    Task { @MainActor in
+      if isAccessibilityPermissionGranted() {
+        accessibilityPermissionStatus.send(true)
+      } else {
+        let pollIntervalNS = pollIntervalNS
+        Task { [weak self] in
+          try await Task.sleep(nanoseconds: pollIntervalNS)
+          self?.pollAccessibilityPermissionStatus()
+        }
+      }
+    }
+  }
+
+  private func pollXcodeExtensionPermissionStatus() async {
+    if await isXcodeExtensionPermissionGranted() {
+      Task { @MainActor in
+        xcodeExtensionPermissionStatus.send(true)
+      }
+    } else {
+      let pollIntervalNS = pollIntervalNS
+      Task { [weak self] in
+        try await Task.sleep(nanoseconds: pollIntervalNS)
+        await self?.pollXcodeExtensionPermissionStatus()
+      }
+    }
+  }
+
+  private func isXcodeExtensionPermissionGranted() async -> Bool {
+    guard let output = try? await shellService.stdout("ps aux | grep '\(bundle.xcodeExtensionName)'") else {
+      defaultLogger.error("`ps aux | grep '\(bundle.xcodeExtensionName)'` failed to return an output")
+      return false
+    }
+    #if DEBUG
+    let isGranted = output.contains("Xcompanion (Debug).appex")
+    #else
+    let isGranted = output.contains("Xcompanion.appex")
+    #endif
+    return isGranted
+  }
+
+}
+
+extension BaseProviding where
+  Self: ShellServiceProviding
+{
+  public var permissionsService: PermissionsService {
+    shared {
+      DefaultPermissionsService(
+        shellService: shellService,
+        userDefaults: .standard,
+        bundle: .main,
+        isAccessibilityPermissionGranted: { AXIsProcessTrusted() },
+        requestAccessibilityPermission: {
+          AXIsProcessTrustedWithOptions([
+            kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
+          ] as NSDictionary)
+        })
+    }
+  }
+}

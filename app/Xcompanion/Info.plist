@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>$(PRODUCT_NAME) needs to control System Events</string>
+	<key>APP_BUNDLE_IDENTIFIER</key>
+	<string>$(HOST_APP_BUNDLE_IDENTIFIER)</string>
+	<key>RELEASE_APP_BUNDLE_IDENTIFIER</key>
+	<string>$(RELEASE_APP_BUNDLE_IDENTIFIER)</string>
+	<key>XCODE_EXTENSION_PRODUCT_NAME</key>
+	<string>$(XCODE_EXTENSION_PRODUCT_NAME)</string>
+	<key>UserDefaultsSharedSuiteName</key>
+	<string>$(INFOPLIST_KEY_UserDefaultsSharedSuiteName)</string>
+	<key>ReleaseUserDefaultsSharedSuiteName</key>
+	<string>$(INFOPLIST_KEY_ReleaseUserDefaultsSharedSuiteName)</string>
+	<key>DebugUserDefaultsSharedSuiteName</key>
+	<string>$(INFOPLIST_KEY_DebugUserDefaultsSharedSuiteName)</string>
+</dict>
+</plist>

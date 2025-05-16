@@ -1,0 +1,8 @@
+.DS_Store
+secrets.json
+tmp
+.aider*
+
+.build
+build
+.swiftpm

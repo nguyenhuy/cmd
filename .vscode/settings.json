@@ -1,0 +1,31 @@
+{
+    "explorer.confirmDragAndDrop": false,
+    "explorer.confirmDelete": false,
+    "eslint.codeActionsOnSave.rules": null,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "always"
+    },
+    "eslint.format.enable": true,
+    "window.openFoldersInNewWindow": "on",
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "lldb.library": "/Applications/Xcode-16.2.0.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/LLDB",
+    "lldb.launch.expressions": "native",
+    "files.exclude": {
+        "**/.build": true,
+        "**/build": true
+    },
+    "explorer.excludeGitIgnore": true,
+    "cursor-retrieval.canAttemptGithubLogin": false,
+    "eslint.timeBudget.onValidation": {
+        
+        "warn": 4000,
+        "error": 8000
+    },
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+    ]
+}

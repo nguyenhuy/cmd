@@ -1,0 +1,42 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+Target.module(
+  name: "Chat",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    .product(name: "Down", package: "Down"),
+    .product(name: "HighlightSwift", package: "highlightswift"),
+    "AppEventServiceInterface",
+    "AppFoundation",
+    "ChatAppEvents",
+    "ChatFoundation",
+    "CheckpointServiceInterface",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "DLS",
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+    "FileEditServiceInterface",
+    "FileSuggestionServiceInterface",
+    "FoundationInterfaces",
+    "JSONFoundation",
+    "LLMServiceInterface",
+    "LoggingServiceInterface",
+    "ServerServiceInterface",
+    "SettingsServiceInterface",
+    "ToolFoundation",
+    "XcodeObserverServiceInterface",
+  ],
+  testDependencies: [
+    .product(name: "ViewInspector", package: "ViewInspector"),
+    "AccessibilityFoundation",
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "FileSuggestionServiceInterface",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "SwiftTesting",
+    "XcodeObserverServiceInterface",
+  ])

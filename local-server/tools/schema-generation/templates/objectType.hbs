@@ -1,0 +1,57 @@
+public struct {{typeName}}: Codable, Sendable {
+  {{#each properties}}
+  public let {{name}}{{#if fixedValue}} = {{{fixedValue}}}{{else}}: {{typeName}}{{/if}}
+  {{/each}}
+
+  private enum CodingKeys: String, CodingKey {
+    {{#each properties}}
+    case {{name}} = "{{decodingKey}}"
+    {{/each}}
+  }
+
+  public init(
+    {{#each properties}}
+      {{name}}: {{typeName}}{{#if fixedValue}} = {{{fixedValue}}}{{else}}{{#unless isRequired}} = nil{{/unless}}{{/if}}{{#unless @last}},{{/unless}}
+    {{/each}}
+  ) {
+    {{#each properties}}
+      {{#unless fixedValue}}
+    self.{{name}} = {{name}}
+      {{/unless}}
+    {{/each}}
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    {{#each properties}}
+      {{#unless fixedValue}}
+        {{#if isRequired}}
+    {{name}} = try container.decode({{typeName}}.self, forKey: .{{name}})
+        {{else}}
+    {{name}} = try container.decodeIfPresent({{typeName}}.self, forKey: .{{name}})
+        {{/if}}
+      {{/unless}}
+    {{/each}}
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    {{#each properties}}
+      {{#if isRequired}}
+    try container.encode({{name}}, forKey: .{{name}})
+      {{else}}
+    try container.encodeIfPresent({{name}}, forKey: .{{name}})
+      {{/if}}
+    {{/each}}
+  }
+  {{#each nestedDefinitions}}
+
+    {{#if isObjectType}}
+  {{> objectType}}
+    {{else if isOneOfType}}
+  {{> oneOfType}}
+    {{else}}
+  {{> enumType}}
+{{/if}}{{!--  somehow this tag indentation is needed to get the generated intentation to work well --}}
+  {{/each}}
+}

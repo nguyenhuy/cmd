@@ -1,0 +1,362 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import AppEventServiceInterface
+import AppFoundation
+@preconcurrency import Combine
+import DependencyFoundation
+import Foundation
+import FoundationInterfaces
+import LoggingServiceInterface
+import ServerServiceInterface
+
+// MARK: - DefaultServer
+
+import ThreadSafe
+
+// MARK: - DefaultServer
+
+// TODO: convert bad status code to error and throw.
+
+@ThreadSafe
+final class DefaultServer: Server {
+
+  init(
+    sharedUserDefaults: UserDefaultsI,
+    appEventHandlerRegistry: AppEventHandlerRegistry,
+    fileManager: FileManagerI)
+  {
+    self.sharedUserDefaults = sharedUserDefaults
+    self.appEventHandlerRegistry = appEventHandlerRegistry
+    self.fileManager = fileManager
+    hasCopiedFiles = false
+    applicationSupportPath = {
+      let paths = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+      return paths[0].appendingPathComponent("XCompanion").path
+    }()
+
+    let delegate = ServerDelegate()
+    let configuration = URLSessionConfiguration.default
+    configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+    session = URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+    connectionStatus = .waitingOnConnection(.init { _ in })
+
+    self.delegate = delegate
+    delegate.owner = self
+
+    Task {
+      try await self.connect()
+    }
+  }
+
+  let appEventHandlerRegistry: AppEventHandlerRegistry
+
+  var serverConnection: URLSessionWebSocketTask?
+
+  func getRequest(path: String, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> Data {
+    let port = try await connectionStatus.port
+    guard let url = URL(string: "http://localhost:\(port)/\(path)") else {
+      throw APIError("Invalid URL: http://localhost:\(port)/\(path)")
+    }
+    var request = URLRequest(url: url)
+    request.httpMethod = "GET"
+
+    let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
+    try assertIsSuccess(response: response, data: data)
+    return data
+  }
+
+  func postRequest(
+    path: String,
+    data: Data,
+    onReceiveJSONData: (@Sendable (Data) -> Void)?)
+    async throws -> Data
+  {
+    var path = path
+    if path.starts(with: "/") {
+      path = String(path.dropFirst())
+    }
+    let port = try await connectionStatus.port
+    var request = URLRequest(url: URL(string: "http://localhost:\(port)/\(path)")!)
+    request.httpMethod = "POST"
+    request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.addValue("application/json", forHTTPHeaderField: "Accept")
+    request.httpBody = data
+
+    let (data, response) = try await send(request: request, onReceiveJSONData: onReceiveJSONData)
+    try assertIsSuccess(response: response, data: data)
+    return data
+  }
+
+  func handle(task: URLSessionTask, didCompleteWithError error: Error?) {
+    guard let handler = inflightTasks.removeValue(forKey: task) else {
+      return
+    }
+    let response = task.response
+    Task { @MainActor in
+      if let error {
+        print("Task completed with error \(error)")
+        handler.continuation.resume(throwing: error)
+      } else if let response {
+        handler.continuation.resume(returning: (handler.totalData, response))
+      } else {
+        assertionFailure("Task completed without response")
+        handler.continuation.resume(throwing: URLError(.badServerResponse))
+      }
+    }
+  }
+
+  func handle(dataTask: URLSessionDataTask, didReceive data: Data) {
+    guard var handler = inflightTasks[dataTask] else {
+      return
+    }
+    defer { inflightTasks[dataTask] = handler }
+
+    handler.totalData.append(data)
+
+    if let onReceiveJSONData = handler.onReceiveJSONData {
+      handler.incompletedJSONData.append(data)
+      let (jsonObjects, newImcompleteData) = handler.incompletedJSONData.parseJSONObjects()
+      handler.incompletedJSONData = newImcompleteData ?? Data()
+
+      Task { @MainActor in
+        for jsonObject in jsonObjects {
+          onReceiveJSONData(jsonObject)
+        }
+      }
+    }
+  }
+
+  private struct TaskHandler: Sendable {
+    let continuation: CheckedContinuation<(Data, URLResponse), Error>
+    let onReceiveJSONData: (@Sendable (Data) -> Void)?
+    /// Data received from the server that is not yet a complete JSON object.
+    var incompletedJSONData = Data()
+    /// All the data received from the server since the beginning of the task.
+    var totalData = Data()
+  }
+
+  private enum ConnectionStatus: Sendable {
+    case waitingOnConnection(Future<ConnectionResponse, Error>)
+    case connected(port: Int)
+
+    var port: Int {
+      get async throws {
+        switch self {
+        case .connected(let port):
+          port
+        case .waitingOnConnection(let onConnection):
+          try await onConnection.value.port
+        }
+      }
+    }
+  }
+
+  private let fileManager: FileManagerI
+
+  private let applicationSupportPath: String
+
+  private let sharedUserDefaults: UserDefaultsI
+  private var hasCopiedFiles: Bool
+
+  private var inflightTasks: [URLSessionTask: TaskHandler] = [:]
+
+  private let delegate: ServerDelegate
+
+  private var connectionStatus: ConnectionStatus
+
+  private let session: URLSession
+
+  /// Connect to the server, and return the port where the server is running.
+  private func connect() async throws {
+    var onConnection: Future<ConnectionResponse, Error>.Promise?
+    connectionStatus = .waitingOnConnection(.init { onConnection = $0 })
+
+    do {
+      try copyExecutableFiles()
+
+      let mainPath = (applicationSupportPath as NSString).appendingPathComponent("launch-server.sh")
+
+      let process = Process()
+      process.launchPath = "/bin/zsh"
+      #if DEBUG
+      // In debug, load the interactive shell to allow for local env parameters to be passed in.
+      process.arguments = ["-ilc"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      #else
+      process.arguments = ["-c"] + ["'\(mainPath)' --attachTo \(getpid())"]
+      #endif
+
+      let stdout = Pipe()
+      process.standardOutput = stdout
+      let connectionResult = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<
+        ConnectionResponse,
+        Error
+      >) in
+        var hasResponded = false
+
+        Task {
+          for await data in stdout.fileHandleForReading.dataStream {
+            guard !hasResponded else { return }
+            if let response = try? JSONDecoder().decode(ConnectionResponse.self, from: data) {
+              hasResponded = true
+              continuation.resume(returning: response)
+
+              listenToExtension(port: response.port)
+              sharedUserDefaults.set(response.port, forKey: UserDefaultKeys.localServerPort)
+              defaultLogger.log("Local server started at port \(response.port)")
+            }
+          }
+        }
+
+        do {
+          try process.run()
+          Task.detached { [weak self] in
+            process.waitUntilExit()
+            if let self {
+              // The server crashed or was killed, restart it.
+              print("Restarting server")
+              try await connect()
+            }
+          }
+        } catch {
+          guard !hasResponded else {
+            assertionFailure("Error running executable: \(error.localizedDescription)")
+            return
+          }
+          hasResponded = true
+          continuation.resume(throwing: error)
+        }
+      }
+      connectionStatus = .connected(port: connectionResult.port)
+      onConnection?(.success(connectionResult))
+
+    } catch {
+      onConnection?(.failure(error))
+      throw error
+    }
+  }
+
+  private func copyExecutableFiles() throws {
+    guard !hasCopiedFiles else {
+      // Not re-copying the files over allows for the server to be hot-reloaded during development.
+      // In production, there is no reason for those files to have changed since the app was launched.
+      return
+    }
+    hasCopiedFiles = true
+    let files = ["main.bundle.js", "main.bundle.js.map", "launch-server.sh"]
+    let filePaths = files.compactMap { resourceBundle.path(forResource: $0, ofType: nil) }
+
+    guard filePaths.count == files.count else {
+      throw AppError(message: "Failed to locate all files to copy.")
+    }
+
+    // Create application support directory if it doesn't exist
+    try fileManager.createDirectory(atPath: applicationSupportPath, withIntermediateDirectories: true)
+
+    try files.enumerated().forEach { idx, fileName in
+      let destination = (applicationSupportPath as NSString).appendingPathComponent(fileName)
+      let filePath = filePaths[idx]
+      if fileManager.fileExists(atPath: destination) {
+        try fileManager.removeItem(atPath: destination)
+      }
+      try fileManager.copyItem(atPath: filePath, toPath: destination)
+      try fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: destination)
+    }
+  }
+
+  private func send(request: URLRequest, onReceiveJSONData: (@Sendable (Data) -> Void)?) async throws -> (Data, URLResponse) {
+    let task = session.dataTask(with: request)
+
+    return try await withTaskCancellationHandler(operation: {
+      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(Data, URLResponse), Error>) in
+        inflightTasks[task] = TaskHandler(
+          continuation: continuation,
+          onReceiveJSONData: onReceiveJSONData,
+          incompletedJSONData: Data(),
+          totalData: Data())
+        task.resume()
+      }
+    }, onCancel: {
+      task.cancel()
+    })
+  }
+
+  private func assertIsSuccess(response: URLResponse, data: Data) throws {
+    guard let httpURLResponse = response as? HTTPURLResponse else {
+      throw APIError("Unexpected non-HTTP URL response. Data: \(String(data: data, encoding: .utf8) ?? "??")")
+    }
+
+    guard (200..<300).contains(httpURLResponse.statusCode) else {
+      throw APIError("HTTP status code \(httpURLResponse.statusCode). Data: \(String(data: data, encoding: .utf8) ?? "??")")
+    }
+  }
+}
+
+extension FileHandle {
+  public var dataStream: AsyncStream<Data> {
+    let (stream, continuation) = AsyncStream<Data>.makeStream()
+
+    readabilityHandler = { handle in
+      let data = handle.availableData
+
+      if data.isEmpty {
+        handle.readabilityHandler = nil
+        continuation.finish()
+        return
+      }
+
+      continuation.yield(data)
+    }
+
+    return stream
+  }
+}
+
+// MARK: - ServerDelegate
+
+private final class ServerDelegate: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+  weak var owner: DefaultServer?
+
+  func urlSession(_: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+    Task {
+      owner?.handle(dataTask: dataTask, didReceive: data)
+    }
+  }
+
+  func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    Task {
+      owner?.handle(task: task, didCompleteWithError: error)
+    }
+  }
+}
+
+// MARK: - ConnectionResponse
+
+private struct ConnectionResponse: Decodable, Sendable {
+  let port: Int
+}
+
+extension BaseProviding where
+  Self: UserDefaultsProviding,
+  Self: AppEventHandlerRegistryProviding,
+  Self: FileManagerProviding
+{
+  public var server: Server {
+    shared {
+      DefaultServer(
+        sharedUserDefaults: sharedUserDefaults,
+        appEventHandlerRegistry: appEventHandlerRegistry,
+        fileManager: fileManager)
+    }
+  }
+}
+
+extension URLResponse: @unchecked @retroactive Sendable { }
+
+#if SWIFT_PACKAGE
+// TODO: look if the later also works
+private let resourceBundle = Bundle.module
+#else
+private class ResourceBundle { }
+private let resourceBundle = Bundle(for: ResourceBundle.self)
+#endif

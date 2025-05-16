@@ -1,0 +1,249 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import CodePreview
+import Dependencies
+import DLS
+import Down
+import FileDiffTypesFoundation
+import FileEditServiceInterface
+import FoundationInterfaces
+import LoggingServiceInterface
+import SwiftUI
+import ToolFoundation
+
+// MARK: - ChatMessageView
+
+struct ChatMessageView: View {
+
+  let message: ChatMessage
+
+  var body: some View {
+    HStack {
+      VStack(alignment: .leading, spacing: 0) {
+        ForEach(message.content) { content in
+          switch content {
+          case .text(let textContent):
+
+            if !textContent.attachments.isEmpty {
+              AttachmentsView(attachments: .constant(textContent.attachments), isEditable: false)
+                .padding(5)
+                .padding(.top, 2)
+            }
+            ForEach(textContent.elements) { element in
+              textElementView(element)
+            }
+
+          case .toolUse(let toolUse):
+            toolUseView(toolUse.toolUse)
+          }
+        }
+      }
+      Spacer(minLength: 0)
+    }
+    .background(message.role == .user ? colorScheme.secondarySystemBackground : .clear)
+    .roundedCornerWithBorder(
+      borderColor: message.role == .user ? colorScheme.textAreaBorderColor : .clear,
+      radius: Constants.cornerRadius)
+  }
+
+  // MARK: Private Constants
+
+  private enum Constants {
+    static let cornerRadius: CGFloat = 3
+  }
+
+  @Environment(\.colorScheme) private var colorScheme
+
+  @ViewBuilder
+  private func textElementView(_ element: TextFormatter.Element) -> some View {
+    switch element {
+    case .text(let text):
+      Text(markdown(for: text))
+        .font(.body)
+        .lineLimit(nil)
+        .textSelection(.enabled)
+        .padding(5)
+        .foregroundColor(message.role == .user ? .white : .primary)
+        .cornerRadius(12)
+
+    case .codeBlock(let code):
+      CodeBlockContentView(code: code, role: message.role)
+    }
+  }
+
+  @ViewBuilder
+  private func toolUseView(_ toolUse: any ToolUse) -> some View {
+    VStack {
+      if let display = (toolUse as? (any DisplayableToolUse))?.body {
+        AnyView(display)
+      } else {
+        HStack(spacing: 0) {
+          Image(systemName: "hammer")
+            .foregroundColor(colorScheme.toolUseForeground)
+          Text(" Tool used: \(toolUse.toolName)")
+            .foregroundColor(colorScheme.toolUseForeground)
+            .font(.system(size: 11))
+            .font(.body)
+        }
+        .padding(3)
+      }
+    }
+  }
+
+  private func markdown(for text: TextFormatter.Element.TextElement) -> AttributedString {
+    let markDown = Down(markdownString: text.text)
+    let style = DownStyle()
+    style.baseFont = Font.systemFont(ofSize: 12)
+    style.baseFontColor = .textColor
+    style.codeFont = .monospacedSystemFont(ofSize: 12, weight: .medium)
+    style.codeColor = .controlAccentColor
+    style.h1Size = 20
+    style.h2Size = 18
+    style.h3Size = 16
+    let attributedString = try! markDown.toAttributedString(using: style)
+    return AttributedString(attributedString)
+  }
+}
+
+// MARK: - CodeBlockContentView
+
+struct CodeBlockContentView: View {
+
+  // MARK: Internal
+
+  @Bindable var code: TextFormatter.Element.CodeBlockElement
+  let role: MessageRole
+
+  let iconSizes: CGFloat = 15
+
+  var body: some View {
+    VStack(spacing: 0) {
+      HStack {
+        if let filePath {
+          FileIcon(filePath: filePath)
+            .frame(width: 12, height: 12)
+          Text(filePath.lastPathComponent)
+        }
+        Spacer()
+        #if DEBUG
+        IconButton(
+          action: {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(code.rawContent, forType: .string)
+          },
+          systemName: "doc.on.doc",
+          withCheckMark: true)
+          .frame(width: iconSizes, height: iconSizes)
+          .foregroundColor(.orange)
+        #endif
+        if let copyableContent = code.copyableContent {
+          IconButton(
+            action: {
+              NSPasteboard.general.clearContents()
+              NSPasteboard.general.setString(copyableContent, forType: .string)
+            },
+            systemName: "doc.on.doc",
+            withCheckMark: true)
+            .frame(width: iconSizes, height: iconSizes)
+        }
+        if code.isComplete {
+          if code.fileChange != nil {
+            IconButton(
+              action: {
+                reapplyFileChange()
+              },
+              systemName: "arrow.trianglehead.clockwise",
+              withCheckMark: true)
+              .frame(width: iconSizes, height: iconSizes)
+            if isApplyingChange {
+              ProgressView()
+                .controlSize(.small)
+                .frame(width: iconSizes, height: iconSizes)
+            } else if hasAppliedChanges == true {
+              Image(systemName: "checkmark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: iconSizes, height: iconSizes)
+            } else {
+              IconButton(
+                action: {
+                  applyFileChange()
+                },
+                systemName: "play",
+                withCheckMark: true)
+                .frame(width: iconSizes, height: iconSizes)
+            }
+          }
+        } else {
+          ProgressView()
+            .controlSize(.small)
+            .frame(width: iconSizes, height: iconSizes)
+        }
+      }
+      .padding(7)
+      .overlay(
+        Rectangle()
+          .frame(height: 0.5)
+          .foregroundColor(colorScheme.textAreaBorderColor),
+        alignment: .bottom)
+
+      if hasAppliedChanges != true {
+        CodePreview(
+          filePath: code.filePath.map { URL(fileURLWithPath: $0) },
+          language: code.language,
+          startLine: nil,
+          endLine: nil,
+          content: code.content,
+          highlightedContent: code.highlightedText,
+          fileChange: code.fileChange,
+          collapsedHeight: 500,
+          expandedHeight: nil)
+      }
+    }
+    .background(colorScheme.primaryBackground)
+    .roundedCornerWithBorder(borderColor: colorScheme.textAreaBorderColor, radius: Constants.codePreviewCornerRadius)
+    .foregroundColor(role == .user ? .white : .primary)
+  }
+
+  @Dependency(\.fileEditService) private var fileEditService: FileEditService
+  @Dependency(\.fileManager) private var fileManager: FileManagerI
+  @State private var isApplyingChange = false
+
+  private var hasAppliedChanges: Bool? {
+    code.fileChange?.formattedDiff.changes.filter { $0.change.type != .unchanged }.isEmpty
+  }
+
+  private func applyFileChange() {
+    isApplyingChange = true
+    Task {
+      do {
+        try await code.fileChange?.handleApplyAllChange()
+        isApplyingChange = false
+      } catch {
+        defaultLogger.error("Error applying code change: \(error)")
+        isApplyingChange = false
+      }
+    }
+  }
+
+  private func reapplyFileChange() {
+    Task {
+      await code.fileChange?.handleReapplyChange()
+    }
+  }
+
+  // MARK: Private
+
+  private enum Constants {
+    static let codePreviewCornerRadius: CGFloat = 3
+    static let codePreviewBorderWidth: CGFloat = 1
+  }
+
+  @Environment(\.colorScheme) private var colorScheme
+
+  private var filePath: URL? {
+    code.filePath.map { URL(fileURLWithPath: $0) }
+  }
+
+}

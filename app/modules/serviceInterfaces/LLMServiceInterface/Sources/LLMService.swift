@@ -1,0 +1,53 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import ConcurrencyFoundation
+import Foundation
+import ServerServiceInterface
+import ToolFoundation
+
+public typealias UpdateStream = CurrentValueStream<[CurrentValueStream<AssistantMessage>]>
+
+// MARK: - ChatContext
+
+public protocol ChatContext: Sendable {
+  /// The root of the project that is being worked on.
+  var projectRoot: URL { get }
+  /// When a tool that is not read-only runs, this function will be called before.
+  var prepareForWriteToolUse: @Sendable () async -> Void { get }
+}
+
+// MARK: - LLMService
+
+public protocol LLMService: Sendable {
+  func sendMessage(
+    messageHistory: [Schema.Message],
+    tools: [any Tool],
+    model: LLMModel,
+    context: ChatContext,
+    migrated: Bool,
+    handleUpdateStream: (UpdateStream) -> Void)
+    async throws -> [AssistantMessage]
+}
+
+#if DEBUG
+// TODO: Remove this once tests have been migrated to use the new API.
+extension LLMService {
+  func sendMessage(
+    messageHistory: [Schema.Message],
+    tools: [any Tool],
+    model: LLMModel,
+    context: ChatContext,
+    handleUpdateStream: (UpdateStream) -> Void)
+    async throws -> [AssistantMessage]
+  {
+    try await sendMessage(
+      messageHistory: messageHistory,
+      tools: tools,
+      model: model,
+      context: context,
+      migrated: false,
+      handleUpdateStream: handleUpdateStream)
+  }
+}
+#endif

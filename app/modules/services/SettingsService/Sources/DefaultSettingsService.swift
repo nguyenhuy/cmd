@@ -1,0 +1,185 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import AppFoundation
+@preconcurrency import Combine
+import ConcurrencyFoundation
+import DependencyFoundation
+import Foundation
+import FoundationInterfaces
+import LoggingServiceInterface
+import SettingsServiceInterface
+import SharedValuesFoundation
+import ThreadSafe
+
+// MARK: - DefaultSettingsService
+
+@ThreadSafe
+final class DefaultSettingsService: SettingsService {
+
+  // MARK: - Initialization
+
+  init(sharedUserDefaults: UserDefaultsI) {
+    self.sharedUserDefaults = sharedUserDefaults
+    settings = CurrentValueSubject<Settings, Never>(Self.loadSettings(from: sharedUserDefaults))
+
+    notificationObserver = sharedUserDefaults.onChange { [weak self] in
+      guard let self else { return }
+
+      let newSettings = Self.loadSettings(from: self.sharedUserDefaults)
+      settings.send(newSettings)
+    }
+  }
+
+  // MARK: - Constants
+
+  enum Keys {
+    static let appWideSettings = "appWideSettings"
+  }
+
+  // MARK: - SettingsService Implementation
+
+  func value<T: Equatable>(for keypath: KeyPath<Settings, T>) -> T {
+    settings.value[keyPath: keypath]
+  }
+
+  func liveValue<T: Equatable>(for keypath: KeyPath<Settings, T>) -> ReadonlyCurrentValueSubject<T, Never> {
+    ReadonlyCurrentValueSubject(
+      settings.value[keyPath: keypath],
+      publisher: settings.map { $0[keyPath: keypath] }.removeDuplicates().eraseToAnyPublisher())
+  }
+
+  func values() -> Settings {
+    settings.value
+  }
+
+  func liveValues() -> ReadonlyCurrentValueSubject<Settings, Never> {
+    settings.readonly(removingDuplicate: true)
+  }
+
+  func update<T>(setting: WritableKeyPath<Settings, T>, to value: T) {
+    var newSettings = settings.value
+    newSettings[keyPath: setting] = value
+    update(to: newSettings)
+  }
+
+  func update(to newSettings: Settings) {
+    settings.send(newSettings)
+    persist(settings: newSettings)
+  }
+
+  func resetToDefault<T>(setting: WritableKeyPath<Settings, T>) {
+    update(setting: setting, to: Self.defaultSettings[keyPath: setting])
+  }
+
+  func resetAllToDefault() {
+    settings.send(Self.defaultSettings)
+    Task { @MainActor in
+      persist(settings: Self.defaultSettings)
+    }
+  }
+
+  /// Decode the value here to ensure that we are using the default values used in decoding.
+  private static let defaultSettings = try! JSONDecoder().decode(Settings.self, from: "{}".data(using: .utf8)!)
+
+  private let settings: CurrentValueSubject<Settings, Never>
+  private var notificationObserver: AnyCancellable?
+
+  private let sharedUserDefaults: UserDefaultsI
+
+  private static func loadSettings(from userDefaults: UserDefaultsI) -> Settings {
+    if let data = userDefaults.data(forKey: Keys.appWideSettings) {
+      do {
+        var settings = try JSONDecoder().decode(Settings.self, from: data)
+        // Load API keys fromn the keychain.
+        if let anthropicAPIKey = settings.anthropicSettings?.apiKey {
+          if let key = userDefaults.loadSecuredValue(forKey: anthropicAPIKey) {
+            settings.anthropicSettings?.apiKey = key
+          } else {
+            settings.anthropicSettings = nil
+          }
+        }
+        if let openAIAPIKey = settings.openAISettings?.apiKey {
+          if let key = userDefaults.loadSecuredValue(forKey: openAIAPIKey) {
+            settings.openAISettings?.apiKey = key
+          } else {
+            settings.openAISettings = nil
+          }
+        }
+
+        // Load pointReleaseXcodeExtensionToDebugApp that is stored separately
+        settings.pointReleaseXcodeExtensionToDebugApp = userDefaults.bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+
+        return settings
+      } catch {
+        defaultLogger.error(error.localizedDescription)
+      }
+    }
+    return Self.defaultSettings
+  }
+
+  private func persist(settings: Settings) {
+    Task { @MainActor in
+      do {
+        // Persist settings to user defaults, but move keys to the keychain.
+        var publicSettings = settings
+        var privateKeys: [String: String?] = [
+          "ANTHROPIC_API_KEY": nil,
+          "OPENAI_API_KEY": nil,
+        ]
+
+        if let anthropicSettings = settings.anthropicSettings {
+          privateKeys["ANTHROPIC_API_KEY"] = anthropicSettings.apiKey
+          publicSettings.anthropicSettings?.apiKey = "ANTHROPIC_API_KEY"
+        }
+        if let openAISettings = settings.openAISettings {
+          privateKeys["OPENAI_API_KEY"] = openAISettings.apiKey
+          publicSettings.openAISettings?.apiKey = "OPENAI_API_KEY"
+        }
+        let value = try JSONEncoder().encode(publicSettings)
+        sharedUserDefaults.set(value, forKey: Keys.appWideSettings)
+
+        for (key, value) in privateKeys {
+          if let value {
+            sharedUserDefaults.securelySave(value, forKey: key)
+          } else {
+            sharedUserDefaults.removeSecuredValue(forKey: key)
+          }
+        }
+
+        // Store this value separately in the keychain, as it can also be accessed by the release version.
+        sharedUserDefaults.set(
+          settings.pointReleaseXcodeExtensionToDebugApp,
+          forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+      } catch {
+        defaultLogger.error(error.localizedDescription)
+      }
+      #if DEBUG
+      // Write pointReleaseXcodeExtensionToDebugApp to the release settings.
+      do {
+        let releaseUserDefaults = try UserDefaults.releaseShared(bundle: .main)
+        releaseUserDefaults?.set(
+          settings.pointReleaseXcodeExtensionToDebugApp,
+          forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+      } catch {
+        defaultLogger.error(error.localizedDescription)
+      }
+      #endif
+    }
+  }
+
+}
+
+// MARK: - Dependency Registration
+
+extension BaseProviding where Self: UserDefaultsProviding {
+  public var settingsService: SettingsService {
+    shared {
+      DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    }
+  }
+}
+
+// MARK: - WritableKeyPath + Sendable
+
+extension WritableKeyPath: Sendable where Root: Sendable, Value: Sendable { }

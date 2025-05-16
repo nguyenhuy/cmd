@@ -1,0 +1,4 @@
+module AccessibilityObjCFoundation {
+    umbrella header "WindowActivation.h"
+    export *
+} 

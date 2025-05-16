@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/ValueType",
+  "definitions": {
+    "ValueType": {
+      "type": "object",
+      "properties": {
+        "nested": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "nested"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

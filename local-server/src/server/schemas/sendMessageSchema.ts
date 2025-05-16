@@ -1,0 +1,138 @@
+export interface SendMessageRequestParams {
+	messages: Message[]
+	system?: string
+	projectRoot: string
+	tools?: Tool[]
+	model: string
+	provider: APIProvider
+}
+
+export interface APIProvider {
+	name: APIProviderName
+	settings: {
+		apiKey?: string
+		baseUrl?: string
+	}
+}
+
+export type APIProviderName = "openai" | "anthropic"
+
+export type StreamedResponseChunk = TextDelta | ToolUseRequest | ResponseError
+
+export interface TextDelta {
+	type: "text_delta"
+	text: string
+}
+
+export interface ToolUseRequest {
+	type: "tool_call"
+	name: string
+	input: Record<string, unknown>
+	id: string
+}
+
+export interface ResponseError {
+	type: "error"
+	message: string
+	/**
+	 * @format integer
+	 */
+	statusCode?: number
+}
+
+export type MessageContent = TextMessage | ToolUseRequest | ToolResultMessage
+
+export interface Message {
+	// The role of the message's author. Roles can be: system, user, assistant, function or tool.
+	role: "system" | "user" | "assistant"
+	content: Array<MessageContent>
+	// | ImageBlockParam
+}
+
+// export interface ImageBlockParam {
+//   type: 'image';
+//   source: ImageSource;
+// }
+
+// export interface ImageSource {
+//   data: string;
+//   media_type: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+//   type: 'base64';
+// }
+
+export interface TextMessage {
+	text: string
+	attachments?: MessageAttachment[]
+	type: "text"
+}
+
+export type MessageAttachment = ImageAttachment | FileAttachment | FileSelectionAttachment | BuildErrorAttachment
+
+export interface ImageAttachment {
+	type: "image_attachment"
+	url: string
+	mimeType: string
+}
+
+export interface FileAttachment {
+	type: "file_attachment"
+	path: string
+	content: string
+}
+
+export interface FileSelectionAttachment {
+	type: "file_selection_attachment"
+	path: string
+	content: string
+	/**
+	 * @format integer
+	 */
+	startLine: number
+	/**
+	 * @format integer
+	 */
+	endLine: number
+}
+
+export interface BuildErrorAttachment {
+	type: "build_error_attachment"
+	filePath: string
+	/**
+	 * @format integer
+	 */
+	line: number
+	/**
+	 * @format integer
+	 */
+	column: number
+	message: string
+}
+
+export interface ToolResultSuccessMessage {
+	type: "tool_result_success"
+	success: unknown
+}
+
+export interface ToolResultFailureMessage {
+	type: "tool_result_failure"
+	failure: unknown
+}
+
+export interface ToolResultMessage {
+	tool_use_id: string
+	type: "tool_result"
+	result: ToolResultSuccessMessage | ToolResultFailureMessage
+}
+
+export interface Tool {
+	name: string
+	description: string
+	input_schema: Record<string, unknown>
+}
+
+export interface ChatCompletionToolResponseChunk {
+	type: "tool_call"
+	id: string
+	input: Record<string, unknown>
+	name: string
+}
