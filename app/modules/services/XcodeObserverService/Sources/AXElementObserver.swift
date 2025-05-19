@@ -19,7 +19,8 @@ class AXElementObserver: @unchecked Sendable {
   /// The accessibility element being observed.
   let element: AXUIElement
 
-  @MainActor var onElementInvalidated: @Sendable @MainActor (AXElementObserver) -> Void {
+  @MainActor
+  var onElementInvalidated: @Sendable @MainActor (AXElementObserver) -> Void {
     get { internalState.value.onElementInvalidated }
     set { internalState.mutate { $0.onElementInvalidated = newValue } }
   }

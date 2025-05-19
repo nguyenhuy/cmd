@@ -4,6 +4,7 @@
 Target.module(
   name: "LLMService",
   dependencies: [
+    .product(name: "JSONScanner", package: "JSONScanner"),
     .product(name: "SwiftOpenAI", package: "SwiftOpenAI"),
     "AppFoundation",
     "ConcurrencyFoundation",
@@ -16,6 +17,7 @@ Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
     "LLMServiceInterface",

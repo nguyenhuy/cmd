@@ -10,6 +10,7 @@ Target.module(
     "JSONFoundation",
   ],
   testDependencies: [
+    "AppFoundation",
     "ConcurrencyFoundation",
     "SwiftTesting",
   ])

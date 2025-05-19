@@ -23,12 +23,7 @@ final class DefaultSettingsService: SettingsService {
     self.sharedUserDefaults = sharedUserDefaults
     settings = CurrentValueSubject<Settings, Never>(Self.loadSettings(from: sharedUserDefaults))
 
-    notificationObserver = sharedUserDefaults.onChange { [weak self] in
-      guard let self else { return }
-
-      let newSettings = Self.loadSettings(from: self.sharedUserDefaults)
-      settings.send(newSettings)
-    }
+    observeChangesToUserDefaults()
   }
 
   // MARK: - Constants
@@ -80,7 +75,7 @@ final class DefaultSettingsService: SettingsService {
   }
 
   /// Decode the value here to ensure that we are using the default values used in decoding.
-  private static let defaultSettings = try! JSONDecoder().decode(Settings.self, from: "{}".data(using: .utf8)!)
+  private static let defaultSettings = try! JSONDecoder().decode(Settings.self, from: "{}".utf8Data)
 
   private let settings: CurrentValueSubject<Settings, Never>
   private var notificationObserver: AnyCancellable?
@@ -112,10 +107,20 @@ final class DefaultSettingsService: SettingsService {
 
         return settings
       } catch {
-        defaultLogger.error(error.localizedDescription)
+        defaultLogger.error(error)
       }
     }
     return Self.defaultSettings
+  }
+
+  /// This can be mobed back to init once https://github.com/swiftlang/swift/issues/80050 is fixed.
+  private func observeChangesToUserDefaults() {
+    notificationObserver = sharedUserDefaults.onChange { [weak self] in
+      guard let self else { return }
+
+      let newSettings = Self.loadSettings(from: sharedUserDefaults)
+      settings.send(newSettings)
+    }
   }
 
   private func persist(settings: Settings) {
@@ -152,7 +157,7 @@ final class DefaultSettingsService: SettingsService {
           settings.pointReleaseXcodeExtensionToDebugApp,
           forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
       } catch {
-        defaultLogger.error(error.localizedDescription)
+        defaultLogger.error(error)
       }
       #if DEBUG
       // Write pointReleaseXcodeExtensionToDebugApp to the release settings.
@@ -162,7 +167,7 @@ final class DefaultSettingsService: SettingsService {
           settings.pointReleaseXcodeExtensionToDebugApp,
           forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
       } catch {
-        defaultLogger.error(error.localizedDescription)
+        defaultLogger.error(error)
       }
       #endif
     }

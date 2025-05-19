@@ -61,6 +61,7 @@ public struct ChatView: View {
         }
       }
     }
+    .background(colorScheme.primaryBackground)
   }
 
   @State private var path = NavigationPath()

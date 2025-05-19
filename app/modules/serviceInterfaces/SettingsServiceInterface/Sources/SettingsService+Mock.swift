@@ -12,6 +12,7 @@ public final class MockSettingsService: SettingsService {
     _ settings: Settings? = nil,
     defaultSettings: Settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
+      enablePersistedLogging: false,
       anthropicSettings: nil,
       openAISettings: nil))
   {

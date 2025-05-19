@@ -3,4 +3,8 @@
 
 Target.module(
   name: "LoggingServiceInterface",
-  dependencies: [])
+  dependencies: [
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "ThreadSafe",
+  ])

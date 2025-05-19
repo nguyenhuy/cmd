@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import SwiftTesting
@@ -14,7 +15,7 @@ struct MockServerTests {
   @Test
   func testGetRequestSuccess() async throws {
     let server = MockServer()
-    let expectedData = "Hello World".data(using: .utf8)!
+    let expectedData = "Hello World".utf8Data
     let receivedData = Atomic<Data?>(nil)
 
     server.onGetRequest = { path, onReceiveJSONData in
@@ -72,8 +73,8 @@ struct MockServerTests {
   @Test
   func testPostRequestSuccess() async throws {
     let server = MockServer()
-    let sentData = "Hello Server".data(using: .utf8)!
-    let responseData = "Hello Client".data(using: .utf8)!
+    let sentData = "Hello Server".utf8Data
+    let responseData = "Hello Client".utf8Data
     let receivedData = Atomic<Data?>(nil)
 
     server.onPostRequest = { path, data, onReceiveJSONData in
@@ -93,7 +94,7 @@ struct MockServerTests {
   @Test
   func testPostRequestFailure() async throws {
     let server = MockServer()
-    let testData = "Test".data(using: .utf8)!
+    let testData = "Test".utf8Data
 
     // Default behavior should throw badServerResponse
     do {
@@ -107,7 +108,7 @@ struct MockServerTests {
   @Test
   func testPostRequestCancellation() async throws {
     let server = MockServer()
-    let testData = "Test".data(using: .utf8)!
+    let testData = "Test".utf8Data
     let expectation = expectation(description: "Request should be cancelled")
 
     server.onPostRequest = { _, _, _ in
@@ -138,7 +139,7 @@ struct MockServerTests {
       // Try to send data after returning response
       Task {
         try await Task.sleep(for: .milliseconds(100))
-        onReceiveJSONData?("Late data".data(using: .utf8)!)
+        onReceiveJSONData?("Late data".utf8Data)
       }
       return Data()
     }

@@ -89,4 +89,6 @@ public final class AnyAXUIElement: Equatable, Sendable {
 
 }
 
+// MARK: - AXUIElement + @retroactive @unchecked Sendable
+
 extension AXUIElement: @retroactive @unchecked Sendable { }

@@ -9,12 +9,12 @@ import SwiftUI
 import ToolFoundation
 
 #if DEBUG
-struct TestTool: Tool {
+struct TestTool: NonStreamableTool {
   public func isAvailable(in _: ChatMode) -> Bool {
     true
   }
 
-  struct TestToolUse: NonStreamableToolUse {
+  struct Use: ToolUse {
     public let isReadonly = true
     init(input: String = "") {
       self.input = input
@@ -41,8 +41,8 @@ struct TestTool: Tool {
   var name: String { "TestTool" }
   var description: String { "A tool for testing." }
 
-  func use(toolUseId _: String, input _: String, context _: ToolExecutionContext) -> TestToolUse {
-    TestToolUse()
+  func use(toolUseId _: String, input _: String, context _: ToolExecutionContext) -> Use {
+    Use()
   }
 
 }
@@ -161,7 +161,9 @@ struct DebugStreamingMessage: View {
           currentMessage.content = []
         }
       }.padding()
-      ChatMessageView(message: currentMessage)
+      ForEach(currentMessage.content) { content in
+        ChatMessageView(message: .init(content: content, role: currentMessage.role))
+      }
     }
   }
 
@@ -172,21 +174,21 @@ struct DebugStreamingMessage: View {
 #Preview {
   ScrollView {
     VStack {
-      ChatMessageView(message: ChatMessage(
-        content: [.text(.init(text: "What does this code do?", attachments: [
+      ChatMessageView(message: ChatMessageContentWithRole(
+        content: .text(.init(text: "What does this code do?", attachments: [
           .fileSelection(Attachment.FileSelectionAttachment(
             file: Attachment.FileAttachment(path: URL(filePath: "/Users/me/app/source.swift")!, content: mediumFileContent),
             startLine: 4,
             endLine: 10)),
-        ]))],
+        ])),
         role: .user))
 
-      ChatMessageView(message: ChatMessage(
-        content: [.text(.init(text: "Not much"))],
+      ChatMessageView(message: ChatMessageContentWithRole(
+        content: .text(.init(text: "Not much")),
         role: .assistant))
 
-      ChatMessageView(message: ChatMessage(
-        content: [.text(.init(text: """
+      ChatMessageView(message: ChatMessageContentWithRole(
+        content: .text(.init(text: """
           # This is some Markdown
           * This is a list item
 
@@ -198,11 +200,11 @@ struct DebugStreamingMessage: View {
 
           This is a paragraph with a `code` inline.
 
-          """))],
+          """)),
         role: .assistant))
 
-      ChatMessageView(message: ChatMessage(
-        content: [.text(.init(text: messageContentWithCode))],
+      ChatMessageView(message: ChatMessageContentWithRole(
+        content: .text(.init(text: messageContentWithCode)),
         role: .assistant))
 
       withDependencies({
@@ -214,16 +216,21 @@ struct DebugStreamingMessage: View {
             """,
         ])
       }, operation: {
-        ChatMessageView(message: ChatMessage(
-          content: [
+        VStack {
+          ChatMessageView(message: ChatMessageContentWithRole(
+            content:
             .text(.init(text: messageContentWithCodeDiff)),
-            .toolUse(.init(toolUse: TestTool.TestToolUse())),
-          ],
-          role: .assistant))
+            role: .assistant))
+
+          ChatMessageView(message: ChatMessageContentWithRole(
+            content:
+            .toolUse(.init(toolUse: TestTool.Use())),
+            role: .assistant))
+        }
       })
 
-      ChatMessageView(message: ChatMessage(
-        content: [.text(.init(text: messageContentWithUnfinishedCode))],
+      ChatMessageView(message: ChatMessageContentWithRole(
+        content: .text(.init(text: messageContentWithUnfinishedCode)),
         role: .assistant))
 
       DebugStreamingMessage(message: ChatMessage(

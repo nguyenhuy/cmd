@@ -3,7 +3,6 @@
 
 import AppKit
 import Foundation
-import HighlightSwift
 import Testing
 @testable import FileDiffFoundation
 

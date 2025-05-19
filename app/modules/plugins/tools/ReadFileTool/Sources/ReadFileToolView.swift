@@ -7,9 +7,9 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ReadFileTool.ReadFileToolUse + DisplayableToolUse
+// MARK: - ReadFileTool.Use + DisplayableToolUse
 
-extension ReadFileTool.ReadFileToolUse: DisplayableToolUse {
+extension ReadFileTool.Use: DisplayableToolUse {
   public var body: AnyView {
     AnyView(ToolUseView(toolUse: ToolUseViewModel(
       status: status, input: input)))
@@ -68,7 +68,7 @@ struct ToolUseView: View {
   }
 
   @ViewBuilder
-  private func successView(output: ReadFileTool.ReadFileToolUse.Output) -> some View {
+  private func successView(output: ReadFileTool.Use.Output) -> some View {
     VStack(alignment: .leading) {
       HStack {
         if isExpanded {
@@ -118,9 +118,9 @@ struct ToolUseView: View {
 
 }
 
-// MARK: - ReadFileTool.ReadFileToolUse.Output + Identifiable
+// MARK: - ReadFileTool.Use.Output + Identifiable
 
-extension ReadFileTool.ReadFileToolUse.Output: Identifiable {
+extension ReadFileTool.Use.Output: Identifiable {
   public var id: String { uri }
 }
 

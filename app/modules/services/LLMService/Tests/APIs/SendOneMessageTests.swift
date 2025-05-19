@@ -6,6 +6,7 @@ import Foundation
 import SwiftTesting
 import Testing
 
+import AppFoundation
 import LLMServiceInterface
 import ServerServiceInterface
 
@@ -67,13 +68,13 @@ final class SendOneMessageTests {
           "type": "text_delta",
           "text": "hi"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       sendChunk?("""
         {
           "type": "text_delta",
           "text": " what can I do?"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       return okServerResponse
     }
     let updatingMessage = try await sut.sendOneMessage(
@@ -125,13 +126,13 @@ final class SendOneMessageTests {
           "type": "text_delta",
           "text": "hi"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       sendChunk?("""
         {
           "type": "text_delta",
           "text": " what can I do?"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       sendChunk?("""
         {
           "type": "tool_call",
@@ -141,7 +142,7 @@ final class SendOneMessageTests {
             "file": "file.txt"
           }
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       return okServerResponse
     }
     let updatingMessage = try await sut.sendOneMessage(
@@ -194,7 +195,7 @@ final class SendOneMessageTests {
             "badInput": "file.txt"
           }
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       return okServerResponse
     }
     let updatingMessage = try await sut.sendOneMessage(
@@ -286,7 +287,7 @@ final class SendOneMessageTests {
           "type": "text_delta",
           "text": "hi"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
 
       // This will be ignored by the ServerMock as we've already returned a cancellation error.
       return okServerResponse

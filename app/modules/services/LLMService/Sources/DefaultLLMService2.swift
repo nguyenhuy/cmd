@@ -124,54 +124,16 @@ final class DefaultLLMService2: LLMService {
           model: .custom("claude-3-7-sonnet-20250219"),
           tools: tools.map(\.mapped))
         let stream = try await service.startStreamedChat(parameters: parameters)
-        
-          var currentToolUseToolName: String? = nil
-          var currentToolUseId: String? = nil
-          var currentToolUsePartiaInput: String? = nil
-          var currentToolUse: (any ToolUse)? = nil
 
-        let wrapToolUse: () throws -> Void = {
-          defer { toolRequest = nil }
-          guard let toolRequest else { return }
-          // Finish the previous text message.
-          result.content.last?.asText?.finish()
-
-          guard
-            let toolName = toolRequest.name, let toolUseId = toolRequest.id,
-            let data = toolRequest.arguments.data(using: .utf8)
-          else {
-            throw AppError("Could not convert tool request to data")
-          }
-          let input = try JSONDecoder().decode(JSON.self, from: data)
-
-          // Create a tool call request.
-          var content = result.content
-          let request = ToolUseRequestMessage(
-            name: toolName,
-            input: input,
-            id: toolUseId)
-
-          if let tool = tools.first(where: { $0.name == request.name }) {
-            do {
-              try content.append(toolUse: tool.use(
-                toolUseId: request.id,
-                input: request.input,
-                context: ToolExecutionContext(projectRoot: context.projectRoot)))
-            } catch {
-              // If the above fails, this is because the input could not be parsed by the tool.
-              content.append(toolUse: FailedToolUse(
-                toolUseId: request.id,
-                toolName: request.name,
-                error: Self.failedToParseToolInputError(toolName: request.name, error: error)))
-            }
-          } else {
-            // Tool not found
-            content.append(toolUse: FailedToolUse(
-              toolUseId: request.id,
-              toolName: request.name,
-              error: Self.missingToolError(toolName: request.name)))
-          }
-          result.update(with: AssistantMessage(content: content))
+        var currentToolUseToolName: String? = nil
+        var currentToolUseId: String? = nil
+        var currentToolUsePartiaInput: String? = nil
+        var currentToolUse: (any ToolUse)? = nil
+        let resetToolUse = {
+          currentToolUseToolName = nil
+          currentToolUseId = nil
+          currentToolUsePartiaInput = nil
+          currentToolUse = nil
         }
 
         do {
@@ -187,7 +149,6 @@ final class DefaultLLMService2: LLMService {
 
             guard let event = chunk.choices?.first?.delta else { continue }
             if let text = event.content {
-              try wrapToolUse()
               if let textContent = result.content.last?.asText {
                 // We received a new text chunk, we'll append it to the last text content.
                 let lastMessage = textContent.value
@@ -203,27 +164,75 @@ final class DefaultLLMService2: LLMService {
                 result.update(with: AssistantMessage(content: content))
               }
             } else if let toolUse = event.toolCalls?.first {
-                currentToolUseId = currentToolUseId ?? toolUse.id
-                currentToolUseToolName = currentToolUseToolName ?? toolUse.function.name
-                currentToolUsePartiaInput = currentToolUsePartiaInput ?? ""
-                currentToolUsePartiaInput += toolUse.function.arguments
-                
-                // TODO: convert currentToolUsePartiaInput to valid json
-                
+              // Finish the previous text message.
+              result.content.last?.asText?.finish()
+
+              currentToolUseId = currentToolUseId ?? toolUse.id
+              currentToolUseToolName = currentToolUseToolName ?? toolUse.function.name
+              var partiaInput = currentToolUsePartiaInput ?? ""
+              partiaInput += toolUse.function.arguments
+              currentToolUsePartiaInput = partiaInput
+
+              let (data, isInputComplete) = try partiaInput.extractPartialJSON()
+              var content = result.content
+              print("streaming content from \(partiaInput.count) char received")
+
+              do {
                 if let currentToolUse {
-                    do {
-                        let data = currentToolUsePartiaInput.data(using: .utf8)
-                        
+                  // If we already have an existing instance for this tool use, update it with the newly received data.
+                  try currentToolUse.receive(inputUpdate: data, isLast: isInputComplete)
+                } else if let toolName = currentToolUseToolName, let toolUseId = currentToolUseId {
+                  // If we have enough info to know what tool to run, try to start a tool use.
+                  if let tool = tools.first(where: { $0.name == toolName }) {
+                    if tool.canInputBeStreamed || isInputComplete {
+                      // ready to start streaming a new tool use
+                      let toolUse = try tool.use(
+                        toolUseId: toolUseId,
+                        input: data,
+                        isInputComplete: isInputComplete,
+                        context: ToolExecutionContext(projectRoot: context.projectRoot))
+
+                      if !toolUse.isReadonly {
+                        await context.prepareForWriteToolUse()
+                      }
+                      currentToolUse = toolUse
+                      content.append(toolUse: toolUse)
+                      result.update(with: AssistantMessage(content: content))
+                    } else {
+                      // Tool input is not streamable and we are still streaming. Wait for next updates.
                     }
-                    currentToolUse.receive(inputUpdate: <#T##(any ToolUse).Input#>)
-                    else if let name = currentToolUseToolName, let id = currentToolUseId {
-                    // ready to start streaming tool use input
-                    
+                  } else {
+                    // Tool not found this is an error.
+                    if isInputComplete {
+                      // Only record the error once, when the input has been received.
+                      content.append(toolUse: FailedToolUse(
+                        toolUseId: toolUseId,
+                        toolName: toolName,
+                        error: Self.missingToolError(toolName: toolName)))
+                      result.update(with: AssistantMessage(content: content))
+                    }
+                  }
                 }
+              } catch {
+                // If the above fails, this is because the input could not be parsed by the tool.
+                if isInputComplete {
+                  // Only record the error once, when the input has been received.
+                  let toolUseId = currentToolUseId ?? "missing-id"
+                  let toolName = currentToolUseToolName ?? "missing-name"
+                  content.append(toolUse: FailedToolUse(
+                    toolUseId: toolUseId,
+                    toolName: toolName,
+                    error: Self.failedToParseToolInputError(toolName: toolName, error: error)))
+                  result.update(with: AssistantMessage(content: content))
+                } else {
+                  defaultLogger.error("Failed to update tool with input \(partiaInput)", error)
+                }
+              }
+              if isInputComplete {
+                resetToolUse()
+              }
             }
           }
-
-          try wrapToolUse()
         } catch {
           // TODO: Try to decode the chunk as an error
           // Looks like {"success":false,"status":500,"message":"Failed to process message.","stack":{}}
@@ -257,15 +266,12 @@ final class DefaultLLMService2: LLMService {
   /// This returns a message representing the result of the tool use, and broadcast the execution status to the update stream.
   private static func execute(
     toolUseRequest: ToolUseMessage,
-    context: ChatContext)
+    context _: ChatContext)
     async -> Schema.Message
   {
     let toolUse = toolUseRequest.toolUse
 
     do {
-      if !toolUse.isReadonly {
-        await context.prepareForWriteToolUse()
-      }
       toolUse.startExecuting()
       let toolOutput = try await toolUse.result
 
@@ -368,7 +374,9 @@ extension Schema.Message {
                     "<fileSelectionAttachment><path>\(a.path)</path><startLine>\(a.startLine)</startLine><endLine>\(a.endLine)</endLine><content>\(a.content)</content></fileSelectionAttachment>"))
 
             case .imageAttachment(let a):
-              content.append(.imageUrl(.init(url: URL(fileURLWithPath: a.url))))
+              if let url = URL(string: a.url) {
+                content.append(.imageUrl(.init(url: url)))
+              }
 
             case .buildErrorAttachment(let a):
               content
@@ -380,6 +388,9 @@ extension Schema.Message {
           content.append(.text("End of user provided context"))
         }
         result.append(.init(role: role.mapped, content: .contentArray(content)))
+
+      case .internalTextMessage(let message):
+        result.append(.init(role: role.mapped, content: .contentArray([.text(message.text)])))
 
       case .toolResultMessage(let message):
         result.append(.init(
@@ -410,6 +421,6 @@ struct PartialToolUse {
   var id: String?
   var name: String?
   var arguments: String
-    
-    var parseableJSON: Data?
+
+  var parseableJSON: Data?
 }

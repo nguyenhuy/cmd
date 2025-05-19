@@ -95,7 +95,7 @@ final class DefaultServer: Server {
     let response = task.response
     Task { @MainActor in
       if let error {
-        print("Task completed with error \(error)")
+        defaultLogger.error("Task completed with error", error)
         handler.continuation.resume(throwing: error)
       } else if let response {
         handler.continuation.resume(returning: (handler.totalData, response))
@@ -214,7 +214,7 @@ final class DefaultServer: Server {
             process.waitUntilExit()
             if let self {
               // The server crashed or was killed, restart it.
-              print("Restarting server")
+              defaultLogger.log("Restarting server")
               try await connect()
             }
           }
@@ -269,11 +269,15 @@ final class DefaultServer: Server {
 
     return try await withTaskCancellationHandler(operation: {
       try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(Data, URLResponse), Error>) in
-        inflightTasks[task] = TaskHandler(
+        let taskHandler = TaskHandler(
           continuation: continuation,
           onReceiveJSONData: onReceiveJSONData,
           incompletedJSONData: Data(),
           totalData: Data())
+        safelyMutate { state in
+          state.inflightTasks[task] = taskHandler
+        }
+
         task.resume()
       }
     }, onCancel: {

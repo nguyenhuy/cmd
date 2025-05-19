@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import Foundation
 import Security
 
@@ -10,20 +11,18 @@ class KeychainHelper {
 
   @discardableResult
   static func save(key: String, value: String) -> Bool {
-    if let data = value.data(using: .utf8) {
-      let query: [String: Any] = [
-        kSecClass as String: kSecClassGenericPassword,
-        kSecAttrAccount as String: key,
-        kSecAttrService as String: service,
-        kSecValueData as String: data,
-        kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-      ]
+    let data = value.utf8Data
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrAccount as String: key,
+      kSecAttrService as String: service,
+      kSecValueData as String: data,
+      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+    ]
 
-      SecItemDelete(query as CFDictionary) // Remove any existing item
-      let status = SecItemAdd(query as CFDictionary, nil)
-      return status == errSecSuccess
-    }
-    return false
+    SecItemDelete(query as CFDictionary) // Remove any existing item
+    let status = SecItemAdd(query as CFDictionary, nil)
+    return status == errSecSuccess
   }
 
   static func load(key: String) -> String? {

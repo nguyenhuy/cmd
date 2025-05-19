@@ -31,7 +31,8 @@ public protocol FileSuggestionService: Sendable {
   func suggestFiles(
     for query: String,
     in workspace: URL,
-    top: Int) async throws -> [FileSuggestion]
+    top: Int)
+    async throws -> [FileSuggestion]
 }
 
 // MARK: - FileSuggestionServiceProviding

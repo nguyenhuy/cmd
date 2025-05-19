@@ -2,10 +2,9 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 Target.module(
-  name: "FileEditServiceInterface",
+  name: "Onboarding",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
-    "FileDiffTypesFoundation",
-    "ThreadSafe",
-  ],
-  testDependencies: [])
+    "DLS",
+    "PermissionsServiceInterface",
+  ])

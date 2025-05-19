@@ -2,7 +2,6 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Foundation
-import HighlightSwift
 import Testing
 @testable import FileDiffFoundation
 
@@ -566,5 +565,12 @@ struct ApplyLLMSuggestionTests {
       """
     let newContent = try FileDiff.apply(searchReplacePattern: diff, to: fileContent)
     #expect(newContent.contains("A view that displays text with highlighted diffs (changed content)."))
+  }
+}
+
+extension FileDiff {
+  static func apply(searchReplacePattern: String, to content: String) throws -> String {
+    let changes = try FileDiff.parse(searchReplacePattern: searchReplacePattern, for: content)
+    return try FileDiff.apply(changes: changes, to: content)
   }
 }

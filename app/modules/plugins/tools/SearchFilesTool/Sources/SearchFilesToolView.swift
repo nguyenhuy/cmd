@@ -6,9 +6,9 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - SearchFilesTool.SearchFilesToolUse + DisplayableToolUse
+// MARK: - SearchFilesTool.Use + DisplayableToolUse
 
-extension SearchFilesTool.SearchFilesToolUse: DisplayableToolUse {
+extension SearchFilesTool.Use: DisplayableToolUse {
   public var body: AnyView {
     AnyView(ToolUseView(toolUse: ToolUseViewModel(
       status: status, input: input)))
@@ -59,7 +59,7 @@ struct ToolUseView: View {
   }
 
   @ViewBuilder
-  private func successView(output: SearchFilesTool.SearchFilesToolUse.Output) -> some View {
+  private func successView(output: SearchFilesTool.Use.Output) -> some View {
     VStack(alignment: .leading) {
       HStack {
         if isExpanded {

@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ConcurrencyFoundation
 import SwiftUI
 
@@ -32,7 +33,7 @@ import SwiftUI
           drwxr-xr-x@ 7 me  staff   224B Mar 27 15:01 LSTool/
           drwxr-xr-x@ 7 me  staff   224B Mar 27 15:01 ReadFileTool/
           drwxr-xr-x@ 7 me  staff   224B Mar 27 15:01 SearchFilesTool/
-          """).data(using: .utf8)!)),
+          """).utf8Data)),
         stderr: .Just(.Just(Data()))))
     }
   }

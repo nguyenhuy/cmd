@@ -3,6 +3,7 @@
 
 import ChatFoundation
 import CheckpointServiceInterface
+import Combine
 import Dependencies
 import Foundation
 import FoundationInterfaces
@@ -18,12 +19,23 @@ import XcodeObserverServiceInterface
 @MainActor @Observable
 final class ChatTabViewModel: Identifiable, Equatable {
 
-  init(id: UUID = UUID(), name: String = "New Chat", events: [ChatEvent] = [], mode: ChatMode = .agent) {
+  init(id: UUID = UUID(), name: String = "New Chat", messages: [ChatMessage] = [], mode: ChatMode = .agent) {
     self.id = id
     self.name = name
-    self.events = events
+    self.messages = messages
+    events = messages.flatMap { message in
+      message.content.map { .message(.init(content: $0, role: message.role)) }
+    }
     self.mode = mode
     input = ChatInputViewModel()
+
+    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+      guard state.focusedWorkspace != nil else { return }
+      Task { @MainActor in
+        _ = self.updateProjectRoot()
+        self.workspaceRootObservation = nil
+      }
+    }
   }
 
   let id: UUID
@@ -33,6 +45,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
   var input: ChatInputViewModel
   // TODO: look at making this a private(set). It's needed for a finding, that ideally would be readonly
   var isStreamingResponse = false
+
+  private(set) var messages: [ChatMessage] = []
 
   nonisolated static func ==(lhs: ChatTabViewModel, rhs: ChatTabViewModel) -> Bool {
     lhs.id == rhs.id
@@ -60,18 +74,23 @@ final class ChatTabViewModel: Identifiable, Equatable {
     input.attachments = []
 
     // TODO: reformat the string sent to the LLM
+    let messageContent = ChatMessageContent.text(ChatMessageTextContent(
+      projectRoot: projectRoot,
+      text: textInput.string.string,
+      attachments: attachments))
     let userMessage = ChatMessage(
-      content: [.text(ChatMessageTextContent(text: textInput.string.string, attachments: attachments))],
+      content: [messageContent],
       role: .user)
 
-    events.append(.message(userMessage))
+    events.append(.message(.init(content: messageContent, role: .user)))
+    messages.append(userMessage)
 
     // Send the message to the server and stream the response.
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: mode)
       streamingTask = Task {
         async let done = llmService.sendMessage(
-          messageHistory: events.compactMap(\.message).apiFormat,
+          messageHistory: messages.apiFormat,
           tools: tools,
           model: self.input.selectedModel,
           context: DefaultChatContext(
@@ -86,14 +105,18 @@ final class ChatTabViewModel: Identifiable, Equatable {
                 for newMessage in update.filter({ !trackedMessages.contains($0.id) }) {
                   trackedMessages.insert(newMessage.id)
 
-                  let newMessageState = ChatMessage(content: newMessage.content.map(\.domainFormat), role: .assistant)
-                  events.append(.message(newMessageState))
+                  let newMessageState = ChatMessage(
+                    content: newMessage.content.map { $0.domainFormat(projectRoot: projectRoot) },
+                    role: .assistant)
+                  messages.append(newMessageState)
 
                   for await update in newMessage.updates {
                     // new message content was received
                     if let newContent = update.content.last {
                       var content = newMessageState.content
-                      content.append(newContent.domainFormat)
+                      let newContent = newContent.domainFormat(projectRoot: projectRoot)
+                      content.append(newContent)
+                      events.append(.message(.init(content: newContent, role: .assistant)))
                       newMessageState.content = content
                     }
                   }
@@ -108,7 +131,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
       streamingTask = nil
     } catch {
       // TODO: add error message to the UI.
-      defaultLogger.error("Error sending message: \(error.localizedDescription)")
+      defaultLogger.error("Error sending message", error)
       streamingTask = nil
     }
   }
@@ -118,10 +141,12 @@ final class ChatTabViewModel: Identifiable, Equatable {
       do {
         try await checkpointService.restore(checkpoint: checkpoint)
       } catch {
-        defaultLogger.error("Failed to restore checkpoint: \(error.localizedDescription)")
+        defaultLogger.error("Failed to restore checkpoint", error)
       }
     }
   }
+
+  @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
   @ObservationIgnored private var projectRoot: URL?
 
@@ -148,12 +173,23 @@ final class ChatTabViewModel: Identifiable, Equatable {
   private func handlePrepareForWriteToolUse() async {
     let projectRoot = updateProjectRoot()
     do {
+      // Create checkpoint and add it to events before the tool call is executed.
       let checkpoint = try await checkpointService.createCheckpoint(
         projectRoot: projectRoot,
         taskId: "main",
         message: "checkpoint")
       if !events.compactMap(\.checkpoint).contains(where: { $0.id == checkpoint.id }) {
-        events.append(.checkpoint(checkpoint))
+        // Execute on the main actor to update the UI
+        await MainActor.run {
+          // Find the index of the last message to insert the checkpoint after it
+          if let lastMessageIndex = events.lastIndex(where: { $0.message != nil }) {
+            // Insert the checkpoint after the last message
+            events.insert(.checkpoint(checkpoint), at: lastMessageIndex + 1)
+          } else {
+            // Fallback if no messages found
+            events.append(.checkpoint(checkpoint))
+          }
+        }
       }
     } catch {
       defaultLogger.error("Failed to create checkpoint: \(error.localizedDescription)")
@@ -164,8 +200,17 @@ final class ChatTabViewModel: Identifiable, Equatable {
     if let projectRoot {
       return projectRoot
     }
-    if let workspaceURL = xcodeObserver.state.focusedWorkspace?.url {
-      let projectRoot = fileManager.isDirectory(at: workspaceURL) ? workspaceURL.deletingLastPathComponent() : workspaceURL
+    if let workspace = xcodeObserver.state.focusedWorkspace {
+      let projectRoot = fileManager.isDirectory(at: workspace.url) ? workspace.url.deletingLastPathComponent() : workspace.url
+
+      Task {
+        do {
+          let workspaceContextMessage = try await createContextMessage(for: workspace, projectRoot: projectRoot)
+          messages.append(.init(content: [.nonUserFacingText(workspaceContextMessage)], role: .user))
+        } catch {
+          defaultLogger.error("Failed to create context message for workspace", error)
+        }
+      }
 
       self.projectRoot = projectRoot
       return projectRoot
@@ -194,10 +239,10 @@ struct DefaultChatContext: ChatContext {
 // MARK: - ChatEvent
 
 enum ChatEvent: Identifiable {
-  case message(_ message: ChatMessage)
+  case message(_ message: ChatMessageContentWithRole)
   case checkpoint(_ checkpoint: Checkpoint)
 
-  var message: ChatMessage? {
+  var message: ChatMessageContentWithRole? {
     if case .message(let message) = self {
       return message
     }

@@ -7,21 +7,30 @@ import ConcurrencyFoundation
 // MARK: - Settings
 
 public struct Settings: Sendable, Codable, Equatable {
+  #if DEBUG
   public init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
+    enablePersistedLogging: Bool = false,
     anthropicSettings: AnthropicSettings?,
     openAISettings: OpenAISettings?)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
+    self.enablePersistedLogging = enablePersistedLogging
     self.anthropicSettings = anthropicSettings
     self.openAISettings = openAISettings
   }
+  #endif
 
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     pointReleaseXcodeExtensionToDebugApp = try container.decodeIfPresent(
       Bool.self,
       forKey: .pointReleaseXcodeExtensionToDebugApp) ?? false
+    #if DEBUG
+    enablePersistedLogging = try container.decodeIfPresent(Bool.self, forKey: .enablePersistedLogging) ?? true
+    #else
+    enablePersistedLogging = try container.decodeIfPresent(Bool.self, forKey: .enablePersistedLogging) ?? false
+    #endif
     anthropicSettings = try container.decodeIfPresent(Settings.AnthropicSettings.self, forKey: .anthropicSettings)
     openAISettings = try container.decodeIfPresent(Settings.OpenAISettings.self, forKey: .openAISettings)
   }
@@ -52,6 +61,7 @@ public struct Settings: Sendable, Codable, Equatable {
     }
   }
 
+  public var enablePersistedLogging: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var anthropicSettings: AnthropicSettings?
   public var openAISettings: OpenAISettings?
@@ -79,7 +89,7 @@ public protocol SettingsService: Sendable {
   func update(to settings: Settings)
 
   /// Reset a setting to its default value
-  func resetToDefault<T: Equatable>(setting: WritableKeyPath<Settings, T>)
+  func resetToDefault(setting: WritableKeyPath<Settings, some Equatable>)
 
   /// Reset all settings to their default values
   func resetAllToDefault()

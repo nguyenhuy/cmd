@@ -12,11 +12,11 @@ import ToolFoundation
 
 // MARK: - ExecuteCommandTool
 
-public final class ExecuteCommandTool: Tool {
+public final class ExecuteCommandTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class ExecuteCommandToolUse: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
 
     init(callingTool: ExecuteCommandTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
@@ -73,10 +73,19 @@ public final class ExecuteCommandTool: Tool {
             useInteractiveShell: true,
             handleStdoutStream: { stream in self.setStdoutStream(.init(stream)) },
             handleSterrStream: { stream in self.setStderrStream(.init(stream)) })
-          updateStatus.yield(.completed(.success(Output(
-            stdout: shellResult.stdout,
-            stderr: shellResult.stderr,
-            exitCode: shellResult.exitCode))))
+          if shellResult.exitCode == 0 {
+            updateStatus.yield(.completed(.success(Output(
+              stdout: shellResult.stdout,
+              stderr: shellResult.stderr,
+              exitCode: shellResult.exitCode))))
+          } else {
+            try updateStatus
+              .yield(
+                .completed(
+                  .failure(
+                    AppError(
+                      "The command failed.\(String(data: JSONEncoder().encode(shellResult), encoding: .utf8) ?? "")"))))
+          }
         } catch {
           updateStatus.yield(.completed(.failure(error)))
         }
@@ -137,8 +146,8 @@ public final class ExecuteCommandTool: Tool {
     mode == .agent
   }
 
-  public func use(toolUseId: String, input: ExecuteCommandToolUse.Input, context: ToolExecutionContext) -> ExecuteCommandToolUse {
-    ExecuteCommandToolUse(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
 }
@@ -151,7 +160,7 @@ final class ToolUseViewModel {
 
   init(
     command: String,
-    status: ExecuteCommandTool.ExecuteCommandToolUse.Status,
+    status: ExecuteCommandTool.Use.Status,
     stdout: Future<BroadcastedStream<Data>, Never>,
     stderr: Future<BroadcastedStream<Data>, Never>)
   {
@@ -179,7 +188,7 @@ final class ToolUseViewModel {
   }
 
   let command: String
-  var status: ToolUseExecutionStatus<ExecuteCommandTool.ExecuteCommandToolUse.Output>
+  var status: ToolUseExecutionStatus<ExecuteCommandTool.Use.Output>
   var std: String?
   var stdData = Data()
 }

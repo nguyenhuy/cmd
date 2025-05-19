@@ -6,9 +6,9 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - LSTool.LSToolUse + DisplayableToolUse
+// MARK: - LSTool.Use + DisplayableToolUse
 
-extension LSTool.LSToolUse: DisplayableToolUse {
+extension LSTool.Use: DisplayableToolUse {
   public var body: AnyView {
     AnyView(ToolUseView(toolUse: ToolUseViewModel(
       status: status, directoryPath: directoryPath)))
@@ -59,7 +59,7 @@ struct ToolUseView: View {
   }
 
   @ViewBuilder
-  private func successView(files: LSTool.LSToolUse.Output) -> some View {
+  private func successView(files: LSTool.Use.Output) -> some View {
     VStack(alignment: .leading) {
       HStack {
         if isExpanded {
@@ -125,8 +125,8 @@ struct ToolUseView: View {
 
 }
 
-// MARK: - LSTool.LSToolUse.Output.File + Identifiable
+// MARK: - LSTool.Use.Output.File + Identifiable
 
-extension LSTool.LSToolUse.Output.File: Identifiable {
+extension LSTool.Use.Output.File: Identifiable {
   public var id: String { path }
 }

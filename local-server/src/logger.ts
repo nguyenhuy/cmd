@@ -4,8 +4,12 @@ import { join } from "path"
 type LogLevel = "ERROR" | "INFO"
 
 // Get the directory where this file is located
-const LOG_FILE = join(__dirname, "logs", `session-${new Date().toISOString()}.log`)
-const SHARED_LOG_FILE = join(__dirname, "logs", `all-sessions.log`)
+const LOG_FILE = join(
+	__dirname,
+	"logs",
+	`${new Date().toISOString().replace("T", "__").replace(/:/g, "-").replace(/Z$/, "")}.node-server.txt`,
+)
+const SHARED_LOG_FILE = join(__dirname, "logs", `all-sessions.txt`)
 try {
 	mkdirSync(join(__dirname, "logs"), { recursive: true })
 } catch (err) {

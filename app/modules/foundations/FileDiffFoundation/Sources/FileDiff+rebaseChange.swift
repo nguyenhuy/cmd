@@ -29,15 +29,15 @@ extension FileDiff {
 
     FileManager.default.createFile(
       atPath: tmpFileV0Path,
-      contents: baselineContent.formattedToApplyGitDiff.data(using: .utf8),
+      contents: baselineContent.formattedToApplyGitDiff.utf8Data,
       attributes: nil)
     FileManager.default.createFile(
       atPath: tmpFileV1Path,
-      contents: currentContent.formattedToApplyGitDiff.data(using: .utf8),
+      contents: currentContent.formattedToApplyGitDiff.utf8Data,
       attributes: nil)
     FileManager.default.createFile(
       atPath: tmpFileV2Path,
-      contents: targetContent.formattedToApplyGitDiff.data(using: .utf8),
+      contents: targetContent.formattedToApplyGitDiff.utf8Data,
       attributes: nil)
 
     defer {

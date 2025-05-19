@@ -90,7 +90,7 @@ public final class AXNotificationPublisher: Publisher, Sendable {
       callback,
       &observer)
     if error != .success {
-      logger.error(error.localizedDescription)
+      logger.error(error)
     }
     guard let observer else {
       logger.error("Failed to create AX notification observer")

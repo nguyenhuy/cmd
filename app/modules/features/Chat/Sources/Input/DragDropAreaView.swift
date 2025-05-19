@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ConcurrencyFoundation
+import LoggingServiceInterface
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -23,11 +24,11 @@ struct DragDropAreaView: View {
       .onDrop(
         of: [UTType.fileURL.identifier, UTType.image.identifier, UTType.plainText.identifier],
         isTargeted: $isTargeted)
-    { providers in
-      onDrop(with: providers)
-    }
+      { providers in
+        onDrop(with: providers)
+      }
     #if DEBUG
-    .onReceive(inspection.notice) { inspection.visit(self, $0) }
+      .onReceive(inspection.notice) { inspection.visit(self, $0) }
     #endif
   }
 
@@ -59,7 +60,7 @@ struct DragDropAreaView: View {
       } else if provider.hasItemConformingToTypeIdentifier(UTType.image.identifier) {
         provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, error in
           if let error {
-            print(error.localizedDescription)
+            defaultLogger.error(error)
             return
           }
 
@@ -82,7 +83,7 @@ struct DragDropAreaView: View {
       } else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
         provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, error in
           if let error {
-            print(error.localizedDescription)
+            defaultLogger.error(error)
             return
           }
           if let data = item as? Data {
@@ -144,7 +145,7 @@ enum MultiTypeTransferable: Transferable, @unchecked Sendable {
     // String Representation
     DataRepresentation(contentType: .plainText) { transferable in
       if case .text(let text) = transferable {
-        return text.data(using: .utf8) ?? Data()
+        return text.utf8Data
       }
       return Data()
     } importing: { data in

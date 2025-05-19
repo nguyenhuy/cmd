@@ -7,10 +7,9 @@ import Combine
 import ConcurrencyFoundation
 import Dependencies
 import FileDiffFoundation
-import FileEditServiceInterface
 import Foundation
 import FoundationInterfaces
-import HighlightSwift
+import HighlighterServiceInterface
 import LoggingServiceInterface
 import Observation
 
@@ -55,7 +54,7 @@ class CodeBlockElement {
 
   private(set) var copyableContent: String?
 
-  var fileChange: SuggestedFileChange?
+  var fileChange: FileDiffViewModel?
 
   var filePath: String? {
     didSet {
@@ -94,11 +93,10 @@ class CodeBlockElement {
   @ObservationIgnored
   @Dependency(\.fileManager) private var fileManager
   @ObservationIgnored
-  @Dependency(\.fileEditService) private var fileEditService
+  @Dependency(\.highlighter) private var highlighter
 
-  private let highlighter = Highlight()
   private let highlightingTasks = ReplaceableTaskQueue<AttributedString>()
-  private let diffingTasks = ReplaceableTaskQueue<SuggestedFileChange?>()
+  private let diffingTasks = ReplaceableTaskQueue<FileDiffViewModel?>()
   private var cancellables = Set<AnyCancellable>()
 
   @MainActor
@@ -120,7 +118,7 @@ class CodeBlockElement {
     let diff = rawContent
     // TODO: only one time called so no need for a task queue?. Look after refactor as we ight add other tasks
     diffingTasks.queue {
-      await SuggestedFileChange(filePath: filePath, llmDiff: diff)
+      await FileDiffViewModel(filePath: filePath, llmDiff: diff)
     }
   }
 

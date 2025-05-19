@@ -19,29 +19,35 @@ extension WindowInfo {
     (CGWindowListCopyWindowInfo(.optionIncludingWindow, windowNumber) as? [WindowInfo])?.first
   }
 
+  /// Finds windows matching the specified process ID and frame
+  /// - Parameters:
+  ///   - pid: The process ID to match
+  ///   - cgFrame: The frame to match
+  /// - Returns: An array of matching window information
   static func findWindowsMatching(pid: pid_t?, cgFrame: CGRect?) -> [WindowInfo] {
-    guard let pid else { return [] }
+    guard let processID = pid else { return [] }
 
     guard
-      let cgFrame,
-      let windows = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [WindowInfo]
+      let targetFrame = cgFrame,
+      let allWindows = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [WindowInfo]
     else {
       return []
     }
-    return windows.compactMap { window in
-      if window[kCGWindowOwnerPID] as? Int32 != pid {
+    return allWindows.compactMap { windowInfo in
+      if windowInfo[kCGWindowOwnerPID] as? Int32 != processID {
         return nil
       }
 
-      var bounds = CGRect.zero
+      var windowBounds = CGRect.zero
       guard
-        let windowBounds = window[kCGWindowBounds], CGRectMakeWithDictionaryRepresentation(
-          windowBounds as! CFDictionary,
-          &bounds)
+        let boundsDictionary = windowInfo[kCGWindowBounds],
+        CGRectMakeWithDictionaryRepresentation(
+          boundsDictionary as! CFDictionary,
+          &windowBounds)
       else {
         return nil
       }
-      return bounds == cgFrame ? window : nil
+      return windowBounds == targetFrame ? windowInfo : nil
     }
   }
 }

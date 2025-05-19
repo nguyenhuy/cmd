@@ -2,6 +2,7 @@ export interface ListFilesToolInput {
 	projectRoot: string
 	path: string
 	recursive?: boolean
+	limit?: number
 }
 
 export interface ListFilesToolOutput {

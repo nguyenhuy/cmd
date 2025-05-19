@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import Foundation
 import Testing
 @testable import ServerServiceInterface
@@ -14,7 +15,7 @@ struct ErrorParsingTests {
   func testSuccessfulDecoding() async throws {
     // Setup
     let server = MockServer()
-    let responseData = try #require("{ \"name\": \"Test User\", \"age\": 30 }".data(using: .utf8))
+    let responseData = try #require("{ \"name\": \"Test User\", \"age\": 30 }".utf8Data)
 
     server.onPostRequest = { _, _, _ in
       responseData
@@ -40,7 +41,7 @@ struct ErrorParsingTests {
           "message": "User not found",
           "stack": "Error stack trace information"
       }
-      """.data(using: .utf8))
+      """.utf8Data)
 
     server.onPostRequest = { _, _, _ in
       errorResponse
@@ -69,7 +70,7 @@ struct ErrorParsingTests {
           "statusCode": 403,
           "message": "Forbidden"
       }
-      """.data(using: .utf8))
+      """.utf8Data)
 
     server.onPostRequest = { _, _, _ in
       errorResponse
@@ -99,7 +100,7 @@ struct ErrorParsingTests {
           "message": "Server error",
           "stack": "Error details"
       }
-      """.data(using: .utf8))
+      """.utf8Data)
 
     server.onPostRequest = { _, _, _ in
       errorResponse
@@ -120,7 +121,7 @@ struct ErrorParsingTests {
   func testRegularDecodingError() async throws {
     // Setup
     let server = MockServer()
-    let responseData = try #require("{ \"invalid\": \"json\" }".data(using: .utf8))
+    let responseData = try #require("{ \"invalid\": \"json\" }".utf8Data)
 
     server.onPostRequest = { _, _, _ in
       responseData

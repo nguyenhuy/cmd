@@ -25,14 +25,14 @@
 ///
 /// The queue implements the `Publisher` protocol, allowing you to subscribe to task results
 /// using Combine's subscription methods.
-public final class ReplaceableTaskQueue<Output>: Sendable, Publisher {
+public final class ReplaceableTaskQueue<Output: Sendable>: Sendable, Publisher {
 
   public init() { }
 
   public typealias Failure = Never
 
   public func receive<S>(subscriber: S) where S: Subscriber, S.Input == Output, S.Failure == Never {
-    publisher.compactMap(\.self).subscribe(subscriber)
+    publisher.compactMap(\.self).receive(subscriber: subscriber)
   }
 
   public func queue(_ task: @escaping @Sendable () async throws -> Output) {
@@ -49,12 +49,17 @@ public final class ReplaceableTaskQueue<Output>: Sendable, Publisher {
 
   private let state = Atomic<State>(State())
 
-  private func dequeue() {
+  private func dequeue(clearingCurrentTask: Bool = false) {
     let task: (@Sendable () async throws -> Output)? = state.mutate { state in
-      if state.currentTask == nil, let nextTask = state.nextTask {
+      if
+        state.currentTask == nil || clearingCurrentTask,
+        let nextTask = state.nextTask
+      {
         state.nextTask = nil
         state.currentTask = nextTask
         return nextTask
+      } else if clearingCurrentTask {
+        state.currentTask = nil
       }
       return nil
     }
@@ -64,12 +69,12 @@ public final class ReplaceableTaskQueue<Output>: Sendable, Publisher {
         do {
           let output = try await task()
           guard let self else { return }
-          state.mutate { $0.currentTask = nil }
           publisher.send(output)
+          dequeue(clearingCurrentTask: true)
         } catch {
           // for now, do nothing with the error.
+          self?.dequeue(clearingCurrentTask: true)
         }
-        self?.dequeue()
       }
     }
   }

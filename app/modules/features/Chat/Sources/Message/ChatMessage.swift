@@ -31,11 +31,15 @@ final class ChatMessage: EquatableByIdentifier {
 
 enum ChatMessageContent: Identifiable {
   case text(ChatMessageTextContent)
+  /// Messages that are relevant for the LLM but should not be shown to the user.
+  case nonUserFacingText(ChatMessageTextContent)
   case toolUse(ChatMessageToolUseContent)
 
   var id: UUID {
     switch self {
     case .text(let content):
+      content.id
+    case .nonUserFacingText(let content):
       content.id
     case .toolUse(let content):
       content.id
@@ -47,6 +51,17 @@ enum ChatMessageContent: Identifiable {
       return content
     }
     return nil
+  }
+}
+
+// MARK: - ChatMessageContentWithRole
+
+struct ChatMessageContentWithRole: Identifiable {
+  let content: ChatMessageContent
+  let role: MessageRole
+
+  var id: UUID {
+    content.id
   }
 }
 

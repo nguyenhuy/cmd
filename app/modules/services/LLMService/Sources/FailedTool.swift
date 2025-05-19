@@ -11,7 +11,7 @@ struct EmptyObject: Codable, Sendable { }
 
 // MARK: - FailedToolUse
 
-struct FailedToolUse: NonStreamableToolUse {
+struct FailedToolUse: ToolUse {
 
   init(toolUseId: String, toolName: String, error: Error) {
     self.toolUseId = toolUseId
@@ -37,7 +37,9 @@ struct FailedToolUse: NonStreamableToolUse {
 
 // MARK: - FailedTool
 
-struct FailedTool: Tool {
+struct FailedTool: NonStreamableTool {
+  typealias Use = FailedToolUse
+
   func isAvailable(in _: ChatMode) -> Bool {
     true
   }

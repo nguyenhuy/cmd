@@ -152,7 +152,6 @@ extension Highlight {
     async throws -> AttributedString
   {
     var attributedText = try await attributedText(text, language: language, colors: colors)
-
     let trimmedPrefix = text.prefix(while: { $0.isWhitespace })
     let trimmedSuffix = text.reversed().prefix(while: { $0.isWhitespace }).reversed()
 
@@ -165,7 +164,6 @@ extension Highlight {
       let suffixString = AttributedString(String(trimmedSuffix))
       attributedText = attributedText + suffixString
     }
-
     return attributedText
   }
 }

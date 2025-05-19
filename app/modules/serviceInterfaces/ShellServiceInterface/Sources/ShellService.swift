@@ -6,7 +6,7 @@ import LoggingServiceInterface
 
 // MARK: - CommandExecutionResult
 
-public struct CommandExecutionResult: Equatable, Sendable {
+public struct CommandExecutionResult: Equatable, Sendable, Encodable {
   public let exitCode: Int32
   public let stdout: String?
   public let stderr: String?

@@ -10,9 +10,9 @@ Target.module(
     "DLS",
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
-    "FileEditServiceInterface",
     "FoundationInterfaces",
     "LoggingServiceInterface",
+    "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
   ],
   testDependencies: [
@@ -20,8 +20,8 @@ Target.module(
     "ConcurrencyFoundation",
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
-    "FileEditServiceInterface",
     "FoundationInterfaces",
     "LoggingServiceInterface",
     "SwiftTesting",
+    "XcodeControllerServiceInterface",
   ])

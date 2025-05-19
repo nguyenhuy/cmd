@@ -2,7 +2,7 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import AppFoundation
-// Export ChatFoundation as the protocol definition depends on types from it.
+// Re-export ChatFoundation as the protocols defined here depend on types from this module.
 @_exported import ChatFoundation
 import Combine
 import ConcurrencyFoundation
@@ -12,31 +12,34 @@ import SwiftUI
 
 // MARK: - Tool
 
-/// A tool that can be called by the assistant.
+/// A tool that can be called by the assistant and execute tasks locally.
+/// Each invocation of the tool is a 'tool use' that has its own input/output/state and possibly UI.
 public protocol Tool: Sendable {
-  associatedtype SomeToolUse: ToolUse
+  associatedtype Use: ToolUse
   /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-  func use(toolUseId: String, input: SomeToolUse.Input, context: ToolExecutionContext) -> SomeToolUse
+  func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use
   /// The name of the tool, used to identify it. It should only contain alphanumeric characters.
   var name: String { get }
   /// A description of what the tool does. The description of its input parameters is better suited for the `inputSchema` property.
   var description: String { get }
   /// The schema of the input parameters of the tool.
   var inputSchema: JSON { get }
-  /// Whether the tool is available in the given mode.
+  /// Whether the tool is available in the given chat mode.
   func isAvailable(in mode: ChatMode) -> Bool
+  /// Whether this tool expect to receive the input as it is being streamed, or only once it is received entirely.
+  var canInputBeStreamed: Bool { get }
 }
 
 extension Tool {
-  public typealias Input = SomeToolUse.Input
-  public typealias Output = SomeToolUse.Output
+  public typealias Input = Use.Input
+  public typealias Output = Use.Output
 
-  /// Decodes the input and create a tool use.
-  public func use(toolUseId: String, input: JSON, context: ToolExecutionContext) throws -> SomeToolUse {
-    let data = try JSONEncoder().encode(input)
-    let input = try JSONDecoder().decode(SomeToolUse.Input.self, from: data)
-    return use(toolUseId: toolUseId, input: input, context: context)
-  }
+//  /// Decodes the input and create a tool use.
+//  public func use(toolUseId: String, input: JSON, context: ToolExecutionContext) throws -> Use {
+//    let data = try JSONEncoder().encode(input)
+//    let input = try JSONDecoder().decode(Use.Input.self, from: data)
+//    return use(toolUseId: toolUseId, input: input, context: context)
+//  }
 
 }
 
@@ -46,7 +49,7 @@ extension Tool {
 public protocol ToolUse: Sendable {
   associatedtype Input: Codable & Sendable
   associatedtype Output: Codable & Sendable
-  associatedtype SomeTool: Tool where SomeTool.SomeToolUse == Self
+  associatedtype SomeTool: Tool where SomeTool.Use == Self
 
   typealias Status = CurrentValueStream<ToolUseExecutionStatus<Output>>
 
@@ -54,33 +57,72 @@ public protocol ToolUse: Sendable {
   var toolUseId: String { get }
   /// The input of the tool use.
   var input: Input { get }
-  /// Whether the tool use is readonly or not
+  /// Whether the tool use is readonly or not.
   /// (tools that modify derived data are categorized as readonly. eg a build tool would be readonly).
   var isReadonly: Bool { get }
   /// The tool that is being used.
   var callingTool: SomeTool { get }
   /// The status of the execution of the tool use.
   var status: Status { get }
-    /// Whether this tool use expect to receive the input as it is being streamed, or once it is received entirely.
-    static var canInputBeStreamed: Bool { get }
-    /// Update the input with the updated one.
-    /// Note: the tool can expect this to be called only if `canInputBeStreamed` is true.
-    func receive(inputUpdate: Input)
+  /// Update the input with the updated one.
+  /// Note: the tool can expect this to be called only if `canInputBeStreamed` is true.
+  /// - Parameters:
+  ///   - inputUpdate: The update input containing all the data since it started streaming.
+  ///   - isLast: Whether this is the last chunk of the input.
+  func receive(inputUpdate: Data, isLast: Bool) throws
   /// Start the execution of the tool use. The execution should not start before this method is called.
-    /// Note: the tool can expect this to be called after all the input has been received, and to not receive later calls to `receive(inputUpdate:)`.
+  /// Note: the tool can expect this to be called after all the input has been received, and to not receive later calls to `receive(inputUpdate:)`.
   func startExecuting()
 }
 
-public protocol NonStreamableToolUse: ToolUse {}
+extension ToolUse {
 
-extension NonStreamableToolUse {
-    public func receive(inputUpdate: Input) {}
-    public static var canInputBeStreamed: Bool { false }
+  public var toolName: String { callingTool.name }
+
+  public var result: Output {
+    get async throws {
+      //       TODO: check why the iterator doesn't work nor completes if the value has already been set.
+      if case .completed(let result) = status.value {
+        return try result.get()
+      }
+      for await value in status {
+        if case .completed(let result) = value {
+          return try result.get()
+        }
+      }
+      throw AppError(message: "The tool use completed with no result.")
+    }
+  }
+
+  public var currentResult: Output? {
+    guard case .completed(let result) = status.value else { return nil }
+    return try? result.get()
+  }
 }
 
+/// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
+public protocol NonStreamableTool: Tool {
+  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
+  func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use
+}
+
+extension NonStreamableTool {
+  public var canInputBeStreamed: Bool { false }
+
+  public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
+    assert(isInputComplete)
+    let input = try JSONDecoder().decode(Input.self, from: input)
+    return use(toolUseId: toolUseId, input: input, context: context)
+  }
+}
+
+extension ToolUse where SomeTool: NonStreamableTool {
+  public func receive(inputUpdate _: Data, isLast _: Bool) throws { }
+}
 
 // MARK: - DisplayableToolUse
 
+/// A tool that can be displayed in th UI.
 public protocol DisplayableToolUse: ToolUse {
   associatedtype SomeView: View
   @MainActor
@@ -89,7 +131,8 @@ public protocol DisplayableToolUse: ToolUse {
 
 // MARK: - ToolExecutionContext
 
-public struct ToolExecutionContext {
+/// The context in which a tool use has been created.
+public struct ToolExecutionContext: Sendable {
   /// The path to the root of the project.
   public let projectRoot: URL
 
@@ -106,26 +149,34 @@ public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
   case completed(Result<Output, Error>)
 }
 
-extension ToolUse {
-  public var toolName: String { callingTool.name }
+public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Codable, Sendable {
+  case streaming(_ input: StreamingInput)
+  case streamed(_ input: StreamedInput)
 
-  public var result: Output {
-    get async throws {
-//       TODO: check why the iterator doesn't work nor completes if the value has already been set.
-        if case .completed(let result) = status.value {
-        return try result.get()
-      }
-      for await value in status {
-        if case .completed(let result) = value {
-          return try result.get()
-        }
-      }
-      throw AppError(message: "The tool use completed with no result.")
-    }
+  public init(from decoder: any Decoder) throws {
+    /// When working with streamed input,
+    self = try .streaming(StreamingInput(from: decoder))
   }
 
-  public var currentResult: Output? {
-    guard case .completed(let result) = status.value else { return nil }
-    return try? result.get()
+  public func encode(to encoder: any Encoder) throws {
+    switch self {
+    case .streaming(let input):
+      try input.encode(to: encoder)
+    case .streamed(let input):
+      try input.encode(to: encoder)
+    }
+  }
+}
+
+extension KeyedDecodingContainer {
+  /// Decodes an array, dropping values that failed to decode.
+  /// This can be useful to decode streamed input, where the last value in the array was truncated in a way that makes decoding impossible.
+  public func resilientlyDecode<T: Decodable>(_: [T].Type, forKey key: K) throws -> [T] {
+    var items = [T?]()
+    var container = try nestedUnkeyedContainer(forKey: key)
+    while !container.isAtEnd, items.count < container.count ?? Int.max {
+      items.append(try? container.decode(T.self))
+    }
+    return items.compactMap(\.self)
   }
 }

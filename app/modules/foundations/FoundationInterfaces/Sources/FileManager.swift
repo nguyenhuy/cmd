@@ -47,7 +47,11 @@ public protocol FileManagerI: Sendable {
     at url: URL,
     includingPropertiesForKeys keys: [URLResourceKey]?,
     options mask: FileManager.DirectoryEnumerationOptions,
-    errorHandler handler: ((URL, any Error) -> Bool)?) -> FileManager.DirectoryEnumerator?
+    errorHandler handler: ((URL, any Error) -> Bool)?)
+    -> FileManager.DirectoryEnumerator?
+
+  /// Returns a file handle for writing to the specified URL.
+  func fileHandle(forWritingTo: URL) throws -> FileHandle
 }
 
 extension FileManagerI {
@@ -86,6 +90,7 @@ extension FileManager: @retroactive @unchecked Sendable { }
 // MARK: - FileManager + FileManagerI
 
 extension FileManager: FileManagerI {
+
   public func observeChangesToContent(
     of url: URL,
     onChange: @escaping (String?) -> Void)
@@ -149,6 +154,10 @@ extension FileManager: FileManagerI {
     } catch {
       return false
     }
+  }
+
+  public func fileHandle(forWritingTo file: URL) throws -> FileHandle {
+    try FileHandle(forWritingTo: file)
   }
 
 }

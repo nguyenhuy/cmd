@@ -7,10 +7,12 @@ import PermissionsServiceInterface
 import SwiftUI
 
 // TODO: if no API provider is setup, show a message to the user to get the keys.
-struct SetupView: View {
+public struct SetupView: View {
+  public init() { }
+
   @Dependency(\.permissionsService) private var permissionsService
 
-  var body: some View {
+  public var body: some View {
     // Example usage
     VStack {
       Text("Xcompanion needs accessibility permissions to interact with Xcode.").padding()
@@ -19,7 +21,10 @@ struct SetupView: View {
       }
     }
     .padding()
+    .background(colorScheme.primaryBackground)
   }
+
+  @Environment(\.colorScheme) private var colorScheme
 }
 
 #Preview("SetupView") {

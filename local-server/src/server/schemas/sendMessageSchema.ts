@@ -40,7 +40,7 @@ export interface ResponseError {
 	statusCode?: number
 }
 
-export type MessageContent = TextMessage | ToolUseRequest | ToolResultMessage
+export type MessageContent = TextMessage | ToolUseRequest | ToolResultMessage | InternalTextMessage
 
 export interface Message {
 	// The role of the message's author. Roles can be: system, user, assistant, function or tool.
@@ -64,6 +64,12 @@ export interface TextMessage {
 	text: string
 	attachments?: MessageAttachment[]
 	type: "text"
+}
+
+// This should not be sent to the provider. Can be used to hold internal information.
+export interface InternalTextMessage {
+	text: string
+	type: "internal_text"
 }
 
 export type MessageAttachment = ImageAttachment | FileAttachment | FileSelectionAttachment | BuildErrorAttachment

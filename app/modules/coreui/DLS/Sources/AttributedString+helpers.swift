@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import AppKit
 import Foundation
 import LoggingServiceInterface
@@ -37,7 +38,7 @@ public enum AttributedStringHelpers {
       </html>
       """
 
-    guard let data = styledHTML.data(using: .utf8) else { return nil }
+    let data = styledHTML.utf8Data
     do {
       let attrString = try NSMutableAttributedString(
         data: data,

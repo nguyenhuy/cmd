@@ -22,6 +22,12 @@ public struct XcompanionApp: App {
     let isAppActive = _appDelegate.wrappedValue.isAppActive.removeDuplicates().eraseToAnyPublisher()
     self.isAppActive = isAppActive
     AppScope.shared.create(isAppActive: isAppActive)
+
+    // Setup logging
+    if AppScope.shared.settingsService.values().enablePersistedLogging {
+      defaultLogger.startFileLogging(fileManager: AppScope.shared.fileManager)
+    }
+
     let windowsViewModel = WindowsViewModel()
     self.windowsViewModel = windowsViewModel
     windows = WindowsView(viewModel: windowsViewModel)
@@ -43,12 +49,14 @@ public struct XcompanionApp: App {
       _ = try? await server.getRequest(path: "launch")
     }
 
+    #if DEBUG
     timer = Timer(timeInterval: 1, repeats: true, block: { _ in
       Task { @MainActor in
         Self.report_memory()
       }
     })
     RunLoop.main.add(timer!, forMode: .common)
+    #endif
   }
 
   public var body: some Scene {
@@ -76,6 +84,7 @@ public struct XcompanionApp: App {
 
   let isAppActive: AnyPublisher<Bool, Never>
 
+  #if DEBUG
   @MainActor
   static func report_memory() {
     var info = mach_task_basic_info()
@@ -93,20 +102,20 @@ public struct XcompanionApp: App {
     }
 
     if kerr == KERN_SUCCESS {
-//            print("Memory in use (in bytes): \(info.resident_size)")
       if info.resident_size > 1000000000 {
-        print("Memory in use (in bytes): \(info.resident_size / 1000000000) GB")
+        defaultLogger.error("Memory in use (in bytes): \(info.resident_size / 1000000000) GB")
       }
     } else {
-      print(
+      defaultLogger.error(
         "Error with task_info(): " +
           (String(cString: mach_error_string(kerr), encoding: String.Encoding.ascii) ?? "unknown error"))
     }
   }
 
-  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-
   private var timer: Timer?
+  #endif
+
+  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
   private let extensionCommandHandler: ExtensionCommandHandler
 

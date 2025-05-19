@@ -11,11 +11,12 @@ import ToolFoundation
 
 // MARK: - AskFollowUpTool
 
-public final class AskFollowUpTool: Tool {
+public final class AskFollowUpTool: NonStreamableTool {
+
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class AskFollowUpToolUse: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     init(callingTool: AskFollowUpTool, toolUseId: String, input: Input) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
@@ -89,8 +90,8 @@ public final class AskFollowUpTool: Tool {
     true
   }
 
-  public func use(toolUseId: String, input: AskFollowUpToolUse.Input, context _: ToolExecutionContext) -> AskFollowUpToolUse {
-    AskFollowUpToolUse(callingTool: self, toolUseId: toolUseId, input: input)
+  public func use(toolUseId: String, input: Use.Input, context _: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input)
   }
 }
 
@@ -101,8 +102,8 @@ public final class AskFollowUpTool: Tool {
 final class ToolUseViewModel {
 
   init(
-    status: AskFollowUpTool.AskFollowUpToolUse.Status,
-    input: AskFollowUpTool.AskFollowUpToolUse.Input,
+    status: AskFollowUpTool.Use.Status,
+    input: AskFollowUpTool.Use.Input,
     selectFollowUp: @escaping (String) -> Void)
   {
     self.status = status.value
@@ -115,7 +116,7 @@ final class ToolUseViewModel {
     }
   }
 
-  let input: AskFollowUpTool.AskFollowUpToolUse.Input
+  let input: AskFollowUpTool.Use.Input
   var status: ToolUseExecutionStatus<AskFollowUpTool.Output>
   let selectFollowUp: (String) -> Void
 }

@@ -100,27 +100,47 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     }
   }
 
+  /// Apply the file change using the Xcode extension.
+  /// If other changes are pending, this will wait for them to complete first.
   public func apply(fileChange: FileChange) async throws {
+    try await tasksQueue.queueAndAwait { [weak self] in
+      try await self?._apply(fileChange: fileChange)
+    }
+  }
+
+  #if DEBUG
+  var currentExecutionId: String? {
+    fileChange?.id
+  }
+  #endif
+
+  private let tasksQueue = TaskQueue<Void, any Error>()
+  private var fileChange: FileChange?
+  private var currentContinuation: CheckedContinuation<Void, Error>?
+
+  // Configuration variable that can be changed for testing.
+  private let timeout: TimeInterval
+  private let canUseAppleScript: Bool
+
+  private let appEventHandlerRegistry: AppEventHandlerRegistry
+  private let shellService: ShellService
+  private let xcodeObserver: XcodeObserver
+  private let settingsService: SettingsService
+  private let fileManager: FileManagerI
+
+  /// Start applying the code change, typically by selecting the extension menu item in Xcode.
+  private let startApplyingFileChange: @Sendable () async throws -> Void
+
+  /// Apply the file change using the Xcode extension, assuming none are pending.
+  private func _apply(fileChange: FileChange) async throws {
     do {
       guard fileManager.fileExists(atPath: fileChange.filePath.path) else {
-        guard let data = fileChange.suggestedNewContent.data(using: .utf8) else {
-          throw AppError(message: "Failed to convert string to data.")
-        }
-        // TODO: look at making the required modification to the excode project if necessary.
+        let data = fileChange.suggestedNewContent.utf8Data
+        // TODO: look at making the required modification to the xcode project if necessary.
         try fileManager.write(data: data, to: fileChange.filePath)
         return
       }
-      // If the file is not open in Xcode, change it directly on disk.
-      if xcodeObserver.state.focusedWorkspace?.tabs.contains(where: { $0.fileName == fileChange.filePath.path }) == false {
-        try fileChange.suggestedNewContent.write(to: fileChange.filePath, atomically: true, encoding: .utf8)
-        guard let data = fileChange.suggestedNewContent.data(using: .utf8) else {
-          throw AppError(message: "Failed to convert string to data.")
-        }
-        try fileManager.write(data: data, to: fileChange.filePath, options: .atomic)
-      } else {
-        // Otherwise change it through the Xcode extension / AX.
-        try await applyWithXcodeExtension(fileChange: fileChange)
-      }
+      try await applyWithXcodeExtension(fileChange: fileChange)
     } catch {
       let err = error
       defaultLogger.error("Failed to apply code change with Xcode extension, falling back to Apple Script: \(err)")
@@ -136,46 +156,15 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     }
   }
 
-  var fileChange: FileChange?
-  var currentContinuation: CheckedContinuation<Void, Error>?
-
-  #if DEBUG
-  var currentExecutionId: String? {
-    fileChange?.id
-  }
-  #endif
-
-  // Configuration variable that can be changed for testing.
-  private let timeout: TimeInterval
-  private let canUseAppleScript: Bool
-
-  private let appEventHandlerRegistry: AppEventHandlerRegistry
-  private let shellService: ShellService
-  private let xcodeObserver: XcodeObserver
-  private let settingsService: SettingsService
-  private let fileManager: FileManagerI
-
-  /// Start applying the code change, typically by selecting the extension menu item in Xcode.
-  private let startApplyingFileChange: @Sendable () async throws -> Void
-
   private func applyWithXcodeExtension(fileChange: FileChange) async throws {
     let start = Date()
     let timeout = timeout
 
     return try await withCheckedThrowingContinuation { continuation in
       Task {
-        let isAlreadyApplyingChange = safelyMutate { state in
-          guard state.currentContinuation == nil else {
-            return true
-          }
+        safelyMutate { state in
           state.fileChange = fileChange
           state.currentContinuation = continuation
-          return false
-        }
-
-        guard !isAlreadyApplyingChange else {
-          continuation.resume(throwing: AppError(message: "Already applying edit"))
-          return
         }
 
         do {
@@ -291,8 +280,8 @@ extension DefaultXcodeController {
     if let error {
       defaultLogger.log("Extension has failed to apply the edit.")
       // TODO: make this parsing more type safe.
+      let errorData = error.utf8Data
       if
-        let errorData = error.data(using: .utf8),
         let errorObject = try? JSONSerialization.jsonObject(with: errorData) as? [String: Any],
         let bufferContent = errorObject["bufferContent"] as? String,
         let expectedContent = errorObject["expectedContent"] as? String

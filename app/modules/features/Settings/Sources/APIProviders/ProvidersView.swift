@@ -16,7 +16,6 @@ struct ProvidersView: View {
     }
 
     ForEach(providerSettings.indices, id: \.self) { idx in
-
       VStack(alignment: .leading, spacing: 0) {
         Divider()
           .padding(.bottom, 10)

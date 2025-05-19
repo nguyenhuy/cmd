@@ -189,7 +189,7 @@ final class DefaultXcodeObserver: XcodeObserver {
   private func stopObservations() {
     let cancellables = safelyMutate { state in
       let cancellables = Array(state.xcodeObserverSubscriptions.values) + [state.observationsCancellable]
-      observationsCancellable = nil
+      state.observationsCancellable = nil
       state.xcodeObserverSubscriptions.removeAll()
       return cancellables
     }

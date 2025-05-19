@@ -7,6 +7,7 @@ import AppKit
 import Chat
 import Dependencies
 import LoggingServiceInterface
+import SettingsFeature
 import SwiftUI
 import XcodeObserverServiceInterface
 
@@ -28,18 +29,22 @@ final class SidePanel: XcodeWindow {
     ]
 
     let idealFrame = trackedWindow.map { self.frame(from: $0) } ?? nil
-    let defaultFrame = CGRect(
-      origin: frame.origin,
-      size: CGSize(width: max(frame.size.width, 600), height: max(frame.size.height, 1000)))
+    let defaultFrame = CGRect.zero
 
     let frame = idealFrame ?? defaultFrame
-    setFrame(frame, display: isVisible)
+    if trackedWindow != nil {
+      setFrame(frame, display: isVisible)
+      makeKeyAndOrderFront(nil)
+    }
     lastWindowFrame = frame
-    makeKeyAndOrderFront(nil)
 
     backgroundColor = .clear
 
-    let root = RootView()
+    let root = ChatView(
+      viewModel: ChatViewModel(),
+      SettingsView: {
+        AnyView(SettingsView(viewModel: SettingsViewModel()))
+      })
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     let hostingView = NSHostingView(rootView: root)

@@ -52,11 +52,13 @@ public struct Corners: OptionSet, Sendable {
 // MARK: - RoundedCornerShape
 
 /// A Shape that rounds only the specified corners.
-struct RoundedCornerShape: Shape {
-  var radius: CGFloat
-  var corners: Corners
+public struct RoundedCornerShape: Shape {
+  public init(radius: CGFloat, corners: Corners) {
+    self.radius = radius
+    self.corners = corners
+  }
 
-  func path(in rect: CGRect) -> Path {
+  public func path(in rect: CGRect) -> Path {
     var path = Path()
 
     // Helper for corner radius if in `corners`, or 0 if not
@@ -118,4 +120,8 @@ struct RoundedCornerShape: Shape {
 
     return path
   }
+
+  var radius: CGFloat
+  var corners: Corners
+
 }

@@ -89,7 +89,7 @@ struct TestToolUse<Input: Codable & Sendable, Output: Codable & Sendable>: ToolU
 
 // MARK: - TestTool
 
-struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: Tool {
+struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStreamableTool {
   init(
     name: String = "TestTool",
     output: Result<Output, Error>,
@@ -105,6 +105,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: Tool {
   init(name: String = "TestTool", output: Output) {
     self.init(name: name, output: .success(output))
   }
+
+  typealias Use = TestToolUse<Input, Output>
 
   let name: String
   let isReadonly: Bool

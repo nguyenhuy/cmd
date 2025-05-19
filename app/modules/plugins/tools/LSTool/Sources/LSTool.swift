@@ -12,11 +12,12 @@ import ToolFoundation
 
 // MARK: - LSTool
 
-public final class LSTool: Tool {
+public final class LSTool: NonStreamableTool {
+
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class LSToolUse: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     init(callingTool: LSTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
@@ -113,8 +114,8 @@ public final class LSTool: Tool {
     true
   }
 
-  public func use(toolUseId: String, input: LSToolUse.Input, context: ToolExecutionContext) -> LSToolUse {
-    LSToolUse(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
 }
@@ -125,7 +126,7 @@ public final class LSTool: Tool {
 @MainActor
 final class ToolUseViewModel {
 
-  init(status: LSTool.LSToolUse.Status, directoryPath: URL) {
+  init(status: LSTool.Use.Status, directoryPath: URL) {
     self.status = status.value
     self.directoryPath = directoryPath
     Task {
@@ -136,11 +137,11 @@ final class ToolUseViewModel {
   }
 
   let directoryPath: URL
-  var status: ToolUseExecutionStatus<LSTool.LSToolUse.Output>
+  var status: ToolUseExecutionStatus<LSTool.Use.Output>
 }
 
 extension Schema.ListFilesToolOutput {
-  func transformed(with context: ToolExecutionContext) -> LSTool.LSToolUse.Output {
+  func transformed(with context: ToolExecutionContext) -> LSTool.Use.Output {
     .init(
       files: files.map { file in
         .init(

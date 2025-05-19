@@ -5,7 +5,7 @@ import ConcurrencyFoundation
 import SwiftUI
 
 #if DEBUG
-typealias SearchFilesStatus = AskFollowUpTool.AskFollowUpToolUse.Status
+typealias SearchFilesStatus = AskFollowUpTool.Use.Status
 
 #Preview {
   ScrollView {
@@ -29,7 +29,7 @@ typealias SearchFilesStatus = AskFollowUpTool.AskFollowUpToolUse.Status
         selectFollowUp: { _ in }))
 
       ToolUseView(toolUse: ToolUseViewModel(
-        status: SearchFilesStatus.Just(.completed(.success(AskFollowUpTool.AskFollowUpToolUse.Output(response: "Yes")))),
+        status: SearchFilesStatus.Just(.completed(.success(AskFollowUpTool.Use.Output(response: "Yes")))),
         input: AskFollowUpTool.Input(
           question: "Can edit this file?", followUp: [
             "Yes",

@@ -16,22 +16,26 @@ import XcodeObserverServiceInterface
 // MARK: - EditFilesTool
 
 public final class EditFilesTool: Tool {
-    
-    
+
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-    public final class EditFilesToolUse: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
 
-    init(callingTool: EditFilesTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
+    init(
+      callingTool: EditFilesTool,
+      toolUseId: String,
+      input: Data,
+      isInputComplete: Bool,
+      context: ToolExecutionContext)
+      throws
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      self.input = Input(files: input.files.map { fileChange in
-        .init(
-          path: fileChange.path.resolvePath(from: context.projectRoot).path(),
-          isNewFile: fileChange.isNewFile,
-          changes: fileChange.changes)
-      })
+      self.isInputComplete = Atomic(isInputComplete)
+      self.context = context
+      let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
+      _input = Atomic(input)
 
       let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
       status = stream
@@ -39,15 +43,43 @@ public final class EditFilesTool: Tool {
     }
 
     public struct Input: Codable, Sendable {
-      public let files: [FileChange]
+      init(files: [FileChange]) {
+        self.files = files
+      }
+
+      public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: String.self)
+        // Decode all the values possible, and drop those that are still missing required properties to be decoded.
+        files = try container.resilientlyDecode([FileChange].self, forKey: "files")
+      }
+
       public struct FileChange: Codable, Sendable {
         public let path: String
         public let isNewFile: Bool?
         public let changes: [Change]
+
         public struct Change: Codable, Sendable {
           public let search: String
           public let replace: String
+
+          public init(from decoder: any Decoder) throws {
+            let container = try decoder.container(keyedBy: String.self)
+            // Decode with default values, since when streaming not all keys may be present.
+            search = (try? container.decode(String.self, forKey: "search")) ?? ""
+            replace = (try? container.decode(String.self, forKey: "replace")) ?? ""
+          }
         }
+      }
+
+      public let files: [FileChange]
+
+      func withPathsResolved(from root: URL) -> Input {
+        Input(files: files.map { fileChange in
+          FileChange(
+            path: fileChange.path.resolvePath(from: root).path(),
+            isNewFile: fileChange.isNewFile,
+            changes: fileChange.changes)
+        })
       }
     }
 
@@ -59,12 +91,28 @@ public final class EditFilesTool: Tool {
 
     public let callingTool: EditFilesTool
     public let toolUseId: String
-    public let input: Input
-
+    public let _input: Atomic<Input>
     public let status: Status
+
+    public var input: Input { _input.value }
+
+    public func receive(inputUpdate data: Data, isLast: Bool) throws {
+      let input = try JSONDecoder().decode(Input.self, from: data).withPathsResolved(from: context.projectRoot)
+      _input.set(to: input)
+      isInputComplete.set(to: isLast)
+
+      Task { @MainActor [weak self] in
+        self?._viewModel?.input = input
+        self?._viewModel?.isInputComplete = isLast
+      }
+    }
 
     public func startExecuting() {
       updateStatus.yield(.running)
+      guard isInputComplete.value else {
+        updateStatus.yield(.completed(.failure(AppError("Started ecxecuting before the input was entirely received"))))
+        return
+      }
 
       Task { @MainActor in
         var results: [String: JSON.Value] = [:]
@@ -84,7 +132,7 @@ public final class EditFilesTool: Tool {
             }.first
             let currentContent = try editorContent ?? fileManager.read(contentsOf: filePath, encoding: .utf8)
             let targetContent = try FileDiff.apply(
-              searchReplace: fileChange.changes.map { .init(search: $0.search, replace: $0.replace) },
+              changes: fileChange.changes.map { .init(search: $0.search, replace: $0.replace) },
               to: currentContent)
 
             let fileDiff = try FileDiff.getFileChange(changing: currentContent, to: targetContent)
@@ -102,7 +150,25 @@ public final class EditFilesTool: Tool {
       }
     }
 
+    let isInputComplete: Atomic<Bool>
+
+    @MainActor
+    var viewModel: ToolUseViewModel {
+      if let _viewModel {
+        return _viewModel
+      }
+      let viewModel = ToolUseViewModel(
+        status: status,
+        input: input,
+        isInputComplete: isInputComplete.value)
+      _viewModel = viewModel
+      return viewModel
+    }
+
+    @MainActor private var _viewModel: ToolUseViewModel?
+
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    private let context: ToolExecutionContext
 
     @Dependency(\.xcodeController) private var xcodeController
     @Dependency(\.fileManager) private var fileManager
@@ -199,39 +265,27 @@ public final class EditFilesTool: Tool {
         },
         "required": ["files"]
       }
-      """.data(using: .utf8)!)
+      """.utf8Data)
+
+  public let canInputBeStreamed = true
 
   public func isAvailable(in mode: ChatMode) -> Bool {
     mode == .agent
   }
 
-  public func use(toolUseId: String, input: EditFilesToolUse.Input, context: ToolExecutionContext) -> EditFilesToolUse {
-    EditFilesToolUse(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  public func use(
+    toolUseId: String,
+    input: Data,
+    isInputComplete: Bool,
+    context: ToolExecutionContext)
+    throws -> Use
+  {
+    try Use(
+      callingTool: self,
+      toolUseId: toolUseId,
+      input: input,
+      isInputComplete: isInputComplete,
+      context: context)
   }
-}
 
-// MARK: - ToolUseViewModel
-//
-// @Observable
-// @MainActor
-// final class ToolUseViewModel {
-//
-//  init(
-//    status: EditFilesTool.AskFollowUpToolUse.Status,
-//    input: EditFilesTool.AskFollowUpToolUse.Input,
-//    selectFollowUp: @escaping (String) -> Void)
-//  {
-//    self.status = status.value
-//    self.input = input
-//    self.selectFollowUp = selectFollowUp
-//    Task {
-//      for await status in status {
-//        self.status = status
-//      }
-//    }
-//  }
-//
-//  let input: EditFilesTool.AskFollowUpToolUse.Input
-//  var status: ToolUseExecutionStatus<AskFollowUpTool.Output>
-//  let selectFollowUp: (String) -> Void
-// }
+}

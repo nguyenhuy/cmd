@@ -95,6 +95,7 @@ let package = Package(
     .package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.0"),
     .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
+    .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
 
     // Testing dependencies:
     .package(url: "https://github.com/nalexn/ViewInspector", from: "0.10.1"),

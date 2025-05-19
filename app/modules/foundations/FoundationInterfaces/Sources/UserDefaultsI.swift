@@ -77,7 +77,7 @@ public protocol UserDefaultsI: Sendable {
   func removeSecuredValue(forKey: String)
 }
 
-// MARK: - UserDefaults + UserDefaultsI
+// MARK: - UserDefaults + @retroactive @unchecked Sendable
 
 extension UserDefaults: @retroactive @unchecked Sendable { }
 

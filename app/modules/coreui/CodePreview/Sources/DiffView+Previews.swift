@@ -3,7 +3,6 @@
 
 import ConcurrencyFoundation
 import FileDiffFoundation
-import FileEditServiceInterface
 import SwiftUI
 
 #if DEBUG
@@ -29,17 +28,13 @@ final class Eventual<Value: Sendable>: Sendable {
 
 extension FormattedFileChange {
   @MainActor
-  var mockSuggestion: SuggestedFileChange {
-    SuggestedFileChange(
+  var mockSuggestion: FileDiffViewModel {
+    FileDiffViewModel(
       filePath: URL(filePath: "/"),
       baseLineContent: "",
       targetContent: "",
-      llmDiff: "",
-      gitDiff: "",
+      changes: [],
       canBeApplied: true,
-      fileRef: MockFileReference(
-        path: URL(filePath: "/"),
-        currentContent: ""),
       formattedDiff: self)
   }
 }
@@ -67,7 +62,7 @@ private struct PreviewHelper: View {
     }
   }
 
-  @Bindable private var diff: Eventual<SuggestedFileChange>
+  @Bindable private var diff: Eventual<FileDiffViewModel>
 
 }
 
@@ -94,7 +89,7 @@ private struct PartialPreviewHelper: View {
     }
   }
 
-  @Bindable private var diff: Eventual<SuggestedFileChange>
+  @Bindable private var diff: Eventual<FileDiffViewModel>
 
 }
 

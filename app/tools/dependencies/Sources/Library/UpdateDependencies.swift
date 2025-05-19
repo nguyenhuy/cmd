@@ -254,17 +254,17 @@ extension UpdateDependencies {
       basePackageSource: basePackageSource,
       packageDirPath: basePackagePath.deletingLastPathComponent()).generate()
 
-    // // Generate all the derived Package.swift for each module
-    // let targetExtractor = ExtractModuleInfo(packageDirPath: basePackagePath.deletingLastPathComponent())
-    // targetExtractor.walk(mainPackageSource)
-    // let allTargets = targetExtractor.targetInfo.reduce(into: [String: TargetInfo]()) { acc, target in acc[target.name] = target }
+    // Generate all the derived Package.swift for each module
+    let targetExtractor = ExtractModuleInfo(packageDirPath: basePackagePath.deletingLastPathComponent())
+    targetExtractor.walk(mainPackageSource)
+    let allTargets = targetExtractor.targetInfo.reduce(into: [String: TargetInfo]()) { acc, target in acc[target.name] = target }
 
-    // for modulePath in allTargets.values
-    //   .compactMap({ $0.modulePath?.path })
-    //   .uniqueSorted(by: \.self)
-    // {
-    //   try GenerateModulePackage(modulePath: modulePath, allTargets: allTargets, basePackageSource: basePackageSource).run()
-    // }
+    for modulePath in allTargets.values
+      .compactMap({ $0.modulePath?.path })
+      .uniqueSorted(by: \.self)
+    {
+      try GenerateModulePackage(modulePath: modulePath, allTargets: allTargets, basePackageSource: basePackageSource).run()
+    }
   }
 }
 

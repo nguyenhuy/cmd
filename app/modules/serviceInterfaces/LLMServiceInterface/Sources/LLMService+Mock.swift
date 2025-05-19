@@ -19,7 +19,8 @@ public final class MockLLMService: LLMService {
     [any Tool],
     LLMModel,
     ChatContext,
-    (UpdateStream) -> Void) -> [AssistantMessage])?
+    (UpdateStream) -> Void)
+    -> [AssistantMessage])?
 
   public var onIsWithinRoot: @Sendable (URL) -> Bool = { _ in true }
 

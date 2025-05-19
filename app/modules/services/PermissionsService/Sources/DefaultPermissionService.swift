@@ -86,6 +86,7 @@ final class DefaultPermissionsService: PermissionsService {
       if isAccessibilityPermissionGranted() {
         accessibilityPermissionStatus.send(true)
       } else {
+        accessibilityPermissionStatus.send(false)
         let pollIntervalNS = pollIntervalNS
         Task { [weak self] in
           try await Task.sleep(nanoseconds: pollIntervalNS)
@@ -101,6 +102,7 @@ final class DefaultPermissionsService: PermissionsService {
         xcodeExtensionPermissionStatus.send(true)
       }
     } else {
+      xcodeExtensionPermissionStatus.send(false)
       let pollIntervalNS = pollIntervalNS
       Task { [weak self] in
         try await Task.sleep(nanoseconds: pollIntervalNS)

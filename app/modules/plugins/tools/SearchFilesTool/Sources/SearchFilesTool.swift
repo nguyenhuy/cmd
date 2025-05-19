@@ -12,11 +12,12 @@ import ToolFoundation
 
 // MARK: - SearchFilesTool
 
-public final class SearchFilesTool: Tool {
+public final class SearchFilesTool: NonStreamableTool {
+
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-    public final class SearchFilesToolUse: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
 
     init(callingTool: SearchFilesTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
@@ -113,8 +114,8 @@ public final class SearchFilesTool: Tool {
     true
   }
 
-  public func use(toolUseId: String, input: SearchFilesToolUse.Input, context: ToolExecutionContext) -> SearchFilesToolUse {
-    SearchFilesToolUse(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
 }
@@ -126,8 +127,8 @@ public final class SearchFilesTool: Tool {
 final class ToolUseViewModel {
 
   init(
-    status: SearchFilesTool.SearchFilesToolUse.Status,
-    input: SearchFilesTool.SearchFilesToolUse.Input)
+    status: SearchFilesTool.Use.Status,
+    input: SearchFilesTool.Use.Input)
   {
     self.status = status.value
     self.input = input
@@ -138,11 +139,11 @@ final class ToolUseViewModel {
     }
   }
 
-  let input: SearchFilesTool.SearchFilesToolUse.Input
-  var status: ToolUseExecutionStatus<SearchFilesTool.SearchFilesToolUse.Output>
+  let input: SearchFilesTool.Use.Input
+  var status: ToolUseExecutionStatus<SearchFilesTool.Use.Output>
 }
 
-extension SearchFilesTool.SearchFilesToolUse.Output {
+extension SearchFilesTool.Use.Output {
   // TODO: deal with this properly, to allow for serialization for message history.
   /// Only encode the output for LLM
   public func encode(to encoder: Encoder) throws {

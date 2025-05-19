@@ -18,17 +18,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   init(xcodeObserver: XcodeObserver) {
     registerActions()
 
-    let cancellable = xcodeObserver.statePublisher
-      .map { $0.activeInstance?.isActive }
-      .removeDuplicates()
-      .sink { @Sendable [weak self] isXcodeActive in
-        if isXcodeActive == true {
-          self?.enable()
-        } else {
-          self?.disable()
-        }
-      }
-    safelyMutate { $0.cancellables.insert(cancellable) }
+    observeXcodeState(xcodeObserver: xcodeObserver)
   }
 
   func enable() {
@@ -42,6 +32,21 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   private var cancellables: Set<AnyCancellable> = []
 
   @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
+
+  /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
+  private func observeXcodeState(xcodeObserver: XcodeObserver) {
+    let cancellable = xcodeObserver.statePublisher
+      .map { $0.activeInstance?.isActive }
+      .removeDuplicates()
+      .sink { @Sendable [weak self] isXcodeActive in
+        if isXcodeActive == true {
+          self?.enable()
+        } else {
+          self?.disable()
+        }
+      }
+    safelyMutate { $0.cancellables.insert(cancellable) }
+  }
 
   private func registerActions() {
     KeyboardShortcuts.onKeyUp(for: .chat) {

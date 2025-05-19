@@ -213,7 +213,6 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
 
     let url = workspaceInspector.workspaceURL
     let (toCancel, toRelease) = safelyMutate { state in
-
       let toCancel = state.workspaceSubscriptions.removeValue(forKey: url)
       let toRelease = state.workspaceInspectors.removeValue(forKey: url)
       state.workspaceInspectors[url] = workspaceInspector

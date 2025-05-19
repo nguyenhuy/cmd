@@ -17,7 +17,8 @@ final class WindowsView {
     update(
       to: viewModel.state,
       from: .init(
-        isSidePanelVisible: false))
+        isSidePanelVisible: false,
+        isSetupVisible: false))
     startObservations(of: viewModel)
   }
 
@@ -27,7 +28,37 @@ final class WindowsView {
     }
   }
 
-  func showSidePanel() {
+  private let viewModel: WindowsViewModel
+
+  private var sidePanel: SidePanel?
+  private var setupWindow: SetupWindow?
+
+  private func update(to newState: WindowsViewModel.State, from oldState: WindowsViewModel.State) {
+    if newState.isSetupVisible != oldState.isSetupVisible {
+      if newState.isSetupVisible {
+        showSetupWindow()
+        hideSidePanel()
+      } else {
+        hideSetupWindow()
+        if newState.isSidePanelVisible {
+          // The side panel was set to be visible, but this was delayed while the setup view was visible.
+          // So we show it now.
+          showSidePanel()
+        }
+      }
+    }
+    if newState.isSidePanelVisible != oldState.isSidePanelVisible {
+      if newState.isSidePanelVisible {
+        if newState.isSetupVisible == false {
+          showSidePanel()
+        }
+      } else {
+        hideSidePanel()
+      }
+    }
+  }
+
+  private func showSidePanel() {
     if sidePanel == nil {
       sidePanel = SidePanel(windowsViewModel: viewModel)
     }
@@ -36,22 +67,20 @@ final class WindowsView {
     sidePanel?.orderFrontRegardless()
   }
 
-  func hideSidePanel() {
+  private func hideSidePanel() {
     sidePanel?.hide()
   }
 
-  private let viewModel: WindowsViewModel
-
-  private var sidePanel: SidePanel?
-
-  private func update(to newState: WindowsViewModel.State, from oldState: WindowsViewModel.State) {
-    if newState.isSidePanelVisible != oldState.isSidePanelVisible {
-      if newState.isSidePanelVisible {
-        showSidePanel()
-      } else {
-        hideSidePanel()
-      }
+  private func showSetupWindow() {
+    if setupWindow == nil {
+      setupWindow = SetupWindow()
     }
+    setupWindow?.setIsVisible(true)
+    sidePanel?.orderFrontRegardless()
+  }
+
+  private func hideSetupWindow() {
+    setupWindow?.setIsVisible(false)
   }
 
   @MainActor

@@ -9,8 +9,6 @@ import DLS
 import FoundationInterfaces
 import SwiftUI
 
-import FileEditServiceInterface
-
 // MARK: - ChatMessageList
 
 struct ChatMessageList: View {
@@ -24,7 +22,7 @@ struct ChatMessageList: View {
 
   var body: some View {
     ScrollView {
-      LazyVStack(spacing: 4) {
+      LazyVStack(spacing: 6) {
         ForEach(events) { event in
           switch event {
           case .message(let message):

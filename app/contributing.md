@@ -9,7 +9,7 @@ Each module defines a `Module.swift` file where its dependencies are listed. The
 
 Local dependencies are automatically added / removed by running:
 ```bash
-make sync-dependencies
+./tools/dependencies/sync.sh
 ```
 3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.base.swift`.
 
@@ -33,5 +33,5 @@ We define different module types that have some dependency rules:
 
 If for some reason Xcode stops showing files in Swift packages, removing untracked files from `./modules` will help:
 ```bash
-make cleanup
+(cd "$(git rev-parse --show-toplevel)/app/modules" && find . -not -path './.git/*' | git check-ignore --stdin | tr '\n' '\0' | xargs -0 rm -rf)
 ```

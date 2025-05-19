@@ -6,7 +6,6 @@ import Dependencies
 import DLS
 import Down
 import FileDiffTypesFoundation
-import FileEditServiceInterface
 import FoundationInterfaces
 import LoggingServiceInterface
 import SwiftUI
@@ -16,41 +15,39 @@ import ToolFoundation
 
 struct ChatMessageView: View {
 
-  let message: ChatMessage
+  let message: ChatMessageContentWithRole
 
   var body: some View {
     HStack {
       VStack(alignment: .leading, spacing: 0) {
-        ForEach(message.content) { content in
-          switch content {
-          case .text(let textContent):
-
-            if !textContent.attachments.isEmpty {
-              AttachmentsView(attachments: .constant(textContent.attachments), isEditable: false)
-                .padding(5)
-                .padding(.top, 2)
-            }
-            ForEach(textContent.elements) { element in
-              textElementView(element)
-            }
-
-          case .toolUse(let toolUse):
-            toolUseView(toolUse.toolUse)
+        switch message.content {
+        case .text(let textContent):
+          if !textContent.attachments.isEmpty {
+            AttachmentsView(attachments: .constant(textContent.attachments), isEditable: false)
+              .padding(5)
+              .padding(.top, 2)
           }
+          ForEach(textContent.elements) { element in
+            textElementView(element)
+          }
+
+        case .toolUse(let toolUse):
+          toolUseView(toolUse.toolUse)
+
+        case .nonUserFacingText:
+          EmptyView()
         }
       }
       Spacer(minLength: 0)
     }
     .background(message.role == .user ? colorScheme.secondarySystemBackground : .clear)
-    .roundedCornerWithBorder(
-      borderColor: message.role == .user ? colorScheme.textAreaBorderColor : .clear,
-      radius: Constants.cornerRadius)
+    .roundedCorner(radius: Constants.cornerRadius)
   }
 
   // MARK: Private Constants
 
   private enum Constants {
-    static let cornerRadius: CGFloat = 3
+    static let cornerRadius: CGFloat = 5
   }
 
   @Environment(\.colorScheme) private var colorScheme
@@ -101,13 +98,20 @@ struct ChatMessageView: View {
     style.h1Size = 20
     style.h2Size = 18
     style.h3Size = 16
-    let attributedString = try! markDown.toAttributedString(using: style)
-    return AttributedString(attributedString)
+    do {
+      var attributedString = try markDown.toAttributedString(using: style)
+      return AttributedString(attributedString.trimmedAttributedString())
+    } catch {
+      defaultLogger.error("Error parsing markdown", error)
+
+      return AttributedString(text.text)
+    }
   }
 }
 
 // MARK: - CodeBlockContentView
 
+// TODO: Remove code change edit from this view, since they are now handled by the edit tool.
 struct CodeBlockContentView: View {
 
   // MARK: Internal
@@ -133,6 +137,7 @@ struct CodeBlockContentView: View {
             NSPasteboard.general.setString(code.rawContent, forType: .string)
           },
           systemName: "doc.on.doc",
+          cornerRadius: 0,
           withCheckMark: true)
           .frame(width: iconSizes, height: iconSizes)
           .foregroundColor(.orange)
@@ -144,18 +149,19 @@ struct CodeBlockContentView: View {
               NSPasteboard.general.setString(copyableContent, forType: .string)
             },
             systemName: "doc.on.doc",
+            cornerRadius: 0,
             withCheckMark: true)
             .frame(width: iconSizes, height: iconSizes)
         }
         if code.isComplete {
           if code.fileChange != nil {
-            IconButton(
-              action: {
-                reapplyFileChange()
-              },
-              systemName: "arrow.trianglehead.clockwise",
-              withCheckMark: true)
-              .frame(width: iconSizes, height: iconSizes)
+//            IconButton(
+//              action: {
+//                reapplyFileChange()
+//              },
+//              systemName: "arrow.trianglehead.clockwise",
+//              withCheckMark: true)
+//              .frame(width: iconSizes, height: iconSizes)
             if isApplyingChange {
               ProgressView()
                 .controlSize(.small)
@@ -189,16 +195,23 @@ struct CodeBlockContentView: View {
         alignment: .bottom)
 
       if hasAppliedChanges != true {
-        CodePreview(
-          filePath: code.filePath.map { URL(fileURLWithPath: $0) },
-          language: code.language,
-          startLine: nil,
-          endLine: nil,
-          content: code.content,
-          highlightedContent: code.highlightedText,
-          fileChange: code.fileChange,
-          collapsedHeight: 500,
-          expandedHeight: nil)
+        if let fileChange = code.fileChange {
+          CodePreview(
+            language: code.language,
+            fileChange: fileChange,
+            collapsedHeight: 500,
+            expandedHeight: nil)
+        } else {
+          CodePreview(
+            filePath: code.filePath.map { URL(fileURLWithPath: $0) },
+            language: code.language,
+            startLine: nil,
+            endLine: nil,
+            content: code.content,
+            highlightedContent: code.highlightedText,
+            collapsedHeight: 500,
+            expandedHeight: nil)
+        }
       }
     }
     .background(colorScheme.primaryBackground)
@@ -206,12 +219,11 @@ struct CodeBlockContentView: View {
     .foregroundColor(role == .user ? .white : .primary)
   }
 
-  @Dependency(\.fileEditService) private var fileEditService: FileEditService
   @Dependency(\.fileManager) private var fileManager: FileManagerI
   @State private var isApplyingChange = false
 
   private var hasAppliedChanges: Bool? {
-    code.fileChange?.formattedDiff.changes.filter { $0.change.type != .unchanged }.isEmpty
+    code.fileChange?.formattedDiff?.changes.filter { $0.change.type != .unchanged }.isEmpty
   }
 
   private func applyFileChange() {
@@ -227,11 +239,11 @@ struct CodeBlockContentView: View {
     }
   }
 
-  private func reapplyFileChange() {
-    Task {
-      await code.fileChange?.handleReapplyChange()
-    }
-  }
+//  private func reapplyFileChange() {
+//    Task {
+//      code.fileChange?.handleReapplyChange()
+//    }
+//  }
 
   // MARK: Private
 
@@ -246,4 +258,27 @@ struct CodeBlockContentView: View {
     code.filePath.map { URL(fileURLWithPath: $0) }
   }
 
+}
+
+extension NSAttributedString {
+
+  /// Trims new lines and whitespaces off the beginning and the end of attributed strings
+  public func trimmedAttributedString() -> NSAttributedString {
+    let nonWhiteSpace = CharacterSet.whitespacesAndNewlines.inverted
+    let startRange = string.rangeOfCharacter(from: nonWhiteSpace)
+    let endRange = string.rangeOfCharacter(from: nonWhiteSpace, options: .backwards)
+
+    // If no non-whitespace characters found, return original string (it's either empty or all whitespace)
+    guard let startLocation = startRange?.lowerBound, let endLocation = endRange?.lowerBound else {
+      return self
+    }
+
+    // Check if there's nothing to trim (already trimmed)
+    if startLocation == string.startIndex, endLocation == string.index(before: string.endIndex) {
+      return self
+    }
+
+    let trimmedRange = startLocation...endLocation
+    return attributedSubstring(from: NSRange(trimmedRange, in: string))
+  }
 }

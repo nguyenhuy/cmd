@@ -1,11 +1,37 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
+import Dependencies
 import Foundation
 import JSONFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
+import XcodeObserverServiceInterface
+
+extension ChatTabViewModel {
+
+  func createContextMessage(for workspace: XcodeWorkspaceState, projectRoot: URL) async throws -> ChatMessageTextContent {
+    // from workspace.url, do a BDS file search
+    @Dependency(\.server) var server
+
+    let fullInput = Schema.ListFilesToolInput(
+      projectRoot: projectRoot.path,
+      path: "",
+      recursive: true,
+      limit: 200)
+
+    let data = try JSONEncoder().encode(fullInput)
+    let response: Schema.ListFilesToolOutput = try await server.postRequest(path: "listFiles", data: data)
+    let text = """
+      # Current Workspace Directory (\(workspace.url.path) Files:
+      \(response.files.filter(\.isFile).map { URL(filePath: $0.path).pathRelative(to: projectRoot) }.joined(separator: "\n"))
+      \(response.hasMore ? "(File list truncated. Use list_files on specific subdirectories if you need to explore further)" : "")
+      """
+    return .init(projectRoot: projectRoot, text: text)
+  }
+}
 
 // MARK: - State domain to API domain
 
@@ -61,6 +87,9 @@ extension ChatMessageContent {
       return [(nil, .textMessage(.init(
         text: message.text,
         attachments: message.attachments.map(\.apiFormat))))]
+
+    case .nonUserFacingText(let message):
+      return [(nil, .textMessage(.init(text: message.text)))]
 
     case .toolUse(let toolUse):
       do {
@@ -139,7 +168,7 @@ extension Attachment {
       mimeType = ext == "png" ? "image/png" : ext == "jpg" ? "image/jpeg" : nil
     }
     let data = image.imageData
-    return "data:image/\(mimeType ?? "png");base64,\(data.base64EncodedString())"
+    return "data:\(mimeType ?? "image/png");base64,\(data.base64EncodedString())"
   }
 }
 
@@ -147,10 +176,10 @@ extension Attachment {
 
 extension AssistantMessageContent {
   @MainActor
-  var domainFormat: ChatMessageContent {
+  func domainFormat(projectRoot: URL) -> ChatMessageContent {
     switch self {
     case .text(let value):
-      let content = ChatMessageTextContent(text: value.content, attachments: [])
+      let content = ChatMessageTextContent(projectRoot: projectRoot, text: value.content, attachments: [])
       Task {
         for await update in value.updates {
           content.catchUp(deltas: update.deltas)
@@ -160,11 +189,6 @@ extension AssistantMessageContent {
 
     case .tool(let value):
       let content = ChatMessageToolUseContent(toolUse: value.toolUse)
-//      Task {
-//        for await update in value.updates {
-//          content.status = update.status
-//        }
-//      }
       return .toolUse(content)
     }
   }

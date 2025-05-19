@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -75,16 +76,12 @@ extension FileIcon {
     // to an icon is defined in the node package from
     // https://github.com/material-extensions/vscode-material-icon-theme .
     // So we fetch it over the local server.
-    guard
-      let payload = """
-        {
-          "path": "\(filePath.path())",
-          "type": "file"
-        }
-        """.data(using: .utf8)
-    else {
-      throw URLError(.dataNotAllowed)
-    }
+    let payload = """
+      {
+        "path": "\(filePath.path())",
+        "type": "file"
+      }
+      """.utf8Data
 
     let response: IconResponse = try await server.postRequest(path: "/icon", data: payload)
     guard

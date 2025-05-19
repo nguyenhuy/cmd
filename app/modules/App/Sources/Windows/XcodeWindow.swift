@@ -14,27 +14,23 @@ import XcodeObserverServiceInterface
 /// and the activation state of both applications.
 class XcodeWindow: NSWindow {
 
-  // MARK: - Constants
+  // MARK: - Initialization
 
-  private enum Constants {
-    /// Time interval for position updates
-    static let positionUpdateInterval: TimeInterval = 0.1
-    /// Delay before reactivating window
-    static let reactivationDelay: TimeInterval = 0.1
+  init(contentRect: NSRect) {
+    @Dependency(\.xcodeObserver) var xcodeObserver
+    axNotificationPublisher = xcodeObserver.axNotifications
+    super.init(contentRect: contentRect, styleMask: [.borderless], backing: .buffered, defer: false)
+
+    initWindowProperties()
+    initObservers()
+    updatePositionContinuously()
   }
 
-  // MARK: - Dependencies
-
-  @Dependency(\.xcodeObserver) private var xcodeObserver
-  @Dependency(\.appsActivationState) private var appsActivationStatePublisher
-
-  // MARK: - Properties
-  
   /// The level that the window should have when it is active.
   var activatedLevel: NSWindow.Level {
     .floating
   }
-  
+
   /// Whether the window will automatically position itself in relationship to Xcode.
   /// If false, the window's position will be managed by the user who can drag it.
   var isPositionAutomaticallyManaged = true {
@@ -50,65 +46,15 @@ class XcodeWindow: NSWindow {
       updateLevel()
     }
   }
-  
+
   /// The window (usually an Xcode workspace) that is tracked and that this window can be positioned in relationship to.
   private(set) var trackedWindow: AnyAXUIElement? {
     didSet {
       if trackedWindow != oldValue {
         trackedWindowNumber = nil
+        updatePosition(skippingIfUnchanged: true)
       }
     }
-  }
-  
-  // MARK: - Private Properties
-
-  private var axNotificationPublisher: AnyPublisher<AXNotification, Never>
-  private var cancellables = Set<AnyCancellable>()
-  private var _frame: CGRect?
-  private var trackedWindowNumber: CGWindowID?
-  private var positionTimer: Timer?
-
-  /// Whether the window should behave like an active window (ie be frontmost etc)
-  private var isActive = true
-
-  /// Whether the window is visible.
-  /// Note that we don't close the window, but instead hide it to work around memory bugs (see https://stackoverflow.com/a/13470694/2054629).
-  private var isShown = true
-  private var shouldBeVisibleWhenAutomaticallyManaged = true
-  
-  /// Whether the tracked window is on screen
-  private var isTrackedWindowOnScreen: Bool {
-    guard let trackedWindow else { return false }
-    if let trackedWindowNumber {
-      return WindowInfo.window(withNumber: trackedWindowNumber)?.isOnScreen ?? false
-    }
-    let windowInfos = WindowInfo.findWindowsMatching(pid: trackedWindow.pid, cgFrame: trackedWindow.cgFrame)
-      .filter(\.isOnScreen)
-
-    if windowInfos.count == 1 {
-      trackedWindowNumber = windowInfos.first?.windowNumber
-    }
-
-    return !windowInfos.isEmpty
-  }
-
-  /// Whether this window is on screen
-  private var isOnScreen: Bool {
-    (CGWindowListCopyWindowInfo(.optionAll, CGWindowID(windowNumber)) as? [WindowInfo])?
-      .first(where: { ($0.windowNumber ?? CGWindowID(windowNumber + 1)) == windowNumber })?
-      .isOnScreen ?? false
-  }
-
-  // MARK: - Initialization
-
-  init(contentRect: NSRect) {
-    @Dependency(\.xcodeObserver) var xcodeObserver
-    axNotificationPublisher = xcodeObserver.axNotifications
-    super.init(contentRect: contentRect, styleMask: [.borderless], backing: .buffered, defer: false)
-
-    initWindowProperties()
-    initObservers()
-    updatePositionContinuously()
   }
 
   // MARK: - Public API
@@ -140,6 +86,59 @@ class XcodeWindow: NSWindow {
     isShown = true
     setIsVisible(true)
     activate()
+  }
+
+  // MARK: - Constants
+
+  private enum Constants {
+    /// Time interval for position updates
+    static let positionUpdateInterval: TimeInterval = 0.1
+    /// Delay before reactivating window
+    static let reactivationDelay: TimeInterval = 0.1
+  }
+
+  // MARK: - Dependencies
+
+  @Dependency(\.xcodeObserver) private var xcodeObserver
+  @Dependency(\.appsActivationState) private var appsActivationStatePublisher
+
+  // MARK: - Private Properties
+
+  private var axNotificationPublisher: AnyPublisher<AXNotification, Never>
+  private var cancellables = Set<AnyCancellable>()
+  private var _frame: CGRect?
+  private var trackedWindowNumber: CGWindowID?
+  private var positionTimer: Timer?
+
+  /// Whether the window should behave like an active window (ie be frontmost etc)
+  private var isActive = true
+
+  /// Whether the window is visible.
+  /// Note that we don't close the window, but instead hide it to work around memory bugs (see https://stackoverflow.com/a/13470694/2054629).
+  private var isShown = true
+  private var shouldBeVisibleWhenAutomaticallyManaged = true
+
+  /// Whether the tracked window is on screen
+  private var isTrackedWindowOnScreen: Bool {
+    guard let trackedWindow else { return false }
+    if let trackedWindowNumber {
+      return WindowInfo.window(withNumber: trackedWindowNumber)?.isOnScreen ?? false
+    }
+    let windowInfos = WindowInfo.findWindowsMatching(pid: trackedWindow.pid, cgFrame: trackedWindow.cgFrame)
+      .filter(\.isOnScreen)
+
+    if windowInfos.count == 1 {
+      trackedWindowNumber = windowInfos.first?.windowNumber
+    }
+
+    return !windowInfos.isEmpty
+  }
+
+  /// Whether this window is on screen
+  private var isOnScreen: Bool {
+    (CGWindowListCopyWindowInfo(.optionAll, CGWindowID(windowNumber)) as? [WindowInfo])?
+      .first(where: { ($0.windowNumber ?? CGWindowID(windowNumber + 1)) == windowNumber })?
+      .isOnScreen ?? false
   }
 
   // MARK: - Private Methods
@@ -190,7 +189,7 @@ class XcodeWindow: NSWindow {
 
     guard isActive else { return }
     guard let frame = getFrame() else { return }
-    
+
     // Calling `getFrame` might have changed our activation state. Check again before updating the display.
     guard isActive else { return }
 
@@ -229,7 +228,7 @@ class XcodeWindow: NSWindow {
   /// Activates the window if it's shown and updates its position
   private func activate() {
     guard isShown else { return }
-    
+
     isActive = true
     orderFrontRegardless()
     updateLevel()
@@ -281,12 +280,12 @@ class XcodeWindow: NSWindow {
     case .hostAppActive:
       guard isShown else { return }
       activate()
-      
+
       // Raise the tracked window and then reactivate after a slight delay
       if let trackedWindow {
         trackedWindow.raise()
       }
-      
+
       DispatchQueue.main.asyncAfter(deadline: .now() + Constants.reactivationDelay) { [weak self] in
         self?.activate()
       }

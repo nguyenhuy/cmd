@@ -6,6 +6,22 @@ set -euo pipefail
 repo_root=$(git rev-parse --show-toplevel)
 current_dir=$(pwd)
 
+# Define cleanup function
+cleanup() {
+  echo "Performing cleanup..."
+  cd "$repo_root/app"
+  # Ensure that the project config modifications are undone
+  git checkout -- "./Xcompanion.debug.xcconfig" || true
+  git checkout -- "./Xcompanion Extension/Extension.debug.xcconfig" || true
+  git checkout -- "./Xcompanion.xcodeproj/project.pbxproj" || true # gets modified when building.
+  git checkout -- "$repo_root/local-server/build.sha256" || true
+  cd "$current_dir"
+  echo "Cleanup completed"
+}
+
+# Set trap to ensure cleanup happens on exit, regardless of how the script exits
+trap cleanup EXIT
+
 if [ -z "$repo_root" ]; then
     echo "Not a git repository"
     exit 1
@@ -35,11 +51,5 @@ mv ./.build/Xcompanion.xcarchive/Products/Applications/Xcompanion.app "$APPLICAT
 echo "App moved to $APPLICATION_PATH"
 
 open "$APPLICATION_PATH" || echo "Failed to open $APPLICATION_PATH"
-
-# undo the project config modifications
-git checkout -- "./Xcompanion.debug.xcconfig"
-git checkout -- "./Xcompanion Extension/Extension.debug.xcconfig"
-git checkout -- "./Xcompanion.xcodeproj/project.pbxproj" # gets modified when building.
-git checkout -- "$repo_root/local-server/build.sha256"
 
 cd "$current_dir"

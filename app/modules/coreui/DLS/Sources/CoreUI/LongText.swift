@@ -168,4 +168,6 @@ struct CodeTextView: NSViewRepresentable {
   }
 }
 
+// MARK: - NSFont + @retroactive @unchecked Sendable
+
 extension NSFont: @retroactive @unchecked Sendable { }

@@ -109,18 +109,22 @@ extension ThreadSafeMacro: MemberAttributeMacro {
       guard let classDecl = group.as(ClassDeclSyntax.self) else { return [] }
       let storedVariablesNames = classDecl.storedVariables
 
-      let arguments = storedVariablesNames.map { key, type, defaultValue in
-        if let defaultValue {
-          "\"\(key)\": TypeInfo<\(type)>(defaultValue: \(defaultValue)),"
-        } else {
-          "\"\(key)\": TypeInfo<\(type)>(),"
-        }
-      }.joined(separator: "\n")
+      let argumentListExpr: String = {
+        if storedVariablesNames.isEmpty { return "[:]" }
+        let arguments = storedVariablesNames.map { key, type, defaultValue in
+          if let defaultValue {
+            "\"\(key)\": TypeInfo<\(type)>(defaultValue: \(defaultValue)),"
+          } else {
+            "\"\(key)\": TypeInfo<\(type)>(),"
+          }
+        }.joined(separator: "\n")
+        return "[\n\(arguments)\n]"
+      }()
 
       let argumentList = LabeledExprListSyntax(
         [
           LabeledExprSyntax(
-            expression: ExprSyntax(stringLiteral: "[\n\(arguments)\n]")),
+            expression: ExprSyntax(stringLiteral: argumentListExpr)),
         ])
 
       return [

@@ -1,5 +1,5 @@
 {
-  "originHash" : "18247c4ed2ed6ae56de2c4ce1006fad80cecd0bde13012b822163c88410b17f0",
+  "originHash" : "a2cbc3c01fea032d1311612a9ef27ebdf0dcba7d66169efc6bea912a80bdf3bf",
   "pins" : [
     {
       "identity" : "aexml",
@@ -43,6 +43,15 @@
       "state" : {
         "revision" : "9b9556e14cee24ad16b19d0eb099283cf79a7d94",
         "version" : "3.0.0"
+      }
+    },
+    {
+      "identity" : "jsonscanner",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gsabran/JSONScanner",
+      "state" : {
+        "revision" : "8e9e7c888931688c43c19310ecfc136ec4e298f0",
+        "version" : "1.0.0"
       }
     },
     {

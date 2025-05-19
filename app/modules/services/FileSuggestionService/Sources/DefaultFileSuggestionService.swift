@@ -216,7 +216,7 @@ final class DefaultFileSuggestionService: FileSuggestionService {
       }
       lines?.removeFirst()
     }
-    guard let stdout = lines?.joined(separator: "\n").data(using: .utf8) else {
+    guard let stdout = lines?.joined(separator: "\n").utf8Data else {
       assertionFailure("Failed to convert output to Data")
       return []
     }

@@ -60,6 +60,9 @@ extension [FormattedLineChange] {
         end += 1
       }
       changes.append(start..<end)
+      if end == range.upperBound {
+        break
+      }
       start = end + 1
     }
     return changes

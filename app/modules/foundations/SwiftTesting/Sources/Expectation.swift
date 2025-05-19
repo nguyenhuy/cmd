@@ -27,6 +27,7 @@ public enum SwiftTestingUtils {
       lock.withLock { $0.isFulfilled }
     }
 
+    /// Fulfill the expectation. This should be called only once.
     public func fulfill() {
       let (wasFulfilled, fullfillmentActions) = lock.withLock { state in
         let wasFulfilled = state.isFulfilled
@@ -36,6 +37,20 @@ public enum SwiftTestingUtils {
 
       if wasFulfilled {
         Issue.record("Expectation from \(location) already fulfilled.")
+        return
+      }
+      for fullfillmentAction in fullfillmentActions { fullfillmentAction() }
+    }
+
+    /// Fulfuil the expectation if it is not already fulfilled.
+    public func fulfillAtMostOnce() {
+      let (wasFulfilled, fullfillmentActions) = lock.withLock { state in
+        let wasFulfilled = state.isFulfilled
+        state.isFulfilled = true
+        return (wasFulfilled, state.onFulfill)
+      }
+
+      if wasFulfilled {
         return
       }
       for fullfillmentAction in fullfillmentActions { fullfillmentAction() }
@@ -118,6 +133,6 @@ public func fulfillment(of expectations: [SwiftTestingUtils.Expectation], timeou
   }
 }
 
-// MARK: - Issue + Error
+// MARK: - Issue + @retroactive Error
 
 extension Issue: @retroactive Error { }

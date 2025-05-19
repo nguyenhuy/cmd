@@ -4,13 +4,6 @@
 import SwiftUI
 
 #if DEBUG
-
-extension ChatTabViewModel {
-  convenience init(messages: [ChatMessage] = []) {
-    self.init(events: messages.map { .message($0) })
-  }
-}
-
 #Preview {
   ChatView(viewModel: ChatViewModel(
     tabs: [

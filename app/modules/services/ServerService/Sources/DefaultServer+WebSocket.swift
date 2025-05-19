@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ExtensionEventsInterface
 import Foundation
 import LoggingServiceInterface
@@ -40,11 +41,8 @@ extension DefaultServer {
     case .success(let message):
       switch message {
       case .string(let message):
-        if let data = message.data(using: .utf8) {
-          handleReception(of: data)
-        } else {
-          defaultLogger.error("Could not convert the message to data: \(message)")
-        }
+        let data = message.utf8Data
+        handleReception(of: data)
 
       case .data(let data):
         defaultLogger.log("Received data: \(data)")

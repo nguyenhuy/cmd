@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import Foundation
 import JSONFoundation
 import ServerServiceInterface
@@ -142,9 +143,7 @@ private func validateObjectDecoding(
   truncatedData expectedTruncatedData: String = "")
   throws
 {
-  guard let data = jsonsRepresentation.data(using: .utf8) else {
-    throw NSError(domain: "Invalid JSON string", code: 1, userInfo: nil)
-  }
+  let data = jsonsRepresentation.utf8Data
   let (objects, truncatedData) = data.parseJSONObjects()
   let jsons = objects.map { object in
     object.jsonString()
@@ -176,7 +175,7 @@ struct DataStreamTests {
     let jsonStream = rawDataStream.jsonStream
 
     func send(_ data: String) {
-      let data = data.data(using: .utf8)!
+      let data = data.utf8Data
       continuation.yield(data)
     }
 

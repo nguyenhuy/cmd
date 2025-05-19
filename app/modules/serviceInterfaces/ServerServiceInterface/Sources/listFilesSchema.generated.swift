@@ -10,21 +10,25 @@ extension Schema {
     public let projectRoot: String
     public let path: String
     public let recursive: Bool?
+    public let limit: Double?
   
     private enum CodingKeys: String, CodingKey {
       case projectRoot = "projectRoot"
       case path = "path"
       case recursive = "recursive"
+      case limit = "limit"
     }
   
     public init(
         projectRoot: String,
         path: String,
-        recursive: Bool? = nil
+        recursive: Bool? = nil,
+        limit: Double? = nil
     ) {
       self.projectRoot = projectRoot
       self.path = path
       self.recursive = recursive
+      self.limit = limit
     }
   
     public init(from decoder: Decoder) throws {
@@ -32,6 +36,7 @@ extension Schema {
       projectRoot = try container.decode(String.self, forKey: .projectRoot)
       path = try container.decode(String.self, forKey: .path)
       recursive = try container.decodeIfPresent(Bool?.self, forKey: .recursive)
+      limit = try container.decodeIfPresent(Double?.self, forKey: .limit)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -39,6 +44,7 @@ extension Schema {
       try container.encode(projectRoot, forKey: .projectRoot)
       try container.encode(path, forKey: .path)
       try container.encodeIfPresent(recursive, forKey: .recursive)
+      try container.encodeIfPresent(limit, forKey: .limit)
     }
   }
   public struct ListFilesToolOutput: Codable, Sendable {

@@ -7,6 +7,7 @@ Target.module(
     "CodePreview",
     "DLS",
     "FoundationInterfaces",
+    "HighlighterServiceInterface",
     "JSONFoundation",
     "ServerServiceInterface",
     "ToolFoundation",

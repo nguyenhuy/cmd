@@ -24,7 +24,7 @@ app.get("/", (_, res) => {
 	res.send("Hello World!")
 })
 app.get("/launch", (_, res) => {
-	res.send("launched")
+	res.json({ ok: true })
 })
 
 registerSendMessageEndpoint(router, [new AnthropicClientBuilder(), new OpenAIClientBuilder()])

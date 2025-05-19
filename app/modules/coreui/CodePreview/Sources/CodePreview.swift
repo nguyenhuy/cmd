@@ -17,6 +17,7 @@ import SwiftUI
 /// If the content is long enough, it can be expanded to a larger size by the user.
 public struct CodePreview: View {
 
+  // TODO: look at separating this in two distinct views. One for a file change diff, and the other one for a code preview with no diff.
   public init(
     filePath: URL?,
     language: String? = nil,
@@ -24,7 +25,6 @@ public struct CodePreview: View {
     endLine: Int? = nil,
     content: String,
     highlightedContent: AttributedString? = nil,
-    fileChange: SuggestedFileChange? = nil,
     collapsedHeight: CGFloat = Constants.defaultCollapsedHeight,
     expandedHeight: CGFloat? = Constants.defaultExpandedHeight)
   {
@@ -36,6 +36,23 @@ public struct CodePreview: View {
     self.collapsedHeight = collapsedHeight
     self.expandedHeight = max(collapsedHeight, expandedHeight ?? .infinity)
     self.highlightedContent = highlightedContent
+    fileChange = nil
+  }
+
+  public init(
+    language: String? = nil,
+    fileChange: FileDiffViewModel,
+    collapsedHeight: CGFloat = Constants.defaultCollapsedHeight,
+    expandedHeight: CGFloat? = Constants.defaultExpandedHeight)
+  {
+    filePath = fileChange.filePath
+    self.language = language
+    content = "" // Not used when fileChange is provided.
+    startLine = nil
+    endLine = nil
+    self.collapsedHeight = collapsedHeight
+    self.expandedHeight = max(collapsedHeight, expandedHeight ?? .infinity)
+    highlightedContent = nil
     self.fileChange = fileChange
   }
 
@@ -129,7 +146,7 @@ public struct CodePreview: View {
   private let content: String
 
   private let highlightedContent: AttributedString?
-  private let fileChange: SuggestedFileChange?
+  private let fileChange: FileDiffViewModel?
 
   private var textContent: AttributedString {
     if let highlightedContent {

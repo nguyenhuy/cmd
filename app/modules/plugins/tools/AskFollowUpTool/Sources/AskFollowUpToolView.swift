@@ -6,9 +6,9 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - AskFollowUpTool.AskFollowUpToolUse + DisplayableToolUse
+// MARK: - AskFollowUpTool.Use + DisplayableToolUse
 
-extension AskFollowUpTool.AskFollowUpToolUse: DisplayableToolUse {
+extension AskFollowUpTool.Use: DisplayableToolUse {
   public var body: AnyView {
     AnyView(ToolUseView(toolUse: ToolUseViewModel(
       status: status,

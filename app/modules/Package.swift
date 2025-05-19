@@ -68,8 +68,7 @@ extension Target {
 
 var targets: [Target] = []
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -87,19 +86,18 @@ targets.append(
       "CheckpointService",
       "CheckpointServiceInterface",
       "DependencyFoundation",
-      "DLS",
       "EditFilesTool",
       "ExecuteCommandTool",
       "ExtensionCommandHandler",
-      "FileEditService",
-      "FileEditServiceInterface",
       "FileSuggestionService",
       "FileSuggestionServiceInterface",
       "FoundationInterfaces",
+      "HighlighterServiceInterface",
       "LLMService",
       "LLMServiceInterface",
       "LoggingServiceInterface",
       "LSTool",
+      "Onboarding",
       "PermissionsService",
       "PermissionsServiceInterface",
       "ReadFileTool",
@@ -122,13 +120,13 @@ targets.append(
     testDependencies: [],
     path: "./App"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
     name: "DLS",
     dependencies: [
+      "AppFoundation",
       "ConcurrencyFoundation",
       "LoggingServiceInterface",
       "ServerServiceInterface",
@@ -139,8 +137,7 @@ targets.append(
     testDependencies: [],
     path: "./coreui/DLS"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -152,9 +149,9 @@ targets.append(
       "DLS",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
-      "FileEditServiceInterface",
       "FoundationInterfaces",
       "LoggingServiceInterface",
+      "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
     ],
     testDependencies: [
@@ -162,15 +159,14 @@ targets.append(
       "ConcurrencyFoundation",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
-      "FileEditServiceInterface",
       "FoundationInterfaces",
       "LoggingServiceInterface",
       "SwiftTesting",
+      "XcodeControllerServiceInterface",
     ],
     path: "./coreui/CodePreview"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -190,8 +186,7 @@ targets.append(
     ],
     path: "./plugins/tools/AskFollowUpTool"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -200,6 +195,7 @@ targets.append(
       "CodePreview",
       "DLS",
       "FoundationInterfaces",
+      "HighlighterServiceInterface",
       "JSONFoundation",
       "ServerServiceInterface",
       "ToolFoundation",
@@ -211,8 +207,7 @@ targets.append(
     ],
     path: "./plugins/tools/ReadFileTool"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -231,8 +226,7 @@ targets.append(
     ],
     path: "./plugins/tools/LSTool"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -255,18 +249,21 @@ targets.append(
     ],
     path: "./plugins/tools/ExecuteCommandTool"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
     name: "EditFilesTool",
     dependencies: [
       "AppFoundation",
+      "CodePreview",
       "ConcurrencyFoundation",
+      "DLS",
       "FileDiffFoundation",
+      "FileDiffTypesFoundation",
       "FoundationInterfaces",
       "JSONFoundation",
+      "ServerServiceInterface",
       "ToolFoundation",
       "XcodeControllerServiceInterface",
       "XcodeObserverServiceInterface",
@@ -274,8 +271,7 @@ targets.append(
     testDependencies: [],
     path: "./plugins/tools/EditFilesTool"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -294,8 +290,7 @@ targets.append(
     ],
     path: "./plugins/tools/SearchFilesTool"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -311,8 +306,7 @@ targets.append(
     ],
     path: "./plugins/ExtensionCommandHandler"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -324,8 +318,7 @@ targets.append(
     testDependencies: [],
     path: "./features/Settings"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -344,9 +337,9 @@ targets.append(
       "DLS",
       "FileDiffFoundation",
       "FileDiffTypesFoundation",
-      "FileEditServiceInterface",
       "FileSuggestionServiceInterface",
       "FoundationInterfaces",
+      "HighlighterServiceInterface",
       "JSONFoundation",
       "LLMServiceInterface",
       "LoggingServiceInterface",
@@ -369,8 +362,19 @@ targets.append(
     ],
     path: "./features/Chat"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
+  // Licensed under the XXX License. See License.txt in the project root for license information.
+
+  Target.module(
+    name: "Onboarding",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      "DLS",
+      "PermissionsServiceInterface",
+    ],
+    path: "./features/Onboarding"))
+
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -385,8 +389,7 @@ targets.append(
     ],
     path: "./AppExtension"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -394,14 +397,14 @@ targets.append(
     dependencies: [],
     path: "./foundations/FileDiffTypesFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
     name: "FoundationInterfaces",
     dependencies: [
       .product(name: "Dependencies", package: "swift-dependencies"),
+      "AppFoundation",
       "ConcurrencyFoundation",
       "DependencyFoundation",
       "JSONFoundation",
@@ -410,8 +413,7 @@ targets.append(
     testDependencies: [],
     path: "./foundations/FoundationInterfaces"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -423,15 +425,13 @@ targets.append(
       "LoggingServiceInterface",
     ],
     testDependencies: [
-      .product(name: "HighlightSwift", package: "highlightswift"),
       .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
       "FileDiffTypesFoundation",
     ],
     testExclude: ["__Snapshots__"],
     path: "./foundations/FileDiffFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -448,8 +448,7 @@ targets.append(
     testDependencies: [],
     path: "./foundations/ToolFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -457,8 +456,7 @@ targets.append(
     dependencies: [],
     path: "./foundations/AccessibilityObjCFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -469,8 +467,7 @@ targets.append(
     ],
     path: "./foundations/ConcurrencyFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -479,8 +476,7 @@ targets.append(
     testDependencies: [],
     path: "./foundations/AppFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -490,19 +486,18 @@ targets.append(
     ],
     path: "./foundations/ChatAppEvents"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
     name: "SwiftTesting",
     dependencies: [
+      "AppFoundation",
       "ConcurrencyFoundation",
     ],
     path: "./foundations/SwiftTesting"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -513,8 +508,7 @@ targets.append(
     ],
     path: "./foundations/ChatFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -524,8 +518,7 @@ targets.append(
     ],
     path: "./foundations/DependencyFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -535,8 +528,7 @@ targets.append(
     ],
     path: "./foundations/SharedValuesFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -545,8 +537,7 @@ targets.append(
     testDependencies: [],
     path: "./foundations/JSONFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -555,8 +546,7 @@ targets.append(
     testDependencies: [],
     path: "./foundations/AccessibilityFoundation"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.macroModule(
@@ -581,8 +571,7 @@ targets.append(
     ],
     path: "./macros/ThreadSafe"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -594,8 +583,7 @@ targets.append(
     testDependencies: [],
     path: "./serviceInterfaces/FileSuggestionServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -612,8 +600,7 @@ targets.append(
     ],
     path: "./serviceInterfaces/CheckpointServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -624,8 +611,7 @@ targets.append(
     ],
     path: "./serviceInterfaces/AppEventServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -640,8 +626,7 @@ targets.append(
     ],
     path: "./serviceInterfaces/PermissionsServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -657,8 +642,7 @@ targets.append(
     testDependencies: [],
     path: "./serviceInterfaces/LLMServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -668,17 +652,19 @@ targets.append(
     ],
     path: "./serviceInterfaces/ExtensionEventsInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
     name: "LoggingServiceInterface",
-    dependencies: [],
+    dependencies: [
+      "ConcurrencyFoundation",
+      "FoundationInterfaces",
+      "ThreadSafe",
+    ],
     path: "./serviceInterfaces/LoggingServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -692,8 +678,7 @@ targets.append(
     ],
     path: "./serviceInterfaces/SettingsServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -706,22 +691,7 @@ targets.append(
     testDependencies: [],
     path: "./serviceInterfaces/ShellServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "FileEditServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "FileDiffTypesFoundation",
-      "ThreadSafe",
-    ],
-    testDependencies: [],
-    path: "./serviceInterfaces/FileEditServiceInterface"))
-
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -733,13 +703,25 @@ targets.append(
       "JSONFoundation",
     ],
     testDependencies: [
+      "AppFoundation",
       "ConcurrencyFoundation",
       "SwiftTesting",
     ],
     path: "./serviceInterfaces/ServerServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
+  // Licensed under the XXX License. See License.txt in the project root for license information.
+
+  Target.module(
+    name: "HighlighterServiceInterface",
+    dependencies: [
+      .product(name: "Dependencies", package: "swift-dependencies"),
+      .product(name: "HighlightSwift", package: "highlightswift"),
+      "DependencyFoundation",
+    ],
+    path: "./serviceInterfaces/HighlighterServiceInterface"))
+
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -752,8 +734,7 @@ targets.append(
     ],
     path: "./serviceInterfaces/XcodeControllerServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -766,8 +747,7 @@ targets.append(
     testDependencies: [],
     path: "./serviceInterfaces/XcodeObserverServiceInterface"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -784,14 +764,14 @@ targets.append(
     ],
     resources: [.process("Resources")],
     testDependencies: [
+      "AppFoundation",
       "JSONFoundation",
       "ServerServiceInterface",
       "SwiftTesting",
     ],
     path: "./services/ServerService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -806,8 +786,7 @@ targets.append(
     testDependencies: [],
     path: "./services/CheckpointService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -828,26 +807,7 @@ targets.append(
     ],
     path: "./services/PermissionsService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "FileEditService",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "FileEditServiceInterface",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "XcodeControllerServiceInterface",
-    ],
-    testDependencies: [],
-    path: "./services/FileEditService"))
-
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -862,8 +822,7 @@ targets.append(
     testDependencies: [],
     path: "./services/ShellService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -887,8 +846,7 @@ targets.append(
     testDependencies: [],
     path: "./services/XcodeControllerService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -917,8 +875,7 @@ targets.append(
     ],
     path: "./services/FileSuggestionService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -930,8 +887,7 @@ targets.append(
     ],
     path: "./services/AppEventService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -955,8 +911,7 @@ targets.append(
     ],
     path: "./services/SettingsService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
@@ -975,13 +930,13 @@ targets.append(
     testDependencies: [],
     path: "./services/XcodeObserverService"))
 
-targets.append(
-  contentsOf: // Copyright Xcompanion. All rights reserved.
+targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
   // Licensed under the XXX License. See License.txt in the project root for license information.
 
   Target.module(
     name: "LLMService",
     dependencies: [
+      .product(name: "JSONScanner", package: "JSONScanner"),
       .product(name: "SwiftOpenAI", package: "SwiftOpenAI"),
       "AppFoundation",
       "ConcurrencyFoundation",
@@ -994,6 +949,7 @@ targets.append(
       "ToolFoundation",
     ],
     testDependencies: [
+      "AppFoundation",
       "ConcurrencyFoundation",
       "JSONFoundation",
       "LLMServiceInterface",
@@ -1031,6 +987,7 @@ let package = Package(
     .package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.0"),
     .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
+    .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
 
     // Testing dependencies:
     .package(url: "https://github.com/nalexn/ViewInspector", from: "0.10.1"),

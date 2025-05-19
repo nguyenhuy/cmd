@@ -106,8 +106,25 @@ extension ColorScheme {
       : Color(red: 255 / 255, green: 238 / 255, blue: 240 / 255)
   }
 
+  public var addedLineDiffText: Color {
+    self == .dark
+      ? Color(red: 76 / 255, green: 161 / 255, blue: 93 / 255)
+      : Color(red: 24 / 255, green: 107 / 255, blue: 47 / 255)
+  }
+
+  public var removedLineDiffText: Color {
+    self == .dark
+      ? Color(red: 218 / 255, green: 75 / 255, blue: 83 / 255)
+      : Color(red: 179 / 255, green: 29 / 255, blue: 40 / 255)
+  }
+
   public var toolUseForeground: Color {
     .secondary
+  }
+
+  public var tertiarySystemBackground: Color {
+    let background = systemBackground
+    return background.mixed(with: background.inverted, proportion: 0.02)
   }
 
   public var secondarySystemBackground: Color {

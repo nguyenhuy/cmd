@@ -3,8 +3,9 @@
 
 #if DEBUG
 
+import Dependencies
 import Foundation
-import HighlightSwift
+import HighlighterServiceInterface
 import Observation
 
 @Observable
@@ -14,14 +15,15 @@ final class Highlighter {
   init(_ content: String) {
     self.content = content
     Task {
-      attributedString = try await highlight.attributedText(content, language: .swift)
+      attributedString = try await highlighter.attributedText(content, language: .swift)
     }
   }
 
   private(set) var attributedString: AttributedString?
 
   private let content: String
-  private let highlight = Highlight()
+  @ObservationIgnored
+  @Dependency(\.highlighter) private var highlighter
 }
 
 let longContent = """

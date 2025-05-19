@@ -6,17 +6,18 @@ import Dependencies
 import DLS
 import Foundation
 import FoundationInterfaces
-import HighlightSwift
+import HighlighterServiceInterface
 import JSONFoundation
 import ToolFoundation
 
 // MARK: - ReadFileTool
 
-public final class ReadFileTool: Tool {
+public final class ReadFileTool: NonStreamableTool {
+
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class ReadFileToolUse: NonStreamableToolUse, @unchecked Sendable {
+  public final class Use: ToolUse, @unchecked Sendable {
     init(callingTool: ReadFileTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
@@ -120,8 +121,8 @@ public final class ReadFileTool: Tool {
     true
   }
 
-  public func use(toolUseId: String, input: ReadFileToolUse.Input, context: ToolExecutionContext) -> ReadFileToolUse {
-    ReadFileToolUse(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
 }
@@ -132,7 +133,7 @@ public final class ReadFileTool: Tool {
 @MainActor
 final class ToolUseViewModel {
 
-  init(status: ReadFileTool.ReadFileToolUse.Status, input: ReadFileTool.ReadFileToolUse.Input) {
+  init(status: ReadFileTool.Use.Status, input: ReadFileTool.Use.Input) {
     self.status = status.value
     self.input = input
     Task { [weak self] in
@@ -141,7 +142,7 @@ final class ToolUseViewModel {
         if case .completed(.success(let output)) = status {
           Task {
             guard let self else { return }
-            let highlightedContent = try await Highlight().attributedText(
+            let highlightedContent = try await self.highlighter.attributedText(
               output.content,
               language: FileIcon.language(for: URL(fileURLWithPath: output.uri)),
               colors: .dark(.xcode))
@@ -152,9 +153,12 @@ final class ToolUseViewModel {
     }
   }
 
-  let input: ReadFileTool.ReadFileToolUse.Input
-  var status: ToolUseExecutionStatus<ReadFileTool.ReadFileToolUse.Output>
+  let input: ReadFileTool.Use.Input
+  var status: ToolUseExecutionStatus<ReadFileTool.Use.Output>
   var highlightedContent: AttributedString?
+
+  @ObservationIgnored
+  @Dependency(\.highlighter) private var highlighter
 }
 
 extension [String] {

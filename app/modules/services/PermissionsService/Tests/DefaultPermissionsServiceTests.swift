@@ -46,13 +46,16 @@ struct DefaultPermissionsServiceTests {
         pollCount.increment() >= pollUntilGranted
       })
 
+    let receivedValues = Atomic<[Bool?]>([])
     let cancellable = sut.status(for: .accessibility).sink { value in
+      receivedValues.mutate { $0.append(value) }
       if value == true {
         exp.fulfill()
       }
     }
     try await fulfillment(of: exp)
     #expect(pollCount.value == pollUntilGranted)
+    #expect(receivedValues.value.compactMap(\.self) == [false, true])
     _ = cancellable
   }
 

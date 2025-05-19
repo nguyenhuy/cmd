@@ -15,6 +15,7 @@ Target.module(
   ],
   resources: [.process("Resources")],
   testDependencies: [
+    "AppFoundation",
     "JSONFoundation",
     "ServerServiceInterface",
     "SwiftTesting",

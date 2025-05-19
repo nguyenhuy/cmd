@@ -7,7 +7,9 @@ import SwiftUI
 #if DEBUG
 extension ChatMessageList {
   init(messages: [ChatMessage]) {
-    self.init(events: messages.map { .message($0) })
+    self.init(events: messages.flatMap { message in
+      message.content.map { .message(ChatMessageContentWithRole(content: $0, role: message.role)) }
+    })
   }
 }
 

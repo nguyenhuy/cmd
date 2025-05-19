@@ -10,7 +10,6 @@ Target.module(
     "LoggingServiceInterface",
   ],
   testDependencies: [
-    .product(name: "HighlightSwift", package: "highlightswift"),
     .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
     "FileDiffTypesFoundation",
   ],

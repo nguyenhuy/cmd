@@ -134,6 +134,10 @@ public final class MockFileManager: FileManagerI {
     return MockDirectoryEnumerator(urls: allPaths.sorted { $0.path < $1.path })
   }
 
+  public func fileHandle(forWritingTo _: URL) throws -> FileHandle {
+    fatalError("not implemented")
+  }
+
   private(set) var files = [URL: Data]()
   private(set) var directories = [URL]()
 

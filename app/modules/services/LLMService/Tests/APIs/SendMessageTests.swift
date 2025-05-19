@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
@@ -29,13 +30,13 @@ final class SendMessageTests {
           "type": "text_delta",
           "text": "hi"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       sendChunk?("""
         {
           "type": "text_delta",
           "text": " what can I do?"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       return okServerResponse
     }
     let updatingMessages = try await sut.sendMessage(
@@ -94,7 +95,7 @@ final class SendMessageTests {
           "type": "text_delta",
           "text": "sure"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
       requestResponded.fulfill()
       return okServerResponse
     }
@@ -132,7 +133,7 @@ final class SendMessageTests {
             "type": "text_delta",
             "text": "hi"
           }
-          """.data(using: .utf8)!)
+          """.utf8Data)
         sendChunk?("""
           {
             "type": "tool_call",
@@ -140,7 +141,7 @@ final class SendMessageTests {
             "input": {},
             "id": "123"
           }
-          """.data(using: .utf8)!)
+          """.utf8Data)
         return okServerResponse
       } else {
         data.expectToMatch("""
@@ -167,7 +168,7 @@ final class SendMessageTests {
             "type": "text_delta",
             "text": "got it!"
           }
-          """.data(using: .utf8)!)
+          """.utf8Data)
         requestResponded.fulfill()
         return okServerResponse
       }
@@ -208,7 +209,7 @@ final class SendMessageTests {
             "input": {},
             "id": "123"
           }
-          """.data(using: .utf8)!)
+          """.utf8Data)
         return okServerResponse
       } else {
         data.expectToMatch("""
@@ -234,7 +235,7 @@ final class SendMessageTests {
             "type": "text_delta",
             "text": "Let me fix this"
           }
-          """.data(using: .utf8)!)
+          """.utf8Data)
         requestResponded.fulfill()
         return okServerResponse
       }
@@ -322,7 +323,7 @@ final class SendMessageTests {
           "type": "text_delta",
           "text": "hi"
         }
-        """.data(using: .utf8)!)
+        """.utf8Data)
 
       // This will be ignored by the ServerMock as we've already returned a cancellation error.
       return okServerResponse

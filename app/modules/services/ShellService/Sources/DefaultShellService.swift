@@ -17,9 +17,7 @@ import ThreadSafe
 final class DefaultShellService: ShellService {
 
   init() {
-    Task.detached { [weak self] in
-      self?.env = try Self.loadZshEnvironment()
-    }
+    loadZshEnvironmentInBackground()
   }
 
   @discardableResult
@@ -135,6 +133,14 @@ final class DefaultShellService: ShellService {
         result[String(components[0])] = String(components[1])
       }
   }
+
+  /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
+  private func loadZshEnvironmentInBackground() {
+    Task.detached { [weak self] in
+      self?.env = try Self.loadZshEnvironment()
+    }
+  }
+
 }
 
 extension BaseProviding {

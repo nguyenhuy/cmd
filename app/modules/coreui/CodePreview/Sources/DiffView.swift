@@ -1,9 +1,11 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ConcurrencyFoundation
 import DLS
 import FileDiffFoundation
+import LoggingServiceInterface
 import SwiftUI
 
 // MARK: - DiffView
@@ -12,7 +14,7 @@ import SwiftUI
 /// Its content will take the width necessary to display the longest line. If that's too wide for the container, it should be wrapped in a scroll view.
 public struct DiffView: View {
 
-  public init(change: SuggestedFileChange) {
+  public init(change: FileDiffViewModel) {
     self.change = change
   }
 
@@ -21,7 +23,7 @@ public struct DiffView: View {
       .background(colorScheme.xcodeEditorBackground)
   }
 
-  let change: SuggestedFileChange
+  let change: FileDiffViewModel
 
   private enum Constants {
     static let maxUnchangedLinesContent = 3
@@ -32,7 +34,7 @@ public struct DiffView: View {
   @State private var desiredTextWidth: CGFloat = 0
 
   private var changedLines: [FormattedLineChange] {
-    change.formattedDiff.changes
+    change.formattedDiff?.changes ?? []
   }
 
   private var partialDiffRanges: [Range<Int>] {
@@ -88,10 +90,10 @@ public struct DiffView: View {
 /// beween changes before splitting the diff for clarity.
 struct PartialDiffView: View {
 
-  init(change: SuggestedFileChange, partialRange: Range<Int>) {
+  init(change: FileDiffViewModel, partialRange: Range<Int>) {
     self.change = change
     self.partialRange = partialRange
-    continousChanges = change.formattedDiff.changes.continousChanges(in: partialRange)
+    continousChanges = change.formattedDiff?.changes.continousChanges(in: partialRange) ?? []
   }
 
   var body: some View {
@@ -120,11 +122,11 @@ struct PartialDiffView: View {
   @State private var lineHeight: CGFloat = 0
   @Environment(\.colorScheme) private var colorScheme
 
-  @Bindable private var change: SuggestedFileChange
+  @Bindable private var change: FileDiffViewModel
   private let partialRange: Range<Int>
   private let continousChanges: [Range<Int>]
 
-  private var changedLines: [FormattedLineChange] { change.formattedDiff.changes }
+  private var changedLines: [FormattedLineChange] { change.formattedDiff?.changes ?? [] }
 
   /// A colored background for the diff view.
   @ViewBuilder
@@ -144,7 +146,11 @@ struct PartialDiffView: View {
   private var content: AttributedString {
     var result = AttributedString()
     for i in partialRange {
-      let line = changedLines[i].formattedContent
+      guard let line = changedLines[safe: i]?.formattedContent else {
+        defaultLogger.error("inconsistent diff data")
+        continue
+      }
+//      let line = changedLines[i].formattedContent
       if i == partialRange.upperBound - 1, line.characters.last == "\n" {
         // Remove the last newline character
         let truncatedLine = line[line.startIndex..<line.index(line.endIndex, offsetByCharacters: -1)]
@@ -173,7 +179,7 @@ struct PartialDiffView: View {
             },
             reject: {
               Task {
-                await change.handleReject(changes: Array(changedLines[range]))
+                try change.handleReject(changes: Array(changedLines[range]))
               }
             })
             .frame(height: lineHeight * CGFloat(range.count))

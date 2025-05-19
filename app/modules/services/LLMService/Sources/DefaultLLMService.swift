@@ -174,9 +174,11 @@ final class DefaultLLMService: LLMService {
 
               if let tool = tools.first(where: { $0.name == request.name }) {
                 do {
+                  let data = try JSONEncoder().encode(request.input)
                   try content.append(toolUse: tool.use(
                     toolUseId: request.id,
-                    input: request.input,
+                    input: data,
+                    isInputComplete: true,
                     context: ToolExecutionContext(projectRoot: context.projectRoot)))
                 } catch {
                   // If the above fails, this is because the input could not be parsed by the tool.

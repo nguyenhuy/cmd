@@ -8,12 +8,11 @@ import CheckpointService
 import CheckpointServiceInterface
 import Combine
 import Dependencies
-import FileEditService
-import FileEditServiceInterface
 import FileSuggestionService
 import FileSuggestionServiceInterface
 import Foundation
 import FoundationInterfaces
+import HighlighterServiceInterface
 import LLMService
 import LLMServiceInterface
 import LoggingServiceInterface
@@ -51,12 +50,6 @@ extension CheckpointServiceDependencyKey: DependencyKey {
   public static var liveValue: CheckpointService { AppScope.shared.checkpointService }
 }
 
-// MARK: - FileEditServiceDependencyKey + DependencyKey
-
-extension FileEditServiceDependencyKey: DependencyKey {
-  public static var liveValue: FileEditService { AppScope.shared.fileEditService }
-}
-
 // MARK: - FileManagerDependencyKey + DependencyKey
 
 extension FileManagerDependencyKey: DependencyKey {
@@ -69,6 +62,12 @@ extension FileManagerDependencyKey: DependencyKey {
 
 extension FileSuggestionServiceDependencyKey: DependencyKey {
   public static var liveValue: FileSuggestionService { AppScope.shared.fileSuggestionService }
+}
+
+// MARK: - HighlighterServiceDependencyKey + DependencyKey
+
+extension HighlighterServiceDependencyKey: DependencyKey {
+  public static var liveValue: Highlight { AppScope.shared.highlighter }
 }
 
 // MARK: - LLMServiceDependencyKey + DependencyKey
@@ -137,13 +136,13 @@ extension AppScope: AppsActivationStateProviding { }
 
 extension AppScope: CheckpointServiceProviding { }
 
-// MARK: - AppScope + FileEditServiceProviding
-
-extension AppScope: FileEditServiceProviding { }
-
 // MARK: - AppScope + FileManagerProviding
 
 extension AppScope: FileManagerProviding { }
+
+// MARK: - AppScope + HighlighterServiceProviding
+
+extension AppScope: HighlighterServiceProviding { }
 
 // MARK: - AppScope + IsHostAppActiveProviding
 

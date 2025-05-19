@@ -7,9 +7,9 @@ import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
-// MARK: - ExecuteCommandTool.ExecuteCommandToolUse + DisplayableToolUse
+// MARK: - ExecuteCommandTool.Use + DisplayableToolUse
 
-extension ExecuteCommandTool.ExecuteCommandToolUse: DisplayableToolUse {
+extension ExecuteCommandTool.Use: DisplayableToolUse {
   public var body: AnyView {
     AnyView(ToolUseView(toolUse: ToolUseViewModel(
       command: input.command,
@@ -55,12 +55,7 @@ struct ToolUseView: View {
   private var stdoutView: some View {
     if let std = toolUse.std, !std.isEmpty {
       CodePreview(filePath: nil, content: std)
-//      LongText(stdout)
-//        .font(.system(.body, design: .monospaced))
-//        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(8)
-        .background(Color.primary.opacity(0.05))
-        .cornerRadius(6)
+        .roundedCornerWithBorder(borderColor: colorScheme.textAreaBorderColor, radius: 5)
     }
   }
 
@@ -95,6 +90,8 @@ struct ToolUseView: View {
               NSPasteboard.general.setString(toolUse.command, forType: .string)
             },
             systemName: "doc.on.doc",
+            padding: 2,
+            cornerRadius: 0,
             withCheckMark: true)
             .frame(width: 15, height: 15)
         } else {
@@ -109,7 +106,7 @@ struct ToolUseView: View {
         VStack(alignment: .leading, spacing: 8) {
           stdoutView
         }
-        .padding(.leading, 15)
+//        .padding(.leading, 15)
         .frame(maxWidth: 600, alignment: .leading)
       }
     }.onHover { isHovered = $0 }

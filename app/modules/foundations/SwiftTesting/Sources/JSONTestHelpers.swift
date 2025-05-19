@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import Foundation
 import Testing
 
@@ -20,17 +21,14 @@ extension Data {
   }
 
   public func expectToMatch(_ expected: String) {
-    guard let expectedData = expected.data(using: .utf8) else {
-      Issue.record("Invalid expected JSON string \(expected)")
-      return
-    }
+    let expectedData = expected.utf8Data
     #expect(jsonString() == expectedData.jsonString())
   }
 }
 
 /// Test decoding the Json data to the given type, encoding it back to Json, and comparing the results.
 public func testDecodingEncodingOf<T: Codable>(_ json: String, with _: T.Type) throws {
-  let jsonData = json.data(using: .utf8)!
+  let jsonData = json.utf8Data
   let jsonDecoder = JSONDecoder()
   let decoded = try jsonDecoder.decode(T.self, from: jsonData)
 
@@ -49,7 +47,7 @@ public func testEncoding(_ value: some Encodable, _ json: String) throws {
   let encodedString = encoded.jsonString()
 
   // Reformat the json expectation (pretty print, sort keys)
-  let jsonData = json.data(using: .utf8)!
+  let jsonData = json.utf8Data
   let expected = jsonData.jsonString()
 
   #expect(expected == encodedString)
@@ -57,7 +55,7 @@ public func testEncoding(_ value: some Encodable, _ json: String) throws {
 
 /// Test that decoding the json gives the expected value.
 public func testDecoding<T: Decodable & Equatable>(_ value: T, _ json: String) throws {
-  let decoded = try JSONDecoder().decode(T.self, from: json.data(using: .utf8)!)
+  let decoded = try JSONDecoder().decode(T.self, from: json.utf8Data)
   #expect(decoded == value)
 }
 

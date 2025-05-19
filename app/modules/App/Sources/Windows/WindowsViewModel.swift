@@ -4,8 +4,10 @@
 import AppEventServiceInterface
 import AppKit
 import ChatAppEvents
+import Combine
 import Dependencies
 import Observation
+import PermissionsServiceInterface
 import XcodeObserverServiceInterface
 
 // MARK: - WindowsViewModel
@@ -14,21 +16,30 @@ import XcodeObserverServiceInterface
 final class WindowsViewModel {
 
   init() {
-    state = .init(isSidePanelVisible: false)
+    state = .init(isSidePanelVisible: false, isSetupVisible: false)
 
     Task {
       await appEventHandlerRegistry.registerHandler { [weak self] event in
         await self?.handle(appEvent: event) ?? false
       }
     }
+    permissionsService.status(for: .accessibility).sink { [weak self] isGranted in
+      self?.handle(.accessibilityPermissionChanged(isGranted: isGranted))
+    }.store(in: &cancellables)
   }
 
   struct State {
     let isSidePanelVisible: Bool
+    let isSetupVisible: Bool
 
-    func with(isSidePanelVisible: Bool?) -> State {
+    func with(
+      isSidePanelVisible: Bool? = nil,
+      isSetupVisible: Bool? = nil)
+      -> State
+    {
       State(
-        isSidePanelVisible: isSidePanelVisible ?? self.isSidePanelVisible)
+        isSidePanelVisible: isSidePanelVisible ?? self.isSidePanelVisible,
+        isSetupVisible: isSetupVisible ?? self.isSetupVisible)
     }
   }
 
@@ -36,6 +47,7 @@ final class WindowsViewModel {
     case showApplication
     case closeSidePanel
     case stopChat
+    case accessibilityPermissionChanged(isGranted: Bool?)
   }
 
   private(set) var state: State
@@ -48,11 +60,21 @@ final class WindowsViewModel {
       state = state.with(isSidePanelVisible: false)
     case .stopChat:
       state = state.with(isSidePanelVisible: false)
+    case .accessibilityPermissionChanged(let isGranted):
+      if isGranted == true {
+        state = state.with(isSetupVisible: false)
+      } else if isGranted == false {
+        state = state.with(isSetupVisible: true)
+      }
     }
   }
 
   @ObservationIgnored
   @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
+  @ObservationIgnored
+  @Dependency(\.permissionsService) private var permissionsService
+
+  private var cancellables = Set<AnyCancellable>()
 
   private func handle(appEvent: AppEvent) -> Bool {
     if appEvent is AddCodeToChatEvent {
