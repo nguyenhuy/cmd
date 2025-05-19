@@ -349,14 +349,13 @@ targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
       "XcodeObserverServiceInterface",
     ],
     testDependencies: [
-      .product(name: "ViewInspector", package: "ViewInspector"),
       "AccessibilityFoundation",
-      "AppFoundation",
+      "CheckpointServiceInterface",
       "ConcurrencyFoundation",
-      "DLS",
       "FileSuggestionServiceInterface",
       "FoundationInterfaces",
       "LLMServiceInterface",
+      "ServerServiceInterface",
       "SwiftTesting",
       "XcodeObserverServiceInterface",
     ],
@@ -990,7 +989,6 @@ let package = Package(
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
 
     // Testing dependencies:
-    .package(url: "https://github.com/nalexn/ViewInspector", from: "0.10.1"),
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),
   ],
   targets: targets)

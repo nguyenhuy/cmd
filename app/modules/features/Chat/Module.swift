@@ -29,14 +29,13 @@ Target.module(
     "XcodeObserverServiceInterface",
   ],
   testDependencies: [
-    .product(name: "ViewInspector", package: "ViewInspector"),
     "AccessibilityFoundation",
-    "AppFoundation",
+    "CheckpointServiceInterface",
     "ConcurrencyFoundation",
-    "DLS",
     "FileSuggestionServiceInterface",
     "FoundationInterfaces",
     "LLMServiceInterface",
+    "ServerServiceInterface",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
   ])

@@ -117,10 +117,9 @@ public final class Logger: Sendable {
 
   /// Writes a message to the log file
   private func writeToFile(_ message: String) {
+    let formattedMessage = "\(Date().ISO8601Format()) \(message)\n"
+    guard let logFile, let data = formattedMessage.data(using: .utf8) else { return }
     fileWriteQueue.queue {
-      let formattedMessage = "\(Date().ISO8601Format()) \(message)\n"
-      guard let logFile = self.logFile, let data = formattedMessage.data(using: .utf8) else { return }
-
       logFile.write(data)
     }
   }

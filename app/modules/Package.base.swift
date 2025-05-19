@@ -98,7 +98,6 @@ let package = Package(
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
 
     // Testing dependencies:
-    .package(url: "https://github.com/nalexn/ViewInspector", from: "0.10.1"),
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),
   ],
   targets: targets)

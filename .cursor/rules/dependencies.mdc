@@ -20,4 +20,4 @@ Code that is non UI facing and should not be mocked for tests should be defined 
 
 ### Features
 Code that is UI facing should be a feature. A features should correspond roughly to a "screen", or part of a screen when the screen is too large / complex.
-Features are expected to be tested with a mix of standard unit tests, and using ViewInspector.
+Features are expected to be tested with a mix of standard unit tests.

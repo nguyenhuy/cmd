@@ -148,7 +148,7 @@ struct TaskQueueTests {
       3
     }
 
-    try await fulfillment(of: [completion])
+    try await fulfillment(of: [completion], timeout: 10) // Large timeout as Task.sleep is not accurate.
     #expect(results == [1, 2, 3], "Tasks should complete in order despite different execution times")
   }
 

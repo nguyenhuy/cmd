@@ -270,7 +270,7 @@ extension NSAttributedString {
 
     // If no non-whitespace characters found, return original string (it's either empty or all whitespace)
     guard let startLocation = startRange?.lowerBound, let endLocation = endRange?.lowerBound else {
-      return self
+      return NSAttributedString(string: "")
     }
 
     // Check if there's nothing to trim (already trimmed)

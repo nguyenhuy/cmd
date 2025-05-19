@@ -77,6 +77,7 @@ public enum SwiftTestingUtils {
         }
         let wasFulfilled = lock.withLock { state in
           if state.isFulfilled {
+            // check again here, in case the fulfillment happened since we last checked.
             return true
           }
           state.onFulfill.append(onFulfill)

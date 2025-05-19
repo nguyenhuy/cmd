@@ -11,7 +11,7 @@ release:
 clean:
 	@cd "$(shell git rev-parse --show-toplevel)/app/modules" && \
 	swift package clean && \
-	find . -not -path './.git/*' | \
+	find . -not -path './.git/*' 2> /dev/null | \
 	git check-ignore --stdin | \
 	tr '\n' '\0' | \
 	xargs -0 rm -rf

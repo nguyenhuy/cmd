@@ -57,16 +57,15 @@ struct NSAttributedStringExtensionTests {
     #expect(trimmed.attributes(at: 0, effectiveRange: nil)[.foregroundColor] as? NSColor == NSColor.green)
   }
 
-  @Test("empty string returns self")
+  @Test("Non trimmable string returns self")
   func test_emptyString() throws {
     let attributes: [NSAttributedString.Key: Any] = [.foregroundColor: NSColor.yellow]
     let original = NSAttributedString(
-      string: "",
+      string: "hello",
       attributes: attributes)
 
     let trimmed = original.trimmedAttributedString()
 
-    #expect(trimmed.string == "")
     #expect(trimmed === original) // Test reference equality - should be the same instance
   }
 

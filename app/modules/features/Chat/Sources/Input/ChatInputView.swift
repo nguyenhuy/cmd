@@ -31,10 +31,7 @@ struct ChatInputView: View {
     #endif
   }
 
-  static let cornerRadius: CGFloat = 10
-
   #if DEBUG
-  let inspection = Inspection<Self>()
   init(
     _debugTextViewHandler: @escaping @Sendable (NSTextView) -> Void,
     inputViewModel: ChatInputViewModel,
@@ -49,6 +46,8 @@ struct ChatInputView: View {
     self._debugTextViewHandler = _debugTextViewHandler
   }
   #endif
+
+  static let cornerRadius: CGFloat = 10
 
   #if DEBUG
   let _debugTextViewHandler: (@Sendable (NSTextView) -> Void)?
@@ -103,9 +102,6 @@ struct ChatInputView: View {
     .onTapGesture {
       inputViewModel.textInputNeedsFocus = true
     }
-    #if DEBUG
-    .onReceive(inspection.notice) { inspection.visit(self, $0) }
-    #endif
   }
 
   @State private var searchResultsViewHeight: CGFloat = 0

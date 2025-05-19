@@ -104,7 +104,7 @@ public struct InnerLongText: View {
   }
 
   public var body: some View {
-    CodeTextView(attributedString: text)
+    NSLongText(attributedString: text)
       .frame(width: textSize.width, height: textSize.height)
   }
 
@@ -130,9 +130,9 @@ public struct InnerLongText: View {
 
 }
 
-// MARK: - CodeTextView
+// MARK: - NSLongText
 
-struct CodeTextView: NSViewRepresentable {
+struct NSLongText: NSViewRepresentable {
   /// The attributed string with syntax highlighting
   let attributedString: NSAttributedString
 

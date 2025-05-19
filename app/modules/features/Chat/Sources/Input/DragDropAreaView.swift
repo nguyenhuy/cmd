@@ -15,10 +15,6 @@ struct DragDropAreaView: View {
   let shape: AnyShape
   let handleDrop: (MultiTypeTransferable) -> Bool
 
-  #if DEBUG
-  let inspection = Inspection<Self>()
-  #endif
-
   var body: some View {
     dragDropArea
       .onDrop(
@@ -27,9 +23,6 @@ struct DragDropAreaView: View {
       { providers in
         onDrop(with: providers)
       }
-    #if DEBUG
-      .onReceive(inspection.notice) { inspection.visit(self, $0) }
-    #endif
   }
 
   @ViewBuilder
