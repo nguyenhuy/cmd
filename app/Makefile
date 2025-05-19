@@ -8,9 +8,12 @@ sync-dependencies:
 release:
 	@./tools/release/release.sh
 # Remove tmp files that might lead to Xcode not showing Swift packages content
-cleanup:
+clean:
 	@cd "$(shell git rev-parse --show-toplevel)/app/modules" && \
+	swift package clean && \
 	find . -not -path './.git/*' | \
 	git check-ignore --stdin | \
 	tr '\n' '\0' | \
 	xargs -0 rm -rf
+test:
+	@cd modules && swift test -Xswiftc -suppress-warnings --quiet
