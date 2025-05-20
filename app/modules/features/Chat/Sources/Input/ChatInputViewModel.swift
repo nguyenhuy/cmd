@@ -76,6 +76,7 @@ final class ChatInputViewModel {
     self.selectedModel = selectedModel ?? availableModels?.first
     self.mode = mode
     self.attachments = attachments
+
     if let availableModels {
       self.availableModels = availableModels
       updateSelectedModel()
@@ -157,6 +158,18 @@ final class ChatInputViewModel {
         updateSearchResults(searchQuery: externalSearchQuery)
       }
     }
+  }
+
+  /// Create a deep copy of the view model.
+  func copy() -> ChatInputViewModel {
+    .init(
+      textInput: TextInput(textInput.string),
+      selectedModel: selectedModel,
+      // Pass nil here to signal that the value from settings should be observed.
+      // This method is not expected to be called in Previews where the mock settings might not have the right content.
+      availableModels: nil,
+      mode: mode,
+      attachments: attachments)
   }
 
   func handleStartExternalSearch(isSearching: Bool) {

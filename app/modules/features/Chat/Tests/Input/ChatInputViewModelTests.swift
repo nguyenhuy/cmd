@@ -23,10 +23,15 @@ struct ChatInputViewModelTests {
   func test_initialization_withSelectedModelInAvailableModels() {
     let selectedModel = LLMModel.gpt4o
     let availableModels = [LLMModel.claudeSonnet, LLMModel.gpt4o]
+    let mockSettingsService = MockSettingsService.allConfigured
 
-    let viewModel = ChatInputViewModel(
-      selectedModel: selectedModel,
-      availableModels: availableModels)
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+    } operation: {
+      ChatInputViewModel(
+        selectedModel: selectedModel,
+        availableModels: availableModels)
+    }
 
     #expect(viewModel.selectedModel == selectedModel)
   }
@@ -36,10 +41,15 @@ struct ChatInputViewModelTests {
   func test_initialization_withSelectedModelNotInAvailableModels() {
     let selectedModel = LLMModel.o1
     let availableModels = [LLMModel.claudeSonnet, LLMModel.gpt4o]
+    let mockSettingsService = MockSettingsService.allConfigured
 
-    let viewModel = ChatInputViewModel(
-      selectedModel: selectedModel,
-      availableModels: availableModels)
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+    } operation: {
+      ChatInputViewModel(
+        selectedModel: selectedModel,
+        availableModels: availableModels)
+    }
 
     #expect(viewModel.selectedModel == availableModels.first)
   }
@@ -48,10 +58,15 @@ struct ChatInputViewModelTests {
   @Test("initializing with nil selected model selects the first available model")
   func test_initialization_withNilSelectedModel() {
     let availableModels = [LLMModel.claudeSonnet, LLMModel.gpt4o]
+    let mockSettingsService = MockSettingsService.allConfigured
 
-    let viewModel = ChatInputViewModel(
-      selectedModel: nil,
-      availableModels: availableModels)
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+    } operation: {
+      ChatInputViewModel(
+        selectedModel: nil,
+        availableModels: availableModels)
+    }
 
     #expect(viewModel.selectedModel == availableModels.first)
   }
@@ -59,9 +74,15 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with empty available models results in nil selected model")
   func test_initialization_withEmptyAvailableModels() {
-    let viewModel = ChatInputViewModel(
-      selectedModel: nil,
-      availableModels: [])
+    let mockSettingsService = MockSettingsService.allConfigured
+
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+    } operation: {
+      ChatInputViewModel(
+        selectedModel: nil,
+        availableModels: [])
+    }
 
     #expect(viewModel.selectedModel == nil)
   }
@@ -69,27 +90,22 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("updating available models keeps selected model if it's still available")
   func test_updatingAvailableModels_keepsSelectedModelIfStillAvailable() {
-    let mockSettingsService = MockSettingsService()
+    let mockSettingsService = MockSettingsService(Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      anthropicSettings: .init(apiKey: "", apiUrl: nil),
+      openAISettings: .init(apiKey: "", apiUrl: nil)))
     let mockUserDefaults = MockUserDefaults()
 
-    withDependencies {
+    let viewModel = withDependencies {
       $0.settingsService = mockSettingsService
       $0.userDefaults = mockUserDefaults
     } operation: {
-      // Initial setup with gpt4o selected
-      let initialSettings = Settings(
-        pointReleaseXcodeExtensionToDebugApp: false,
-        anthropicSettings: nil,
-        openAISettings: nil)
-
-      mockSettingsService.update(to: initialSettings)
-
-      let viewModel = ChatInputViewModel(
+      ChatInputViewModel(
         selectedModel: .gpt4o,
         availableModels: [.claudeSonnet, .gpt4o, .gpt4o_mini])
-
-      #expect(viewModel.selectedModel == .gpt4o)
     }
+
+    #expect(viewModel.selectedModel == .gpt4o)
   }
 
   @MainActor
@@ -101,19 +117,19 @@ struct ChatInputViewModelTests {
       openAISettings: .init(apiKey: "", apiUrl: nil)))
     let mockUserDefaults = MockUserDefaults()
 
-    withDependencies {
+    let viewModel = withDependencies {
       $0.settingsService = mockSettingsService
       $0.userDefaults = mockUserDefaults
     } operation: {
-      let viewModel = ChatInputViewModel(
+      ChatInputViewModel(
         selectedModel: .claudeSonnet,
         availableModels: nil)
-
-      #expect(viewModel.selectedModel == .claudeSonnet)
-      mockSettingsService.update(setting: \.anthropicSettings, to: nil)
-
-      #expect(viewModel.selectedModel == .gpt4o)
     }
+
+    #expect(viewModel.selectedModel == .claudeSonnet)
+    mockSettingsService.update(setting: \.anthropicSettings, to: nil)
+
+    #expect(viewModel.selectedModel == .gpt4o)
   }
 
   @MainActor
@@ -125,19 +141,19 @@ struct ChatInputViewModelTests {
       openAISettings: nil))
     let mockUserDefaults = MockUserDefaults()
 
-    withDependencies {
+    let viewModel = withDependencies {
       $0.settingsService = mockSettingsService
       $0.userDefaults = mockUserDefaults
     } operation: {
-      let viewModel = ChatInputViewModel(
+      ChatInputViewModel(
         selectedModel: .claudeSonnet,
         availableModels: nil)
-
-      #expect(viewModel.selectedModel == .claudeSonnet)
-      mockSettingsService.update(setting: \.anthropicSettings, to: nil)
-
-      #expect(viewModel.selectedModel == nil)
     }
+
+    #expect(viewModel.selectedModel == .claudeSonnet)
+    mockSettingsService.update(setting: \.anthropicSettings, to: nil)
+
+    #expect(viewModel.selectedModel == nil)
   }
 
   @MainActor
@@ -151,33 +167,35 @@ struct ChatInputViewModelTests {
       anthropicSettings: .init(apiKey: "", apiUrl: nil),
       openAISettings: .init(apiKey: "", apiUrl: nil)))
 
-    withDependencies {
+    let viewModel = withDependencies {
       $0.userDefaults = mockUserDefaults
       $0.settingsService = mockSettingsService
     } operation: {
-      let viewModel = ChatInputViewModel()
-
-      #expect(viewModel.selectedModel == .gpt4o)
+      ChatInputViewModel()
     }
+
+    #expect(viewModel.selectedModel == .gpt4o)
   }
 
   @MainActor
   @Test("changing selected model updates user defaults")
   func test_changingSelectedModel_updatesUserDefaults() {
     let mockUserDefaults = MockUserDefaults()
+    let mockSettingsService = MockSettingsService.allConfigured
 
-    withDependencies {
+    let viewModel = withDependencies {
       $0.userDefaults = mockUserDefaults
+      $0.settingsService = mockSettingsService
     } operation: {
-      let viewModel = ChatInputViewModel(
+      ChatInputViewModel(
         selectedModel: .claudeSonnet,
         availableModels: [.claudeSonnet, .gpt4o])
-
-      #expect(mockUserDefaults.string(forKey: "selectedLLMModel") == nil)
-      viewModel.selectedModel = .gpt4o
-
-      #expect(mockUserDefaults.string(forKey: "selectedLLMModel") == "gpt-4o")
     }
+
+    #expect(mockUserDefaults.string(forKey: "selectedLLMModel") == nil)
+    viewModel.selectedModel = .gpt4o
+
+    #expect(mockUserDefaults.string(forKey: "selectedLLMModel") == "gpt-4o")
   }
 
   @MainActor
@@ -189,28 +207,37 @@ struct ChatInputViewModelTests {
       openAISettings: .init(apiKey: "test", apiUrl: nil)))
     let mockUserDefaults = MockUserDefaults()
 
-    withDependencies {
+    let viewModel = withDependencies {
       $0.settingsService = mockSettingsService
       $0.userDefaults = mockUserDefaults
     } operation: {
-      let viewModel = ChatInputViewModel(
+      ChatInputViewModel(
         selectedModel: .claudeSonnet,
         availableModels: nil) // Pass nil to read from the settings service
-
-      #expect(viewModel.availableModels.count == 2)
-      #expect(viewModel.selectedModel == .claudeSonnet)
-
-      mockSettingsService.update(setting: \.openAISettings, to: nil)
-
-      #expect(viewModel.availableModels.count == 1)
-      #expect(viewModel.availableModels.contains(.claudeSonnet))
-      #expect(!viewModel.availableModels.contains(.gpt4o))
-      #expect(viewModel.selectedModel == .claudeSonnet)
-
-      mockSettingsService.update(setting: \.anthropicSettings, to: nil)
-
-      #expect(viewModel.availableModels.isEmpty)
-      #expect(viewModel.selectedModel == nil)
     }
+
+    #expect(viewModel.availableModels.count == 2)
+    #expect(viewModel.selectedModel == .claudeSonnet)
+
+    mockSettingsService.update(setting: \.openAISettings, to: nil)
+
+    #expect(viewModel.availableModels.count == 1)
+    #expect(viewModel.availableModels.contains(.claudeSonnet))
+    #expect(!viewModel.availableModels.contains(.gpt4o))
+    #expect(viewModel.selectedModel == .claudeSonnet)
+
+    mockSettingsService.update(setting: \.anthropicSettings, to: nil)
+
+    #expect(viewModel.availableModels.isEmpty)
+    #expect(viewModel.selectedModel == nil)
+  }
+}
+
+extension MockSettingsService {
+  static var allConfigured: MockSettingsService {
+    MockSettingsService(Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      anthropicSettings: .init(apiKey: "test", apiUrl: nil),
+      openAISettings: .init(apiKey: "test", apiUrl: nil)))
   }
 }

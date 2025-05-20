@@ -15,18 +15,10 @@ import XcodeObserverServiceInterface
 @ThreadSafe
 final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
 
-  init(xcodeObserver: XcodeObserver) {
+  init(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
     registerActions()
 
-    observeXcodeState(xcodeObserver: xcodeObserver)
-  }
-
-  func enable() {
-    KeyboardShortcuts.enable([.chat, .addToChat, .edit, .generate])
-  }
-
-  func disable() {
-    KeyboardShortcuts.disable([.chat, .addToChat, .edit, .generate])
+    observeXcodeState(appsActivationState: appsActivationState)
   }
 
   private var cancellables: Set<AnyCancellable> = []
@@ -34,54 +26,75 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
 
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
-  private func observeXcodeState(xcodeObserver: XcodeObserver) {
-    let cancellable = xcodeObserver.statePublisher
-      .map { $0.activeInstance?.isActive }
-      .removeDuplicates()
-      .sink { @Sendable [weak self] isXcodeActive in
-        if isXcodeActive == true {
-          self?.enable()
-        } else {
-          self?.disable()
+  private func observeXcodeState(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
+    let cancellable = appsActivationState
+      .sink { @Sendable [weak self] appsActivationState in
+        guard self != nil else { return }
+        // Handle de-activations first, then activations.
+        if !appsActivationState.isHostAppActive {
+          KeyboardShortcuts.disable(KeyboardShortcuts.Name.hostAppShortcuts)
+        }
+        if !appsActivationState.isXcodeActive {
+          KeyboardShortcuts.disable(KeyboardShortcuts.Name.xcodeShortcuts)
+        }
+        if appsActivationState.isHostAppActive {
+          KeyboardShortcuts.enable(KeyboardShortcuts.Name.hostAppShortcuts)
+        }
+        if appsActivationState.isXcodeActive {
+          KeyboardShortcuts.enable(KeyboardShortcuts.Name.xcodeShortcuts)
         }
       }
     safelyMutate { $0.cancellables.insert(cancellable) }
   }
 
   private func registerActions() {
-    KeyboardShortcuts.onKeyUp(for: .chat) {
+    on(.ask, trigger: AddCodeToChatEvent(newThread: false, chatMode: .ask))
+    on(.askInNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: .ask))
+    on(.agent, trigger: AddCodeToChatEvent(newThread: false, chatMode: .agent))
+    on(.agentInNewThread, trigger: AddCodeToChatEvent(newThread: true, chatMode: .agent))
+    on(.edit, trigger: EditEvent())
+    on(.generate, trigger: GenerateEvent())
+    on(.hideChat, trigger: HideChatEvent())
+    on(.new, trigger: NewChatEvent())
+    on(.switchToAskMode, trigger: AddCodeToChatEvent(newThread: false, chatMode: .ask))
+    on(.switchToAgentMode, trigger: AddCodeToChatEvent(newThread: false, chatMode: .agent))
+  }
+
+  private func on(_ keyEvent: KeyboardShortcuts.Name, trigger event: AppEvent) {
+    KeyboardShortcuts.onKeyUp(for: keyEvent) {
       Task { [weak self] in
-        await self?.appEventHandlerRegistry.handle(event: AddCodeToChatEvent())
-      }
-    }
-    KeyboardShortcuts.onKeyUp(for: .addToChat) {
-      Task { [weak self] in
-        await self?.appEventHandlerRegistry.handle(event: AddCodeToChatEvent())
-      }
-    }
-    KeyboardShortcuts.onKeyUp(for: .edit) {
-      Task { [weak self] in
-        await self?.appEventHandlerRegistry.handle(event: EditEvent())
-      }
-    }
-    KeyboardShortcuts.onKeyUp(for: .generate) {
-      Task { [weak self] in
-        await self?.appEventHandlerRegistry.handle(event: GenerateEvent())
-      }
-    }
-    KeyboardShortcuts.onKeyUp(for: .hideChat) {
-      Task { [weak self] in
-        await self?.appEventHandlerRegistry.handle(event: HideChatEvent())
+        await self?.appEventHandlerRegistry.handle(event: event)
       }
     }
   }
 }
 
 extension KeyboardShortcuts.Name {
-  static let chat = Self("chat", default: .init(.l, modifiers: [.command]))
-  // TODO: remove
-  static let addToChat = Self("addToChat", default: .init(.l, modifiers: [.command, .shift]))
-  static let edit = Self("edit", default: .init(.k, modifiers: [.command, .shift]))
   static let hideChat = Self("hideChat", default: .init(.escape, modifiers: [.command]))
+  // Xcode shortcuts
+  static let ask = Self("ask", default: .init(.l, modifiers: [.command]))
+  static let askInNewThread = Self("askInNewThread", default: .init(.l, modifiers: [.command, .shift]))
+  static let agent = Self("agent", default: .init(.i, modifiers: [.command]))
+  static let agentInNewThread = Self("agentInNewThread", default: .init(.i, modifiers: [.command, .shift]))
+  static let edit = Self("edit", default: .init(.k, modifiers: [.command, .shift]))
   static let generate = Self("generate", default: .init(.k, modifiers: [.command]))
+
+  static let xcodeShortcuts = [
+    Self.ask,
+    Self.askInNewThread,
+    Self.agent,
+    Self.agentInNewThread,
+    Self.edit,
+    Self.generate,
+  ]
+  // Host app shortcuts
+  static let new = Self("new", default: .init(.n, modifiers: [.command]))
+  static let switchToAskMode = Self("switchToAskMode", default: .init(.l, modifiers: [.command]))
+  static let switchToAgentMode = Self("switchToAgentMode", default: .init(.i, modifiers: [.command]))
+
+  static let hostAppShortcuts = [
+    Self.new,
+    Self.switchToAskMode,
+    Self.switchToAgentMode,
+  ]
 }

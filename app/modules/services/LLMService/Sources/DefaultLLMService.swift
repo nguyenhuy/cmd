@@ -16,6 +16,7 @@ import ToolFoundation
 
 // MARK: - DefaultLLMService
 
+/// NOT USED. TODO: remove once the tests have been ported to the replacement.
 final class DefaultLLMService: LLMService {
 
   init(server: Server, settingsService: SettingsService) {

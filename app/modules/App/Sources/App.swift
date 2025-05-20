@@ -41,7 +41,7 @@ public struct XcompanionApp: App {
     appDelegate.handleApplicationDidBecomeActive = {
       windowsViewModel.handle(.showApplication)
     }
-    xcodeKeyboardShortcutsManager = XcodeKeyboardShortcutsManager(xcodeObserver: xcodeObserver)
+    xcodeKeyboardShortcutsManager = XcodeKeyboardShortcutsManager(appsActivationState: appsActivationState)
     registerColdStartPlugins()
     Task {
       // Initialize the local server on launch
@@ -122,7 +122,7 @@ public struct XcompanionApp: App {
   private let windowsViewModel: WindowsViewModel
   private let windows: WindowsView
 
-  @Dependency(\.xcodeObserver) private var xcodeObserver
+  @Dependency(\.appsActivationState) private var appsActivationState
 
   private var xcodeKeyboardShortcutsManager: XcodeKeyboardShortcutsManager?
 

@@ -22,7 +22,7 @@ struct ChatMessageList: View {
 
   var body: some View {
     ScrollView {
-      LazyVStack(spacing: 6) {
+      LazyVStack(spacing: 0) {
         ForEach(events) { event in
           switch event {
           case .message(let message):

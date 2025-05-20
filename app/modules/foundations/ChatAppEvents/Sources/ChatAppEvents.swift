@@ -2,10 +2,23 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import AppEventServiceInterface
+import ChatFoundation
 
 // MARK: - AddCodeToChatEvent
 
 public struct AddCodeToChatEvent: AppEvent {
+  public init(newThread: Bool, chatMode: ChatMode?) {
+    self.newThread = newThread
+    self.chatMode = chatMode
+  }
+
+  public let newThread: Bool
+  public let chatMode: ChatMode?
+}
+
+// MARK: - NewChatEvent
+
+public struct NewChatEvent: AppEvent {
   public init() { }
 }
 

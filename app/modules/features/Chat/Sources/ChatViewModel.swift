@@ -57,8 +57,11 @@ public class ChatViewModel {
     Task {
       await appEventHandlerRegistry.registerHandler { [weak self] event in
         guard let self else { return false }
-        if event is AddCodeToChatEvent {
-          await handleAddCodeToChatEvent()
+        if let event = event as? AddCodeToChatEvent {
+          await handle(addCodeToChatEvent: event)
+          return true
+        } else if event is NewChatEvent {
+          await addTab(copyingCurrentInput: true)
           return true
         } else {
           return false
@@ -74,8 +77,11 @@ public class ChatViewModel {
   // TODO: persist to user defaults and load
   var defaultMode: ChatMode
 
-  func addTab() {
+  /// Create a new tab/thread.
+  /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
+  func addTab(copyingCurrentInput: Bool = false) {
     let newTab = ChatTabViewModel()
+    let currentTab = selectedTab
     if selectedTab?.events.isEmpty == true {
       // if the selected tab is empty, replace it with the new tab instead of keeping it in memory.
       tabs[tabs.count - 1] = newTab
@@ -83,6 +89,9 @@ public class ChatViewModel {
       tabs.append(newTab)
     }
     selectedTab = newTab
+    if copyingCurrentInput, let currentTab {
+      newTab.input = currentTab.input.copy()
+    }
   }
 
   func remove(tab: ChatTabViewModel) {
@@ -99,11 +108,19 @@ public class ChatViewModel {
   @ObservationIgnored @Dependency(\.xcodeObserver) private var xcodeObserver
   @ObservationIgnored @Dependency(\.fileManager) private var fileManager
 
-  private func handleAddCodeToChatEvent() {
+  private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {
     Task { @MainActor in
       NSApp.setActivationPolicy(.regular)
       // TODO: make sure the app is activated. Sometimes it doesn't work.
       Task { try await NSApplication.activateCurrentApp() }
+
+      if event.newThread {
+        self.addTab()
+      }
+      if let chatMode = event.chatMode {
+        self.selectedTab?.input.mode = chatMode
+      }
+
       self.selectedTab?.input.textInputNeedsFocus = true
 
       if let workspace = xcodeObserver.state.focusedWorkspace {
