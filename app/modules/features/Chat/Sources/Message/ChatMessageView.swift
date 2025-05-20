@@ -18,6 +18,12 @@ struct ChatMessageView: View {
   let message: ChatMessageContentWithRole
 
   var body: some View {
+    GeometryReader { geometry in
+      ReshareGeometry(geometry, geometryReader: $size) {
+        EmptyView()
+      }
+    }
+
     HStack {
       VStack(alignment: .leading, spacing: 0) {
         switch message.content {
@@ -50,19 +56,18 @@ struct ChatMessageView: View {
     static let cornerRadius: CGFloat = 5
   }
 
+  @State private var size = CGSize.zero
+
   @Environment(\.colorScheme) private var colorScheme
 
   @ViewBuilder
   private func textElementView(_ element: TextFormatter.Element) -> some View {
     switch element {
     case .text(let text):
-      Text(markdown(for: text))
-        .font(.body)
-        .lineLimit(nil)
+      LongText(markdown(for: text), maxWidth: size.width)
         .textSelection(.enabled)
-        .padding(5)
-        .foregroundColor(message.role == .user ? .white : .primary)
-        .cornerRadius(12)
+        .padding(8)
+        .cornerRadius(8)
 
     case .codeBlock(let code):
       CodeBlockContentView(code: code, role: message.role)
@@ -90,16 +95,9 @@ struct ChatMessageView: View {
 
   private func markdown(for text: TextFormatter.Element.TextElement) -> AttributedString {
     let markDown = Down(markdownString: text.text)
-    let style = DownStyle()
-    style.baseFont = Font.systemFont(ofSize: 12)
-    style.baseFontColor = .textColor
-    style.codeFont = .monospacedSystemFont(ofSize: 12, weight: .medium)
-    style.codeColor = .controlAccentColor
-    style.h1Size = 20
-    style.h2Size = 18
-    style.h3Size = 16
+    let style = MarkdownStyle(colorScheme: colorScheme)
     do {
-      var attributedString = try markDown.toAttributedString(using: style)
+      let attributedString = try markDown.toAttributedString(using: style)
       return AttributedString(attributedString.trimmedAttributedString())
     } catch {
       defaultLogger.error("Error parsing markdown", error)
@@ -280,5 +278,23 @@ extension NSAttributedString {
 
     let trimmedRange = startLocation...endLocation
     return attributedSubstring(from: NSRange(trimmedRange, in: string))
+  }
+}
+
+/// This is a hack to read the width of the view...
+/// Wrapping the entire message view in a GeometryReader was preventing the view from being interactive.
+/// So instead we use a hidden GeometryReader to get the size of the message view and reshare it with the main view through a binding.
+struct ReshareGeometry<Content: View>: View {
+  let content: Content
+
+  init(_ geometry: GeometryProxy, geometryReader: Binding<CGSize>, @ViewBuilder content: () -> Content) {
+    self.content = content()
+    DispatchQueue.main.async {
+      geometryReader.wrappedValue = geometry.size
+    }
+  }
+
+  var body: some View {
+    content
   }
 }

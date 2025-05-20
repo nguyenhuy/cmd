@@ -98,27 +98,6 @@ extension FileDiff {
 }
 
 extension AttributedString {
-
-  #if DEBUG
-  public func toHTML() throws -> String {
-    let nsAttributedString = NSAttributedString(self)
-    let documentAttributes = [NSAttributedString.DocumentAttributeKey.documentType: NSAttributedString.DocumentType.html]
-
-    let htmlData = try nsAttributedString.data(
-      from: .init(location: 0, length: nsAttributedString.length),
-      documentAttributes: documentAttributes)
-
-    guard let html = String(data: htmlData, encoding: .utf8) else {
-      throw NSError(
-        domain: "HTMLConversionError",
-        code: -1,
-        userInfo: [NSLocalizedDescriptionKey: "Failed to convert HTML data to string"])
-    }
-
-    return html
-  }
-  #endif
-
   /// Returns a range for the current AttributedString.
   ///
   /// - Parameter range: A closed range of integer indices representing the desired substring bounds

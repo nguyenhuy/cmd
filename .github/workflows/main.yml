@@ -28,7 +28,7 @@ jobs:
     - name: Install node dependencies
       run: cd local-server && yarn install
     - name: Make release
-      run: cd app && make release
+      run: cd app && make build_release
 
   test-swift-packages:
     runs-on: macos-15
@@ -119,8 +119,23 @@ jobs:
         node-version-file: "./local-server/.nvmrc"
     - name: Install dependencies
       run: cd local-server && yarn install
-    - name: Run tests
+    - name: Run linter
       run: cd local-server && yarn lint:fix
-    - name: Verify that `make lint` did not change outputs (if it did, please re-run it and re-commit!)
+    - name: Verify that `yarn lint:fix` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
+  lint-shell:
+    runs-on: macos-15
+    steps:
+    - name: MacOS version
+      run: sw_vers
+    - uses: actions/checkout@v4
+    - name: Set up Homebrew
+      id: set-up-homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+    - name: Install shfmt
+      run: brew install shfmt
+    - name: Run linter
+      run: shfmt -w ./**/*.sh
+    - name: Verify that `shfmt -w ./**/*.sh` did not change outputs (if it did, please re-run it and re-commit!)
+      run: git diff --exit-code

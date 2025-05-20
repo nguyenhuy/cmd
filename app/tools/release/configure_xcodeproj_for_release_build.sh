@@ -6,8 +6,8 @@ set -euo pipefail
 repo_root=$(git rev-parse --show-toplevel)
 
 if [ -z "$repo_root" ]; then
-    echo "Not a git repository"
-    exit 1
+	echo "Not a git repository"
+	exit 1
 fi
 
 # Modify the project config, as Xcode is unable to build the project when the Xcode extension target

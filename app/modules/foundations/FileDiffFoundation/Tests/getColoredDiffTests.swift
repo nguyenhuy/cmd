@@ -313,3 +313,30 @@ private struct RenderedDiff: View {
     Text(diff)
   }
 }
+
+extension AttributedString {
+
+  func toHTML() throws -> String {
+    let nsAttributedString = NSAttributedString(self)
+    let documentAttributes = [NSAttributedString.DocumentAttributeKey.documentType: NSAttributedString.DocumentType.html]
+
+    let htmlData = try nsAttributedString.data(
+      from: .init(location: 0, length: nsAttributedString.length),
+      documentAttributes: documentAttributes)
+
+    guard let html = String(data: htmlData, encoding: .utf8) else {
+      throw NSError(
+        domain: "HTMLConversionError",
+        code: -1,
+        userInfo: [NSLocalizedDescriptionKey: "Failed to convert HTML data to string"])
+    }
+
+    return html
+      // This tag will have a different value based on the MacOS version the code
+      // is executed on, making the test flakey if not handled.
+      .replacing(
+        /<meta name="CocoaVersion" content="(?<version>\d+(\.\d+)?)">/,
+        with: "<meta name=\"CocoaVersion\" content=\"CocoaVersion\">")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+}

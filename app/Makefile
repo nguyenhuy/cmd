@@ -5,8 +5,11 @@ lint:
 sync-dependencies:
 	@./tools/dependencies/sync.sh
 # Create a release build, and update the one installed locally
-release:
+build_release:
 	@./tools/release/release.sh
+# Create a release build, and update the one installed locally
+archive_release:
+	@./tools/release/release.sh --archive
 # Remove tmp files that might lead to Xcode not showing Swift packages content
 clean:
 	@cd "$(shell git rev-parse --show-toplevel)/app/modules" && \

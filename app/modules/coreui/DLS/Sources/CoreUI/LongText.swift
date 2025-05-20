@@ -10,35 +10,37 @@ import SwiftUI
 /// especially over long texts that will freeze in a `Text`.
 public struct LongText: View {
 
-  public init(_ text: NSAttributedString) {
-    self.init(text, needColoring: false)
+  public init(_ text: NSAttributedString, maxWidth: CGFloat = .greatestFiniteMagnitude) {
+    self.init(text, needColoring: false, maxWidth: maxWidth)
   }
 
-  private init(_ text: NSAttributedString, needColoring: Bool) {
+  private init(_ text: NSAttributedString, needColoring: Bool, maxWidth: CGFloat) {
     self.text = text
     self.needColoring = needColoring
+    self.maxWidth = maxWidth
   }
 
-  public init(_ text: AttributedString) {
-    self.init(NSAttributedString(text), needColoring: false)
+  public init(_ text: AttributedString, maxWidth: CGFloat = .greatestFiniteMagnitude) {
+    self.init(NSAttributedString(text), needColoring: false, maxWidth: maxWidth)
   }
 
-  public init(_ text: String, font: NSFont = .body) {
+  public init(_ text: String, font: NSFont = .body, maxWidth: CGFloat = .greatestFiniteMagnitude) {
     let attrString = NSMutableAttributedString(attributedString: NSAttributedString(string: text))
     let range = NSRange(location: 0, length: attrString.length)
     attrString.addAttribute(.font, value: font, range: range)
 
-    self.init(attrString, needColoring: true)
+    self.init(attrString, needColoring: true, maxWidth: maxWidth)
   }
 
   public var body: some View {
-    InnerLongText(attributedTextWithFont)
+    InnerLongText(attributedTextWithFont, maxWidth: maxWidth)
   }
 
   let text: NSAttributedString
   let needColoring: Bool
+  let maxWidth: CGFloat
 
-  static func size(for text: NSAttributedString) -> CGSize {
+  static func size(for text: NSAttributedString, maxWidth: CGFloat) -> CGSize {
     let layoutManager = NSLayoutManager()
     let textContainer = NSTextContainer(size: .zero)
     let textStorage = NSTextStorage()
@@ -48,7 +50,7 @@ public struct LongText: View {
     layoutManager.addTextContainer(textContainer)
 
     textStorage.setAttributedString(text)
-    textContainer.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
+    textContainer.containerSize = NSSize(width: maxWidth, height: .greatestFiniteMagnitude)
     layoutManager.glyphRange(for: textContainer)
     let usedRect = layoutManager.usedRect(for: textContainer)
     return usedRect.integral.size
@@ -98,33 +100,19 @@ public struct LongText: View {
 /// Efficiently display an `NSAttributedString`.
 public struct InnerLongText: View {
 
-  public init(_ text: NSAttributedString) {
+  public init(_ text: NSAttributedString, maxWidth: CGFloat) {
     self.text = text
-    textSize = Self.size(for: text)
+    self.maxWidth = maxWidth
+    textSize = LongText.size(for: text, maxWidth: maxWidth)
   }
 
   public var body: some View {
-    NSLongText(attributedString: text)
+    NSLongText(attributedString: text, maxWidth: maxWidth)
       .frame(width: textSize.width, height: textSize.height)
   }
 
   let text: NSAttributedString
-
-  static func size(for text: NSAttributedString) -> CGSize {
-    let layoutManager = NSLayoutManager()
-    let textContainer = NSTextContainer(size: .zero)
-    let textStorage = NSTextStorage()
-
-    // Hook up the text system objects
-    textStorage.addLayoutManager(layoutManager)
-    layoutManager.addTextContainer(textContainer)
-
-    textStorage.setAttributedString(text)
-    textContainer.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
-    layoutManager.glyphRange(for: textContainer)
-    let usedRect = layoutManager.usedRect(for: textContainer)
-    return usedRect.integral.size
-  }
+  let maxWidth: CGFloat
 
   private let textSize: CGSize
 
@@ -135,6 +123,7 @@ public struct InnerLongText: View {
 struct NSLongText: NSViewRepresentable {
   /// The attributed string with syntax highlighting
   let attributedString: NSAttributedString
+  let maxWidth: CGFloat
 
   func makeNSView(context _: Context) -> NSTextView {
     // Create the text storage, layout manager, and text container
@@ -154,7 +143,7 @@ struct NSLongText: NSViewRepresentable {
     textView.isSelectable = true
     textView.isVerticallyResizable = false
     textView.isHorizontallyResizable = false
-    textView.textContainer?.size = LongText.size(for: attributedString)
+    textView.textContainer?.size = LongText.size(for: attributedString, maxWidth: maxWidth)
     textView.textContainer?.widthTracksTextView = false
     textView.backgroundColor = .clear
     return textView
@@ -162,7 +151,7 @@ struct NSLongText: NSViewRepresentable {
 
   func updateNSView(_ nsView: NSTextView, context _: Context) {
     nsView.textStorage?.setAttributedString(attributedString)
-    nsView.textContainer?.size = LongText.size(for: attributedString)
+    nsView.textContainer?.size = LongText.size(for: attributedString, maxWidth: maxWidth)
     nsView.needsLayout = true
     nsView.needsDisplay = true
   }
