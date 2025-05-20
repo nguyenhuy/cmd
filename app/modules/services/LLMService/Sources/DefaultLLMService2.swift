@@ -175,7 +175,6 @@ final class DefaultLLMService2: LLMService {
 
               let (data, isInputComplete) = try partiaInput.extractPartialJSON()
               var content = result.content
-              print("streaming content from \(partiaInput.count) char received")
 
               do {
                 if let currentToolUse {

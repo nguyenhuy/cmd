@@ -3,6 +3,7 @@
 
 import AppFoundation
 import AppKit
+import ChatFoundation
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -56,11 +57,13 @@ struct ChatInputView: View {
   var body: some View {
     VStack(spacing: 0) {
       VStack(alignment: .leading, spacing: 0) {
-        AttachmentsView(
-          searchAttachment: inputViewModel.handleStartExternalSearch,
-          attachments: $inputViewModel.attachments)
-          .padding(.horizontal, sidePadding)
-          .padding(.vertical, sidePadding)
+        HStack(spacing: 8) {
+          AttachmentsView(
+            searchAttachment: inputViewModel.handleStartExternalSearch,
+            attachments: $inputViewModel.attachments)
+        }
+        .padding(.horizontal, sidePadding)
+        .padding(.vertical, sidePadding)
         textInput
         Rectangle()
           .foregroundColor(.clear)
@@ -135,11 +138,30 @@ struct ChatInputView: View {
     .padding(.horizontal, sidePadding)
   }
 
+  private var chatModeSelection: some View {
+    PopUpSelectionMenu(
+      selectedItem: $inputViewModel.mode,
+      availableItems: ChatMode.allCases)
+    { mode in
+      switch mode {
+      case .agent:
+        AgentModeView()
+      case .ask:
+        AskModeView()
+      }
+    }
+  }
+
   private var bottomRow: some View {
     HStack(alignment: .center, spacing: 6) {
-      LLMSelectionView(
-        selectedModel: $inputViewModel.selectedModel,
-        availableModels: inputViewModel.availableModels)
+      chatModeSelection
+      PopUpSelectionMenu(
+        selectedItem: $inputViewModel.selectedModel,
+        availableItems: inputViewModel.availableModels,
+        emptySelectionText: "No model configured")
+      { model in
+        Text(model.displayName)
+      }
       ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
       HStack(spacing: 10) {
         Spacer()
@@ -240,4 +262,16 @@ struct ChatInputView: View {
     }
     return false
   }
+}
+
+// MARK: - LLMModel + MenuItem
+
+extension LLMModel: MenuItem {
+  public var id: String { displayName }
+}
+
+// MARK: - ChatMode + MenuItem
+
+extension ChatMode: MenuItem {
+  public var id: String { rawValue }
 }

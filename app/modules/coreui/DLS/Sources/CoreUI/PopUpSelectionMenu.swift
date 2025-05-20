@@ -1,0 +1,151 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import SwiftUI
+
+// MARK: - MenuItem
+
+public protocol MenuItem: Identifiable, Equatable { }
+
+// MARK: - PopUpSelectionMenu
+
+public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
+  /// A view that displays a list of items as a pop-up menu and allows the user to select one.
+  /// - Parameters:
+  ///   - selectedItem: The item that is currently selected.
+  ///   - availableItems: The list of items to display in the menu.
+  ///   - searchKey: A function that returns the search key for an item. If nil, search is disabled.
+  ///   - viewBuilder: Returns a view to display an item.
+  public init(
+    selectedItem: Binding<Item>,
+    availableItems: [Item],
+    searchKey: ((Item) -> String)? = nil,
+    @ViewBuilder viewBuilder: @escaping (Item) -> Content)
+  {
+    _selectedItem = .init(
+      get: { selectedItem.wrappedValue },
+      set: { newValue in
+        if let newValue {
+          selectedItem.wrappedValue = newValue
+        }
+      })
+    self.availableItems = availableItems
+    self.searchKey = searchKey
+    emptySelectionText = "Select an item"
+    self.viewBuilder = viewBuilder
+  }
+
+  /// A view that displays a list of items as a pop-up menu and allows the user to select one.
+  /// - Parameters:
+  ///   - selectedItem: The item that is currently selected.
+  ///   - availableItems: The list of items to display in the menu.
+  ///   - searchKey: A function that returns the search key for an item. If nil, search is disabled.
+  ///   - emptySelectionText: The text to display when no item is selected.
+  ///   - viewBuilder: Returns a view to display an item.
+  public init(
+    selectedItem: Binding<Item?>,
+    availableItems: [Item],
+    searchKey: ((Item) -> String)? = nil,
+    emptySelectionText: String,
+    @ViewBuilder viewBuilder: @escaping (Item) -> Content)
+  {
+    _selectedItem = selectedItem
+    self.availableItems = availableItems
+    self.searchKey = searchKey
+    self.emptySelectionText = emptySelectionText
+    self.viewBuilder = viewBuilder
+  }
+
+  public var body: some View {
+    Button {
+      isExpanded.toggle()
+    } label: {
+      HStack(spacing: 4) {
+        if let selectedItem {
+          viewBuilder(selectedItem)
+        } else {
+          Text(emptySelectionText)
+        }
+        Icon(systemName: isExpanded ? "chevron.up" : "chevron.down")
+          .frame(width: 6, height: 6)
+      }.tappableTransparentBackground()
+    }
+    .buttonStyle(.plain)
+    .overlay(alignment: .bottomLeading) {
+      if isExpanded {
+        VStack(spacing: 0) {
+          if searchKey != nil {
+            // Search field
+            TextField("Search...", text: $searchText)
+              .textFieldStyle(.plain)
+              .padding(8)
+
+            Divider()
+          }
+
+          // Items list
+          VStack(spacing: 0) {
+            ForEach(filteredItems) { item in
+              Button {
+                selectedItem = item
+                isExpanded = false
+                searchText = ""
+              } label: {
+                HStack {
+                  viewBuilder(item)
+                  Spacer()
+                  if item == selectedItem {
+                    Icon(systemName: "checkmark")
+                      .frame(width: 8, height: 8)
+                  }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                  colorScheme.secondarySystemBackground
+                    .opacity(item == selectedItem ? 1 : 0.001))
+              }
+              .buttonStyle(.plain)
+
+              if item != filteredItems.last {
+                Divider()
+              }
+            }
+          }
+        }
+        .cornerRadius(6)
+        .background(
+          RoundedRectangle(cornerRadius: 6)
+            .fill(colorScheme.primaryBackground)
+            .overlay(
+              RoundedRectangle(cornerRadius: 6)
+                .stroke(colorScheme.textAreaBorderColor, lineWidth: 1)))
+        .offset(y: -30)
+        .fixedSize(horizontal: true, vertical: false)
+        .onOutsideTap {
+          isExpanded = false
+        }
+      }
+    }
+  }
+
+  @Binding private var selectedItem: Item?
+
+  @Environment(\.colorScheme) private var colorScheme
+
+  @State private var searchText = ""
+  @State private var isExpanded = false
+
+  private let availableItems: [Item]
+  private let searchKey: ((Item) -> String)?
+  private let emptySelectionText: String
+  private let viewBuilder: (Item) -> Content
+
+  private var filteredItems: [Item] {
+    if searchText.isEmpty {
+      return availableItems
+    }
+    return availableItems.filter { searchKey?($0).localizedCaseInsensitiveContains(searchText) == true }
+  }
+
+}

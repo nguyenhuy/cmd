@@ -8,7 +8,13 @@ import SwiftUI
 #Preview {
   VStack {
     ChatInputView(
-      inputViewModel: .init(availableModels: LLMModel.allCases),
+      inputViewModel: ChatInputViewModel(availableModels: LLMModel.allCases, mode: .ask),
+      isStreamingResponse: .constant(false),
+      didTapCancel: { },
+      didSend: { })
+    Divider()
+    ChatInputView(
+      inputViewModel: ChatInputViewModel(availableModels: LLMModel.allCases, mode: .agent),
       isStreamingResponse: .constant(false),
       didTapCancel: { },
       didSend: { })

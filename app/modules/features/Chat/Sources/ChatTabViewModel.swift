@@ -21,38 +21,29 @@ import XcodeObserverServiceInterface
 final class ChatTabViewModel: Identifiable, Equatable {
 
   #if DEBUG
-  convenience init(name: String = "New Chat", messages: [ChatMessage] = [], mode: ChatMode = .agent) {
+  convenience init(name: String = "New Chat", messages: [ChatMessage] = []) {
     self.init(
       id: UUID(),
       name: name,
-      messages: messages,
-      mode: mode)
+      messages: messages)
   }
   #endif
 
   convenience init() {
-    @Dependency(\.userDefaults) var userDefaults
-    let chatMode: ChatMode =
-      if let chatModeName = userDefaults.string(forKey: Self.userDefaultsChatModeKey) {
-        ChatMode(rawValue: chatModeName) ?? .agent
-      } else {
-        .agent
-      }
     self.init(
       id: UUID(),
       name: "New Chat",
-      messages: [],
-      mode: chatMode)
+      messages: [])
   }
 
-  private init(id: UUID, name: String, messages: [ChatMessage], mode: ChatMode) {
+  private init(id: UUID, name: String, messages: [ChatMessage]) {
     self.id = id
     self.name = name
     self.messages = messages
     events = messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
-    self.mode = mode
+
     input = ChatInputViewModel()
 
     workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
@@ -80,12 +71,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
   var hasSomeLLMModelsAvailable = true
 
   private(set) var messages: [ChatMessage] = []
-
-  var mode: ChatMode {
-    didSet {
-      userDefaults.set(mode.rawValue, forKey: Self.userDefaultsChatModeKey)
-    }
-  }
 
   nonisolated static func ==(lhs: ChatTabViewModel, rhs: ChatTabViewModel) -> Bool {
     lhs.id == rhs.id
@@ -130,7 +115,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     // Send the message to the server and stream the response.
     do {
-      let tools: [any Tool] = toolsPlugin.tools(for: mode)
+      let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
       streamingTask = Task {
         async let done = llmService.sendMessage(
           messageHistory: messages.apiFormat,
@@ -188,8 +173,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
       }
     }
   }
-
-  private static let userDefaultsChatModeKey = "chatMode"
 
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 

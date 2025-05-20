@@ -1,6 +1,9 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
+import AppKit
+import ChatFoundation
 import Combine
 import ConcurrencyFoundation
 import Dependencies
@@ -24,12 +27,14 @@ final class ChatInputViewModel {
   convenience init(
     selectedModel: LLMModel? = nil,
     availableModels: [LLMModel]? = nil,
+    mode: ChatMode = .agent,
     attachments: [Attachment] = [])
   {
     self.init(
       textInput: TextInput(),
       selectedModel: selectedModel,
       availableModels: availableModels,
+      mode: mode,
       attachments: attachments)
   }
   #endif
@@ -43,10 +48,18 @@ final class ChatInputViewModel {
         nil
       }
 
+    let chatMode: ChatMode =
+      if let chatModeName = userDefaults.string(forKey: Self.userDefaultsChatModeKey) {
+        ChatMode(rawValue: chatModeName) ?? .agent
+      } else {
+        .agent
+      }
+
     self.init(
       textInput: TextInput(),
       selectedModel: selectedModel,
       availableModels: nil, // Pass nil here to signal that the value from settings should be observed.
+      mode: chatMode,
       attachments: [])
   }
 
@@ -56,10 +69,12 @@ final class ChatInputViewModel {
     textInput: TextInput,
     selectedModel: LLMModel? = nil,
     availableModels: [LLMModel]?,
+    mode: ChatMode = .agent,
     attachments: [Attachment])
   {
     self.textInput = textInput
     self.selectedModel = selectedModel ?? availableModels?.first
+    self.mode = mode
     self.attachments = attachments
     if let availableModels {
       self.availableModels = availableModels
@@ -99,6 +114,13 @@ final class ChatInputViewModel {
       if let selectedModel {
         userDefaults.set(selectedModel.id, forKey: Self.userDefaultsSelectLLMModelKey)
       }
+    }
+  }
+
+  /// The chat mode to use for this conversation.
+  var mode: ChatMode {
+    didSet {
+      userDefaults.set(mode.rawValue, forKey: Self.userDefaultsChatModeKey)
     }
   }
 
@@ -243,6 +265,7 @@ final class ChatInputViewModel {
   }
 
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
+  private static let userDefaultsChatModeKey = "chatMode"
 
   /// References to attachments within the text input.
   @ObservationIgnored private var inlineReferences = [String: Attachment]()
