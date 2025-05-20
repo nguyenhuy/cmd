@@ -139,7 +139,7 @@ struct ChatInputView: View {
     HStack(alignment: .center, spacing: 6) {
       LLMSelectionView(
         selectedModel: $inputViewModel.selectedModel,
-        availableModels: $inputViewModel.availableModels.wrappedValue)
+        availableModels: inputViewModel.availableModels)
       ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
       HStack(spacing: 10) {
         Spacer()

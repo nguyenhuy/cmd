@@ -356,6 +356,7 @@ targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
       "FoundationInterfaces",
       "LLMServiceInterface",
       "ServerServiceInterface",
+      "SettingsServiceInterface",
       "SwiftTesting",
       "XcodeObserverServiceInterface",
     ],

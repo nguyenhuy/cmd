@@ -14,8 +14,9 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
   public init?(rawValue: String) {
     if let model = Self.allCases.first(where: { $0.id == rawValue }) {
       self = model
+    } else {
+      return nil
     }
-    return nil
   }
 
   init(displayName: String, id: String) {

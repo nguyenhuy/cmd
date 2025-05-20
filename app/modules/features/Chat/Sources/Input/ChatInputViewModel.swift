@@ -63,13 +63,16 @@ final class ChatInputViewModel {
     self.attachments = attachments
     if let availableModels {
       self.availableModels = availableModels
+      updateSelectedModel()
     } else {
       @Dependency(\.settingsService) var settingsService
       let settings = settingsService.liveValues()
       self.availableModels = settings.currentValue.availableModels
+      updateSelectedModel()
       settingsService.liveValues().sink { [weak self] settings in
         guard let self else { return }
         self.availableModels = settings.availableModels
+        updateSelectedModel()
       }.store(in: &cancellables)
     }
 
@@ -81,7 +84,7 @@ final class ChatInputViewModel {
   }
 
   /// The list of available LLM models that can be selected.
-  var availableModels: [LLMModel]
+  private(set) var availableModels: [LLMModel]
   /// Attachments selected by the user as explicit context for the next message.
   var attachments: [Attachment]
   /// Whether the text input needs to be focused on. This will be reset to false once focus has been updated.
@@ -309,6 +312,13 @@ final class ChatInputViewModel {
     searchTasks.queue {
       try await fileSuggestionService.suggestFiles(for: searchQuery, in: workspaceUrl, top: 50)
     }
+  }
+
+  private func updateSelectedModel() {
+    if let selectedModel, availableModels.contains(selectedModel) {
+      return
+    }
+    selectedModel = availableModels.first
   }
 
 }

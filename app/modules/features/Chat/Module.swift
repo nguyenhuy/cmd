@@ -36,6 +36,7 @@ Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "ServerServiceInterface",
+    "SettingsServiceInterface",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
   ])
