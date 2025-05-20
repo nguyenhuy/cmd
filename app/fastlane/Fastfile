@@ -14,7 +14,17 @@ platform :mac do
   desc "Build and archive the app for Mac App Store distribution"
   lane :build_release do
     setup_ci if ENV['CI']
-    match(type: 'adhoc')
+
+    username = ENV['FASTLANE_MACH_REPO_USERNAME']
+    personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
+    authorization_token_str = "#{username}:#{personal_github_access_token}"
+    basic_authorization_token = Base64.encode64(authorization_token_str)
+    match(
+      git_basic_authorization:basic_authorization_token,
+      type: 'adhoc'
+    )
+
+    sh("./tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
       project: "./Xcompanion.xcodeproj",
       configuration: "Release",
@@ -22,5 +32,6 @@ platform :mac do
       output_directory: "builds/release",
       output_name: "Xcompanion.app"
     )
+    sh("./tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
 end

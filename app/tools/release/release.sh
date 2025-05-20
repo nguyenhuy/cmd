@@ -21,13 +21,7 @@ current_dir=$(pwd)
 cleanup() {
 	echo "Performing cleanup..."
 	cd "$repo_root/app"
-	# Ensure that the project config modifications are undone
-	git checkout -- "./Xcompanion.debug.xcconfig" || true
-	git checkout -- "./Xcompanion Extension/Extension.debug.xcconfig" || true
-	git checkout -- "./Xcompanion.xcodeproj/project.pbxproj" || true # gets modified when building.
-	git checkout -- "$repo_root/local-server/build.sha256" || true
-	cd "$current_dir"
-	echo "Cleanup completed"
+	./tools/release/cleanup_xcodeproj_after_release_build.sh
 }
 
 # Set trap to ensure cleanup happens on exit, regardless of how the script exits
@@ -64,8 +58,7 @@ if [ "$ARCHIVE" = true ]; then
 
 	open "$APPLICATION_PATH" || echo "Failed to open $APPLICATION_PATH"
 else
-	fastlane mac build_release
-	# xcodebuild build -project Xcompanion.xcodeproj -scheme Xcompanion -configuration Release
+	xcodebuild build -project Xcompanion.xcodeproj -scheme Xcompanion -configuration Release
 	echo "Release build completed"
 fi
 
