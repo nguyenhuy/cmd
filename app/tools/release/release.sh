@@ -64,7 +64,7 @@ if [ "$ARCHIVE" = true ]; then
 
 	open "$APPLICATION_PATH" || echo "Failed to open $APPLICATION_PATH"
 else
-	xcodebuild build -project Xcompanion.xcodeproj -scheme Xcompanion -configuration Release | xcpretty
+	xcodebuild build -project Xcompanion.xcodeproj -scheme Xcompanion -configuration Release
 	echo "Release build completed"
 fi
 

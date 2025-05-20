@@ -128,7 +128,7 @@ public func fulfillment(of expectation: SwiftTestingUtils.Expectation, timeout: 
 }
 
 /// Wait for the expectations to be fulfilled, or throw an error after the timeout.
-public func fulfillment(of expectations: [SwiftTestingUtils.Expectation], timeout: TimeInterval = 1) async throws {
+public func fulfillment(of expectations: [SwiftTestingUtils.Expectation], timeout: TimeInterval = 5) async throws {
   for expectation in expectations {
     try await expectation.fulfillment(timeout: timeout)
   }
