@@ -25,10 +25,6 @@ jobs:
     - uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
-    # - uses: apple-actions/import-codesign-certs@v3
-    #   with:
-    #     p12-file-base64: ${{ secrets.APPSTORE_CERTIFICATES_FILE_BASE64 }}
-    #     p12-password: ${{ secrets.APPSTORE_CERTIFICATES_PASSWORD }}
     - name: Install node dependencies
       run: cd local-server && yarn install
     - uses: actions/checkout@v2

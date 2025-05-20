@@ -6,6 +6,15 @@
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
       buildArchitectures = "Automatic">
+      <PreActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Run Script"
+               scriptText = "# WORKSPACE_PATH is like /Users/me/Xcompanion/app/Xcompanion.xcodeproj/project.xcworkspace&#10;&#10;path=$(dirname $WORKSPACE_PATH)&#10;path=$(dirname $path)&#10;&quot;$path/tools/sync-js-bundle-to-app.sh&quot; --pre-build&#10;&#10;">
+            </ActionContent>
+         </ExecutionAction>
+      </PreActions>
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"

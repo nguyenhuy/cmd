@@ -328,7 +328,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n# ../tools/assert-app-synced-with-proxy.sh\n../tools/sync-js-to-app.sh\n";
+			shellScript = "./tools/sync-js-bundle-to-app.sh\n";
 		};
 		F668A8B82D5035950036DF70 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -8,6 +8,7 @@ platform :mac do
       configuration: "Debug",
       skip_archive: true,
       scheme: "Xcompanion"
+      silent: true,
     )
   end
 
@@ -30,7 +31,7 @@ platform :mac do
       output_directory: "builds/release",
       output_name: "Xcompanion.app",
       scheme: "Xcompanion",
-      # silent: true,
+      silent: true,
       skip_archive: true
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
