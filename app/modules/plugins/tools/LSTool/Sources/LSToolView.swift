@@ -100,8 +100,8 @@ struct ToolUseView: View {
                 }
                 Text(URL(fileURLWithPath: file.path).lastPathComponent)
                   .foregroundColor(foregroundColor)
+                Spacer()
                 if !file.attr.starts(with: "d") {
-                  Spacer()
                   Text(file.size)
                     .foregroundColor(foregroundColor)
                 }

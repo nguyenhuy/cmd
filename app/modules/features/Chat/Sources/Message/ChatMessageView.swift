@@ -20,7 +20,7 @@ struct ChatMessageView: View {
   var body: some View {
     GeometryReader { geometry in
       ReshareGeometry(geometry, geometryReader: $size) {
-        EmptyView()
+        Color.clear
       }
     }
 
