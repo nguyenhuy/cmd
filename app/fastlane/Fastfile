@@ -1,0 +1,26 @@
+default_platform(:mac)
+
+platform :mac do
+  desc "Build the app in Debug configuration"
+  lane :build_debug do
+    build_mac_app(
+      project: "./Xcompanion.xcodeproj",
+      configuration: "Debug",
+      skip_archive: true,
+      scheme: "Xcompanion"
+    )
+  end
+
+  desc "Build and archive the app for Mac App Store distribution"
+  lane :build_release do
+    setup_ci if ENV['CI']
+    match(type: 'adhoc')
+    build_mac_app(
+      project: "./Xcompanion.xcodeproj",
+      configuration: "Release",
+      export_method: "mac-application",
+      output_directory: "builds/release",
+      output_name: "Xcompanion.app"
+    )
+  end
+end
