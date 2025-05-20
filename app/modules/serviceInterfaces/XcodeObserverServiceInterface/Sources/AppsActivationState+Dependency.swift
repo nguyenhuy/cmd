@@ -11,7 +11,7 @@ public final class AppsActivationStateDependencyKey: TestDependencyKey {
   public static let testValue: AnyPublisher<AppsActivationState, Never> = AppsActivationState.mockPublisher()
   #else
   /// This is not read outside of DEBUG
-  public static let testValue: AnyPublisher<AppsActivationState, Never> = () as! AnyPublisher<AppsActivationState, Never>
+  public static let testValue: AnyPublisher<AppsActivationState, Never> = Just(AppsActivationState.inactive).eraseToAnyPublisher()
   #endif
 }
 

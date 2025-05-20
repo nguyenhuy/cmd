@@ -36,6 +36,7 @@ jobs:
       run: cd app && fastlane build_release
       env:
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}
+        FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
 
   test-swift-packages:
     runs-on: macos-15

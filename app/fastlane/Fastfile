@@ -18,17 +18,21 @@ platform :mac do
     personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
     match(
       git_bearer_authorization:personal_github_access_token,
-      type: 'adhoc'
+      type: 'appstore',
+      readonly: true
     )
 
-    sh("./tools/release/configure_xcodeproj_for_release_build.sh")
+    sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
       project: "./Xcompanion.xcodeproj",
       configuration: "Release",
       export_method: "mac-application",
       output_directory: "builds/release",
-      output_name: "Xcompanion.app"
+      output_name: "Xcompanion.app",
+      scheme: "Xcompanion",
+      # silent: true,
+      skip_archive: true
     )
-    sh("./tools/release/cleanup_xcodeproj_after_release_build.sh")
+    sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
 end
