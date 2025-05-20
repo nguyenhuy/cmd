@@ -20,26 +20,39 @@ import XcodeObserverServiceInterface
 public class ChatViewModel {
 
   #if DEBUG
-  /// Initializer used for previews
-  init(
+  convenience init(
     defaultMode: ChatMode? = nil,
     tabs: [ChatTabViewModel],
     currentModel: LLMModel = .claudeSonnet,
     selectedTab: ChatTabViewModel? = nil)
   {
-    self.tabs = tabs
-    self.currentModel = currentModel
-    self.selectedTab = selectedTab ?? tabs.first
-    self.defaultMode = defaultMode ?? .agent
+    self.init(
+      defaultMode: defaultMode ?? .agent,
+      tabs: tabs,
+      currentModel: currentModel,
+      selectedTab: selectedTab ?? tabs.first)
   }
   #endif
 
-  public init(defaultMode: ChatMode? = nil) {
+  public convenience init(defaultMode: ChatMode? = nil) {
     let tabs = [ChatTabViewModel()]
+    self.init(
+      defaultMode: defaultMode ?? .agent,
+      tabs: tabs,
+      currentModel: .claudeSonnet,
+      selectedTab: tabs.first)
+  }
+
+  private init(
+    defaultMode: ChatMode,
+    tabs: [ChatTabViewModel],
+    currentModel: LLMModel,
+    selectedTab: ChatTabViewModel?)
+  {
     self.tabs = tabs
-    currentModel = LLMModel.claudeSonnet
-    selectedTab = tabs.first
-    self.defaultMode = defaultMode ?? .agent
+    self.currentModel = currentModel
+    self.selectedTab = selectedTab
+    self.defaultMode = defaultMode
 
     Task {
       await appEventHandlerRegistry.registerHandler { [weak self] event in

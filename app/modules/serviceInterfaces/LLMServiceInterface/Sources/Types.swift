@@ -11,6 +11,23 @@ import ToolFoundation
 
 /// The LLM model used to generate a message.
 public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
+  public init?(rawValue: String) {
+    if let model = Self.allCases.first(where: { $0.id == rawValue }) {
+      self = model
+    }
+    return nil
+  }
+
+  init(displayName: String, id: String) {
+    self.displayName = displayName
+    self.id = id
+  }
+
+  public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
+  public static let gpt4o = LLMModel(displayName: "gpt-4o", id: "gpt-4o")
+  public static let gpt4o_mini = LLMModel(displayName: "gpt-4o-mini", id: "gpt-4o-mini")
+  public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
+
   public static var allCases: [LLMModel] {
     [.claudeSonnet, .gpt4o, .gpt4o_mini, .o1]
   }
@@ -18,10 +35,6 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
   public let displayName: String
   public let id: String
 
-  public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
-  public static let gpt4o = LLMModel(displayName: "gpt-4o", id: "gpt-4o")
-  public static let gpt4o_mini = LLMModel(displayName: "gpt-4o-mini", id: "gpt-4o-mini")
-  public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
 }
 
 // MARK: - AssistantMessage

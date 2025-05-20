@@ -20,26 +20,56 @@ import XcodeObserverServiceInterface
 @Observable @MainActor
 final class ChatInputViewModel {
 
-  /// - Parameters:
-  ///   - availableModels: The available LLM models. When nil, this value is resolved from the settings.
-  init(
-    textInput: TextInput = TextInput(),
-    selectedModel: LLMModel = .claudeSonnet,
+  #if DEBUG
+  convenience init(
+    selectedModel: LLMModel? = nil,
     availableModels: [LLMModel]? = nil,
     attachments: [Attachment] = [])
   {
+    self.init(
+      textInput: TextInput(),
+      selectedModel: selectedModel,
+      availableModels: availableModels,
+      attachments: attachments)
+  }
+  #endif
+
+  convenience init() {
+    @Dependency(\.userDefaults) var userDefaults
+    let selectedModel: LLMModel? =
+      if let modelName = userDefaults.string(forKey: Self.userDefaultsSelectLLMModelKey) {
+        LLMModel(rawValue: modelName)
+      } else {
+        nil
+      }
+
+    self.init(
+      textInput: TextInput(),
+      selectedModel: selectedModel,
+      availableModels: nil, // Pass nil here to signal that the value from settings should be observed.
+      attachments: [])
+  }
+
+  /// - Parameters:
+  ///   - availableModels: The available LLM models. When nil, this value is resolved from the settings and changes to the settings will be observed.
+  private init(
+    textInput: TextInput,
+    selectedModel: LLMModel? = nil,
+    availableModels: [LLMModel]?,
+    attachments: [Attachment])
+  {
     self.textInput = textInput
-    self.selectedModel = selectedModel
+    self.selectedModel = selectedModel ?? availableModels?.first
     self.attachments = attachments
     if let availableModels {
       self.availableModels = availableModels
     } else {
       @Dependency(\.settingsService) var settingsService
       let settings = settingsService.liveValues()
-      self.availableModels = Self.modelsAvailable(from: settings.currentValue)
+      self.availableModels = settings.currentValue.availableModels
       settingsService.liveValues().sink { [weak self] settings in
         guard let self else { return }
-        self.availableModels = Self.modelsAvailable(from: settings)
+        self.availableModels = settings.availableModels
       }.store(in: &cancellables)
     }
 
@@ -50,8 +80,6 @@ final class ChatInputViewModel {
     }.store(in: &cancellables)
   }
 
-  /// Which LLM model is selected to respond to the next message.
-  var selectedModel: LLMModel
   /// The list of available LLM models that can be selected.
   var availableModels: [LLMModel]
   /// Attachments selected by the user as explicit context for the next message.
@@ -61,6 +89,15 @@ final class ChatInputViewModel {
 
   /// When searching for references, the index of the selected search result (at this point the selection has not yet been confirmed).
   var selectedSearchResultIndex = 0
+
+  /// Which LLM model is selected to respond to the next message.
+  var selectedModel: LLMModel? {
+    didSet {
+      if let selectedModel {
+        userDefaults.set(selectedModel.id, forKey: Self.userDefaultsSelectLLMModelKey)
+      }
+    }
+  }
 
   /// The input text, which can contain inline references to attachments.
   var textInput: TextInput {
@@ -202,6 +239,8 @@ final class ChatInputViewModel {
     textInput = TextInput(str)
   }
 
+  private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
+
   /// References to attachments within the text input.
   @ObservationIgnored private var inlineReferences = [String: Attachment]()
 
@@ -212,24 +251,13 @@ final class ChatInputViewModel {
   @Dependency(\.xcodeObserver) private var xcodeObserver
 
   @ObservationIgnored
+  @Dependency(\.userDefaults) private var userDefaults
+
+  @ObservationIgnored
   @Dependency(\.fileManager) private var fileManager
 
   private let searchTasks = ReplaceableTaskQueue<[FileSuggestion]?>()
   private var cancellables = Set<AnyCancellable>()
-
-  private static func modelsAvailable(from settings: SettingsServiceInterface.Settings) -> [LLMModel] {
-    let allModels: [LLMModel] = [.claudeSonnet, .gpt4o]
-    return allModels.filter { model in
-      switch model {
-      case .claudeSonnet:
-        settings.anthropicSettings != nil
-      case .gpt4o, .gpt4o_mini, .o1:
-        settings.openAISettings != nil
-      default:
-        false
-      }
-    }
-  }
 
   private func clearSearchResults() {
     updateSearchResults(searchQuery: nil)

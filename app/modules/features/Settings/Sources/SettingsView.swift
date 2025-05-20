@@ -50,7 +50,6 @@ public struct SettingsView: View {
           .padding()
           .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(minWidth: 300, minHeight: 400)
       }
     }
   }

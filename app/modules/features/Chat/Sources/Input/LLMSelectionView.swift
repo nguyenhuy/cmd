@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LLMSelectionView: View {
 
-  @Binding var selectedModel: LLMModel
+  @Binding var selectedModel: LLMModel?
 
   let availableModels: [LLMModel]
 
@@ -26,7 +26,7 @@ struct LLMSelectionView: View {
     } label: {
       HStack(spacing: 4) {
         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-        Text(selectedModel.displayName)
+        Text(selectedModel?.displayName ?? "No model configured")
       }
     }
     .buttonStyle(.plain)

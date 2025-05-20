@@ -5,7 +5,7 @@ import Foundation
 
 // MARK: - ChatModes
 
-public enum ChatMode: Sendable, Hashable, Equatable {
+public enum ChatMode: String, Sendable, Hashable, Equatable {
   case agent
   case ask
 

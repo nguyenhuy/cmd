@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ChatFoundation
 import CheckpointServiceInterface
 import Combine
@@ -19,7 +20,32 @@ import XcodeObserverServiceInterface
 @MainActor @Observable
 final class ChatTabViewModel: Identifiable, Equatable {
 
-  init(id: UUID = UUID(), name: String = "New Chat", messages: [ChatMessage] = [], mode: ChatMode = .agent) {
+  #if DEBUG
+  convenience init(name: String = "New Chat", messages: [ChatMessage] = [], mode: ChatMode = .agent) {
+    self.init(
+      id: UUID(),
+      name: name,
+      messages: messages,
+      mode: mode)
+  }
+  #endif
+
+  convenience init() {
+    @Dependency(\.userDefaults) var userDefaults
+    let chatMode: ChatMode =
+      if let chatModeName = userDefaults.string(forKey: Self.userDefaultsChatModeKey) {
+        ChatMode(rawValue: chatModeName) ?? .agent
+      } else {
+        .agent
+      }
+    self.init(
+      id: UUID(),
+      name: "New Chat",
+      messages: [],
+      mode: chatMode)
+  }
+
+  private init(id: UUID, name: String, messages: [ChatMessage], mode: ChatMode) {
     self.id = id
     self.name = name
     self.messages = messages
@@ -36,17 +62,30 @@ final class ChatTabViewModel: Identifiable, Equatable {
         self.workspaceRootObservation = nil
       }
     }
+
+    @Dependency(\.settingsService) var settingsService
+    settingsService.liveValues().map(\.availableModels).removeDuplicates().sink { @Sendable [weak self] availableModels in
+      Task { @MainActor in
+        self?.hasSomeLLMModelsAvailable = !availableModels.isEmpty
+      }
+    }.store(in: &cancellables)
   }
 
   let id: UUID
   var name: String
   var events: [ChatEvent]
-  var mode: ChatMode
   var input: ChatInputViewModel
   // TODO: look at making this a private(set). It's needed for a finding, that ideally would be readonly
   var isStreamingResponse = false
+  var hasSomeLLMModelsAvailable = true
 
   private(set) var messages: [ChatMessage] = []
+
+  var mode: ChatMode {
+    didSet {
+      userDefaults.set(mode.rawValue, forKey: Self.userDefaultsChatModeKey)
+    }
+  }
 
   nonisolated static func ==(lhs: ChatTabViewModel, rhs: ChatTabViewModel) -> Bool {
     lhs.id == rhs.id
@@ -65,6 +104,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     guard streamingTask == nil else {
       defaultLogger.error("not sending as already streaming")
+      return
+    }
+    guard let selectedModel = input.selectedModel else {
+      defaultLogger.error("not sending as no model selected")
       return
     }
     let textInput = input.textInput
@@ -92,7 +135,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
         async let done = llmService.sendMessage(
           messageHistory: messages.apiFormat,
           tools: tools,
-          model: self.input.selectedModel,
+          model: selectedModel,
           context: DefaultChatContext(
             projectRoot: projectRoot,
             prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() }),
@@ -146,6 +189,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
+  private static let userDefaultsChatModeKey = "chatMode"
+
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
   @ObservationIgnored private var projectRoot: URL?
@@ -161,8 +206,11 @@ final class ChatTabViewModel: Identifiable, Equatable {
   @ObservationIgnored
   @Dependency(\.fileManager) private var fileManager: FileManagerI
 
+  @ObservationIgnored @Dependency(\.userDefaults) private var userDefaults
+
   @ObservationIgnored
   @Dependency(\.checkpointService) private var checkpointService: CheckpointService
+  @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
   private var streamingTask: Task<Void, any Error>? = nil {
     didSet {

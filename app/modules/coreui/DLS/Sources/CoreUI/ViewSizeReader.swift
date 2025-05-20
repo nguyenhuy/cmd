@@ -77,4 +77,4 @@ extension View {
 
 // Starting form Xcode 16.3 / Swift 6.1 not having this was causing a compiler crash when building a release build from xcodebuild.
 // TODO: Remove if the release build passes without.
-extension CGSize: @retroactive @unchecked Sendable {}
+extension CGSize: @retroactive @unchecked Sendable { }
