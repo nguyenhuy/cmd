@@ -15,26 +15,18 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## Mac
 
-### mac build
+### mac build_debug
 
 ```sh
-[bundle exec] fastlane mac build
+[bundle exec] fastlane mac build_debug
 ```
 
 Build the app in Debug configuration
 
-### mac beta
+### mac build_release
 
 ```sh
-[bundle exec] fastlane mac beta
-```
-
-Build and archive the app for internal distribution
-
-### mac release
-
-```sh
-[bundle exec] fastlane mac release
+[bundle exec] fastlane mac build_release
 ```
 
 Build and archive the app for Mac App Store distribution

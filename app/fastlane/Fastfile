@@ -15,12 +15,9 @@ platform :mac do
   lane :build_release do
     setup_ci if ENV['CI']
 
-    username = ENV['FASTLANE_MACH_REPO_USERNAME']
     personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
-    authorization_token_str = "#{username}:#{personal_github_access_token}"
-    basic_authorization_token = Base64.encode64(authorization_token_str)
     match(
-      git_basic_authorization:basic_authorization_token,
+      git_bearer_authorization:personal_github_access_token,
       type: 'adhoc'
     )
 
