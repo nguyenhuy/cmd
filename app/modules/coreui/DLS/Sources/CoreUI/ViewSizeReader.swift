@@ -42,14 +42,14 @@ extension View {
   }
 
   /// Reads the size of this view and reports it via a callback.
-  public func readSize(_ read: @escaping (CGSize) -> Void) -> some View {
+  public func readSize(_ read: @escaping @MainActor (CGSize) -> Void) -> some View {
     ViewSizeReader(content: self, size: Binding(
       get: { .zero },
       set: { newValue in read(newValue) }))
   }
 
   /// Reads the size of this view and reports it via a binding. Also display the view.
-  public func readingSize(_ read: @escaping (CGSize) -> Void) -> some View {
+  public func readingSize(_ read: @escaping @MainActor (CGSize) -> Void) -> some View {
     onGeometryChange(for: CGSize.self) { proxy in
       proxy.size
     } action: { size in
@@ -74,3 +74,7 @@ extension View {
 
   return PreviewView()
 }
+
+// Starting form Xcode 16.3 / Swift 6.1 not having this was causing a compiler crash when building a release build from xcodebuild.
+// TODO: Remove if the release build passes without.
+extension CGSize: @retroactive @unchecked Sendable {}
