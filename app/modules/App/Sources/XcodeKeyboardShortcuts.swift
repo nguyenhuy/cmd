@@ -19,9 +19,12 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     registerActions()
 
     observeXcodeState(appsActivationState: appsActivationState)
+      enable([.hideChat])
   }
 
   private var cancellables: Set<AnyCancellable> = []
+
+  private var enabledShortcutNames = Set<String>()
 
   @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
 
@@ -29,22 +32,37 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
   private func observeXcodeState(appsActivationState: AnyPublisher<AppsActivationState, Never>) {
     let cancellable = appsActivationState
       .sink { @Sendable [weak self] appsActivationState in
-        guard self != nil else { return }
+        guard let self else { return }
         // Handle de-activations first, then activations.
         if !appsActivationState.isHostAppActive {
-          KeyboardShortcuts.disable(KeyboardShortcuts.Name.hostAppShortcuts)
+          disable(KeyboardShortcuts.Name.hostAppShortcuts)
         }
         if !appsActivationState.isXcodeActive {
-          KeyboardShortcuts.disable(KeyboardShortcuts.Name.xcodeShortcuts)
+          disable(KeyboardShortcuts.Name.xcodeShortcuts)
         }
         if appsActivationState.isHostAppActive {
-          KeyboardShortcuts.enable(KeyboardShortcuts.Name.hostAppShortcuts)
+          enable(KeyboardShortcuts.Name.hostAppShortcuts)
         }
         if appsActivationState.isXcodeActive {
-          KeyboardShortcuts.enable(KeyboardShortcuts.Name.xcodeShortcuts)
+          enable(KeyboardShortcuts.Name.xcodeShortcuts)
         }
       }
     safelyMutate { $0.cancellables.insert(cancellable) }
+  }
+
+  /// Manually tracks enabled shortcuts due to https://github.com/sindresorhus/KeyboardShortcuts/issues/217
+  private func enable(_ shortcuts: [KeyboardShortcuts.Name]) {
+    KeyboardShortcuts.enable(shortcuts)
+    safelyMutate { state in
+      for shortcut in shortcuts { state.enabledShortcutNames.insert(shortcut.rawValue) }
+    }
+  }
+
+  private func disable(_ shortcuts: [KeyboardShortcuts.Name]) {
+    KeyboardShortcuts.disable(shortcuts)
+    safelyMutate { state in
+      for shortcut in shortcuts { state.enabledShortcutNames.remove(shortcut.rawValue) }
+    }
   }
 
   private func registerActions() {
@@ -56,14 +74,17 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     on(.generate, trigger: GenerateEvent())
     on(.hideChat, trigger: HideChatEvent())
     on(.new, trigger: NewChatEvent())
-    on(.switchToAskMode, trigger: AddCodeToChatEvent(newThread: false, chatMode: .ask))
-    on(.switchToAgentMode, trigger: AddCodeToChatEvent(newThread: false, chatMode: .agent))
+    on(.switchToAskMode, trigger: ChangeChatModeEvent(chatMode: .ask))
+    on(.switchToAgentMode, trigger: ChangeChatModeEvent(chatMode: .agent))
   }
 
   private func on(_ keyEvent: KeyboardShortcuts.Name, trigger event: AppEvent) {
     KeyboardShortcuts.onKeyUp(for: keyEvent) {
       Task { [weak self] in
-        await self?.appEventHandlerRegistry.handle(event: event)
+        guard let self else { return }
+        if enabledShortcutNames.contains(keyEvent.rawValue) {
+          _ = await appEventHandlerRegistry.handle(event: event)
+        }
       }
     }
   }

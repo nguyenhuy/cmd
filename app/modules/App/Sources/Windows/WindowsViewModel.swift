@@ -18,10 +18,8 @@ final class WindowsViewModel {
   init() {
     state = .init(isSidePanelVisible: false, isSetupVisible: false)
 
-    Task {
-      await appEventHandlerRegistry.registerHandler { [weak self] event in
-        await self?.handle(appEvent: event) ?? false
-      }
+    appEventHandlerRegistry.registerHandler { [weak self] event in
+      await self?.handle(appEvent: event) ?? false
     }
     permissionsService.status(for: .accessibility).sink { [weak self] isGranted in
       self?.handle(.accessibilityPermissionChanged(isGranted: isGranted))

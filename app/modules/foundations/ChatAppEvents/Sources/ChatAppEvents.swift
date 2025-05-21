@@ -16,6 +16,16 @@ public struct AddCodeToChatEvent: AppEvent {
   public let chatMode: ChatMode?
 }
 
+// MARK: - ChangeChatModeEvent
+
+public struct ChangeChatModeEvent: AppEvent {
+  public init(chatMode: ChatMode) {
+    self.chatMode = chatMode
+  }
+
+  public let chatMode: ChatMode
+}
+
 // MARK: - NewChatEvent
 
 public struct NewChatEvent: AppEvent {

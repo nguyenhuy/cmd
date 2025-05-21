@@ -53,19 +53,7 @@ public class ChatViewModel {
     self.currentModel = currentModel
     self.selectedTab = selectedTab
     self.defaultMode = defaultMode
-
-    appEventHandlerRegistry.registerHandler { [weak self] event in
-      guard let self else { return false }
-      if let event = event as? AddCodeToChatEvent {
-        await handle(addCodeToChatEvent: event)
-        return true
-      } else if event is NewChatEvent {
-        await addTab(copyingCurrentInput: true)
-        return true
-      } else {
-        return false
-      }
-    }
+    registerAsAppEventHandler()
   }
 
   var tabs: [ChatTabViewModel]
@@ -105,6 +93,26 @@ public class ChatViewModel {
   @ObservationIgnored @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
   @ObservationIgnored @Dependency(\.xcodeObserver) private var xcodeObserver
   @ObservationIgnored @Dependency(\.fileManager) private var fileManager
+
+  private func registerAsAppEventHandler() {
+    appEventHandlerRegistry.registerHandler { [weak self] event in
+      guard let self else { return false }
+      if let event = event as? AddCodeToChatEvent {
+        await handle(addCodeToChatEvent: event)
+        return true //
+      } else if let event = event as? ChangeChatModeEvent {
+        Task { @MainActor in
+          self.selectedTab?.input.mode = event.chatMode
+        }
+        return true
+      } else if event is NewChatEvent {
+        await addTab(copyingCurrentInput: true)
+        return true
+      } else {
+        return false
+      }
+    }
+  }
 
   private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {
     Task { @MainActor in
