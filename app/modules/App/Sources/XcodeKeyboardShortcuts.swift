@@ -19,7 +19,7 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
     registerActions()
 
     observeXcodeState(appsActivationState: appsActivationState)
-      enable([.hideChat])
+    enable([.hideChat])
   }
 
   private var cancellables: Set<AnyCancellable> = []

@@ -18,6 +18,6 @@ fi
 ./tmp/bin/sync-package-dependencies sync --path "${ROOT_DIR}/app/modules/Package.swift"
 
 cd "${ROOT_DIR}/app"
-swiftformat --config rules.swiftformat .
+make lint
 
 cd "${CURRENT_DIR}"

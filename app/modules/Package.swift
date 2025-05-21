@@ -350,6 +350,9 @@ targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
     ],
     testDependencies: [
       "AccessibilityFoundation",
+      "AppEventServiceInterface",
+      "ChatAppEvents",
+      "ChatFoundation",
       "CheckpointServiceInterface",
       "ConcurrencyFoundation",
       "FileSuggestionServiceInterface",
@@ -483,6 +486,7 @@ targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
     name: "ChatAppEvents",
     dependencies: [
       "AppEventServiceInterface",
+      "ChatFoundation",
     ],
     path: "./foundations/ChatAppEvents"))
 
@@ -884,6 +888,7 @@ targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
       "AppEventServiceInterface",
       "DependencyFoundation",
       "LoggingServiceInterface",
+      "ThreadSafe",
     ],
     path: "./services/AppEventService"))
 

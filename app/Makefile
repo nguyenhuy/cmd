@@ -1,6 +1,8 @@
 # lint
 lint:
-	@swiftformat --config rules.swiftformat .
+	@mkdir -p .build/caches/swiftformat && \
+	swiftformat --config rules-header.swiftformat . && \
+	swiftformat --config rules.swiftformat . --cache .build/caches/swiftformat
 # Sync module dependencies
 sync-dependencies:
 	@./tools/dependencies/sync.sh
