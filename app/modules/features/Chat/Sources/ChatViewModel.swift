@@ -54,18 +54,16 @@ public class ChatViewModel {
     self.selectedTab = selectedTab
     self.defaultMode = defaultMode
 
-    Task {
-      await appEventHandlerRegistry.registerHandler { [weak self] event in
-        guard let self else { return false }
-        if let event = event as? AddCodeToChatEvent {
-          await handle(addCodeToChatEvent: event)
-          return true
-        } else if event is NewChatEvent {
-          await addTab(copyingCurrentInput: true)
-          return true
-        } else {
-          return false
-        }
+    appEventHandlerRegistry.registerHandler { [weak self] event in
+      guard let self else { return false }
+      if let event = event as? AddCodeToChatEvent {
+        await handle(addCodeToChatEvent: event)
+        return true
+      } else if event is NewChatEvent {
+        await addTab(copyingCurrentInput: true)
+        return true
+      } else {
+        return false
       }
     }
   }
@@ -110,9 +108,11 @@ public class ChatViewModel {
 
   private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {
     Task { @MainActor in
-      NSApp.setActivationPolicy(.regular)
-      // TODO: make sure the app is activated. Sometimes it doesn't work.
-      Task { try await NSApplication.activateCurrentApp() }
+      if ProcessInfo.processInfo.processName != "xctest" {
+        NSApp.setActivationPolicy(.regular)
+        // TODO: make sure the app is activated. Sometimes it doesn't work.
+        Task { try await NSApplication.activateCurrentApp() }
+      }
 
       if event.newThread {
         self.addTab()

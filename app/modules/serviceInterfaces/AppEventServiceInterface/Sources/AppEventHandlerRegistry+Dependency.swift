@@ -10,7 +10,7 @@ public final class AppEventHandlerRegistryDependencyKey: TestDependencyKey {
   public static let testValue: AppEventHandlerRegistry = MockAppEventHandlerRegistry()
   #else
   /// This is not read outside of DEBUG
-  public static let testValue: AppEventHandlerRegistry = () as! AppEventHandlerRegistry
+  public static let testValue: AppEventHandlerRegistry = MockAppEventHandlerRegistry()
   #endif
 }
 

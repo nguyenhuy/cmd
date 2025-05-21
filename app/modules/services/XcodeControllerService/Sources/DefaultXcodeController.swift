@@ -64,40 +64,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     self.timeout = timeout
     self.canUseAppleScript = canUseAppleScript
 
-    Task {
-      await appEventHandlerRegistry.registerHandler { [weak self] event in
-        guard let self else {
-          return false
-        }
-        switch event {
-        case let event as ExecuteExtensionRequestEvent:
-          if
-            event.command == ExtensionCommandKeys.getFileChangeToApply || event.command == ExtensionCommandKeys
-              .confirmFileChangeApplied
-          {
-            do {
-              if event.command == ExtensionCommandKeys.getFileChangeToApply {
-                let fileChange = try getFileChangeToApply()
-                event.completion(.success(fileChange))
-              } else {
-                let result = try JSONDecoder().decode(ExtensionRequest<FileChangeConfirmation>.self, from: event.data)
-                fileChangeApplied(withError: result.input.error)
-                event.completion(.success(EmptyResponse()))
-              }
-            } catch {
-              defaultLogger.error("Failed to handle extension request '\(event.command)': \(error)")
-              fileChangeApplied(withError: error.localizedDescription)
-              event.completion(.failure(error))
-            }
-            return true
-          }
-          return false
-
-        default:
-          return false
-        }
-      }
-    }
+    registerAppEventHandler()
   }
 
   /// Apply the file change using the Xcode extension.
@@ -130,6 +97,41 @@ public final class DefaultXcodeController: XcodeController, Sendable {
 
   /// Start applying the code change, typically by selecting the extension menu item in Xcode.
   private let startApplyingFileChange: @Sendable () async throws -> Void
+
+  private func registerAppEventHandler() {
+    appEventHandlerRegistry.registerHandler { [weak self] event in
+      guard let self else {
+        return false
+      }
+      switch event {
+      case let event as ExecuteExtensionRequestEvent:
+        if
+          event.command == ExtensionCommandKeys.getFileChangeToApply || event.command == ExtensionCommandKeys
+            .confirmFileChangeApplied
+        {
+          do {
+            if event.command == ExtensionCommandKeys.getFileChangeToApply {
+              let fileChange = try getFileChangeToApply()
+              event.completion(.success(fileChange))
+            } else {
+              let result = try JSONDecoder().decode(ExtensionRequest<FileChangeConfirmation>.self, from: event.data)
+              fileChangeApplied(withError: result.input.error)
+              event.completion(.success(EmptyResponse()))
+            }
+          } catch {
+            defaultLogger.error("Failed to handle extension request '\(event.command)': \(error)")
+            fileChangeApplied(withError: error.localizedDescription)
+            event.completion(.failure(error))
+          }
+          return true
+        }
+        return false
+
+      default:
+        return false
+      }
+    }
+  }
 
   /// Apply the file change using the Xcode extension, assuming none are pending.
   private func _apply(fileChange: FileChange) async throws {

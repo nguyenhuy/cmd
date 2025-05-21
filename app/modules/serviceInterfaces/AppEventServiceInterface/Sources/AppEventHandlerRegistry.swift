@@ -10,7 +10,7 @@ public protocol AppEvent: Sendable { }
 
 /// A handler for app wide events.
 public protocol AppEventHandler {
-  func handle(appEvent: AppEvent) async -> Bool
+  func handle(appEvent: AppEvent) -> Bool
 }
 
 // MARK: - AppEventHandlerRegistry
@@ -19,7 +19,7 @@ public protocol AppEventHandler {
 public protocol AppEventHandlerRegistry: Sendable {
   /// Registers a handler for app events.
   /// - Parameter handler: The handler to register. It will be called when any app event is triggered. Returns whether the event was handled.
-  func registerHandler(_ handler: @escaping @Sendable (_ appEvent: AppEvent) async -> Bool) async
+  func registerHandler(_ handler: @escaping @Sendable (_ appEvent: AppEvent) async -> Bool)
   /// Send an event to the registry that will dispatch it to the right handler.
   func handle(event: AppEvent) async -> Bool
 }

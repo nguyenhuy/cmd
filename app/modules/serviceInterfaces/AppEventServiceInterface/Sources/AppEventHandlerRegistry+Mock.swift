@@ -24,7 +24,7 @@ public final class MockAppEventHandlerRegistry: AppEventHandlerRegistry {
     }
   }
 
-  public var onRegisterHandler: @Sendable (_ handler: @Sendable @escaping (_ appEvent: AppEvent) async -> Bool) async
+  public var onRegisterHandler: @Sendable (_ handler: @Sendable @escaping (_ appEvent: AppEvent) async -> Bool)
     -> Void
   {
     set { state.mutate { $0.onRegisterHandler = newValue } }
@@ -36,8 +36,8 @@ public final class MockAppEventHandlerRegistry: AppEventHandlerRegistry {
     get { state.value.onHandle }
   }
 
-  public func registerHandler(_ handler: @Sendable@escaping (_ appEvent: AppEvent) async -> Bool) async {
-    await state.value.onRegisterHandler(handler)
+  public func registerHandler(_ handler: @Sendable@escaping (_ appEvent: AppEvent) async -> Bool) {
+    state.value.onRegisterHandler(handler)
   }
 
   public func handle(event: AppEvent) async -> Bool {
@@ -46,7 +46,7 @@ public final class MockAppEventHandlerRegistry: AppEventHandlerRegistry {
 
   private struct State: Sendable {
     var eventHandlers: [@Sendable (_ appEvent: AppEvent) async -> Bool] = []
-    var onRegisterHandler: @Sendable (_ handler: @Sendable @escaping (_ appEvent: AppEvent) async -> Bool) async
+    var onRegisterHandler: @Sendable (_ handler: @Sendable @escaping (_ appEvent: AppEvent) async -> Bool)
       -> Void = { _ in }
     var onHandle: @Sendable (_ event: AppEvent) async -> Bool = { _ in true }
   }

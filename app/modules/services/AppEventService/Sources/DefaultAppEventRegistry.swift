@@ -4,16 +4,18 @@
 import AppEventServiceInterface
 import DependencyFoundation
 import LoggingServiceInterface
+import ThreadSafe
 
 // MARK: - DefaultAppEventHandlerRegistry
 
-actor DefaultAppEventHandlerRegistry: AppEventHandlerRegistry {
+@ThreadSafe
+final class DefaultAppEventHandlerRegistry: AppEventHandlerRegistry {
 
   init() { }
 
   /// Registers a handler for app events.
   /// This handler will be called for every app event that has not been handled by a handler previously registered.
-  func registerHandler(_ handler: @escaping (_ appEvent: AppEvent) async -> Bool) {
+  func registerHandler(_ handler: @escaping @Sendable (_ appEvent: AppEvent) async -> Bool) {
     eventHandlers.append(handler)
   }
 
@@ -29,7 +31,7 @@ actor DefaultAppEventHandlerRegistry: AppEventHandlerRegistry {
     return false
   }
 
-  private var eventHandlers: [(_ appEvent: AppEvent) async -> Bool] = []
+  private var eventHandlers: [@Sendable (_ appEvent: AppEvent) async -> Bool] = []
 }
 
 extension BaseProviding {

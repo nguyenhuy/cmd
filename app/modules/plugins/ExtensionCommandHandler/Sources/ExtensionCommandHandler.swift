@@ -15,10 +15,8 @@ import XcodeObserverServiceInterface
 public final class ExtensionCommandHandler: @unchecked Sendable {
 
   public init() {
-    Task {
-      await appEventHandlerRegistry.registerHandler { [weak self] event in
-        await self?.handle(appEvent: event) ?? false
-      }
+    appEventHandlerRegistry.registerHandler { [weak self] event in
+      await self?.handle(appEvent: event) ?? false
     }
   }
 
