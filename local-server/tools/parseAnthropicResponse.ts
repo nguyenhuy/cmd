@@ -38,7 +38,7 @@ function extractTextFromStream(inputText: string): { text: string; tool: string 
 					} else if (data.delta?.partial_json) {
 						currentTool += data.delta.partial_json
 					}
-				} catch (error) {
+				} catch {
 					// Skip invalid JSON
 					continue
 				}

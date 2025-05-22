@@ -2,19 +2,9 @@ import { describe, expect, beforeEach, jest, afterEach } from "@jest/globals"
 import Router from "express-promise-router"
 import express from "express"
 import request from "supertest"
-import http from "http"
 import { registerEndpoints } from "../checkpoint"
 import { RepoPerTaskCheckpointService } from "@/services/checkpoints"
 import { UserFacingError } from "../../errors"
-import path from "path"
-import errorHandler from "@/server/errorHandler"
-
-// Define an interface for our mock service
-interface MockCheckpointService {
-	initShadowGit: jest.Mock
-	saveCheckpoint: jest.Mock
-	restoreCheckpoint: jest.Mock
-}
 
 // Create a complete mock service that extends ShadowCheckpointService
 const mockService = {

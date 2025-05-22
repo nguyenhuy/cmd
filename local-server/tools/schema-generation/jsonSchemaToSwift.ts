@@ -311,18 +311,6 @@ const isObjectTypeModel = (
 	return model?.type === "object"
 }
 
-const isEnumTypeModel = (
-	model: ObjectDefinitionModel | OneOfDefinitionModel | EnumDefinitionModel | undefined,
-): model is EnumDefinitionModel => {
-	return model?.type === "enum"
-}
-
-const isOneOfTypeModel = (
-	model: ObjectDefinitionModel | OneOfDefinitionModel | EnumDefinitionModel | undefined,
-): model is OneOfDefinitionModel => {
-	return model?.type === "oneOf"
-}
-
 const valueRepresentation = (value: JSONSchema7Type): string => {
 	if (typeof value === "string") {
 		return `"${value}"`
