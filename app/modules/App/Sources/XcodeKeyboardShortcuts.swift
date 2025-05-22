@@ -47,20 +47,20 @@ final class XcodeKeyboardShortcutsManager: @unchecked Sendable {
           enable(KeyboardShortcuts.Name.xcodeShortcuts)
         }
       }
-    safelyMutate { $0.cancellables.insert(cancellable) }
+    inLock { $0.cancellables.insert(cancellable) }
   }
 
   /// Manually tracks enabled shortcuts due to https://github.com/sindresorhus/KeyboardShortcuts/issues/217
   private func enable(_ shortcuts: [KeyboardShortcuts.Name]) {
     KeyboardShortcuts.enable(shortcuts)
-    safelyMutate { state in
+    inLock { state in
       for shortcut in shortcuts { state.enabledShortcutNames.insert(shortcut.rawValue) }
     }
   }
 
   private func disable(_ shortcuts: [KeyboardShortcuts.Name]) {
     KeyboardShortcuts.disable(shortcuts)
-    safelyMutate { state in
+    inLock { state in
       for shortcut in shortcuts { state.enabledShortcutNames.remove(shortcut.rawValue) }
     }
   }

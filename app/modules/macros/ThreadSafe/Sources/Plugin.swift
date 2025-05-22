@@ -6,7 +6,7 @@ import SwiftCompilerPlugin
 import SwiftSyntaxMacros
 
 /// Define the ThreadSafe macro
-@attached(member, names: named(_internalState), named(_InternalState), named(safelyMutate))
+@attached(member, names: named(_internalState), named(_InternalState), named(inLock))
 @attached(memberAttribute)
 public macro ThreadSafe() = #externalMacro(module: "ThreadSafeMacro", type: "ThreadSafeMacro")
 

@@ -212,7 +212,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
     }
 
     let url = workspaceInspector.workspaceURL
-    let (toCancel, toRelease) = safelyMutate { state in
+    let (toCancel, toRelease) = inLock { state in
       let toCancel = state.workspaceSubscriptions.removeValue(forKey: url)
       let toRelease = state.workspaceInspectors.removeValue(forKey: url)
       state.workspaceInspectors[url] = workspaceInspector
@@ -233,7 +233,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
   @MainActor
   private func stopTracking(_ workspaceInspector: XcodeWorkspaceObserver) {
     let url = workspaceInspector.workspaceURL
-    let (toCancel, toRelease) = safelyMutate { state -> (AnyCancellable?, XcodeWorkspaceObserver?) in
+    let (toCancel, toRelease) = inLock { state -> (AnyCancellable?, XcodeWorkspaceObserver?) in
       guard state.workspaceInspectors[url] === workspaceInspector else {
         // Already replaced
         return (nil, nil)

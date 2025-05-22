@@ -153,7 +153,7 @@ final class XcodeWorkspaceObserver: AXElementObserver, @unchecked Sendable {
   }
 
   private func stopTracking(_ inspector: SourceEditorObserver) {
-    safelyMutate { state in
+    inLock { state in
       state.editorInspectors = state.editorInspectors.filter { $0 !== inspector }
     }
   }

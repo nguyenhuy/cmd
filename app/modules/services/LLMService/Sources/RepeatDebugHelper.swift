@@ -38,7 +38,7 @@ final class RepeatDebugHelper: Sendable {
 
   func receive(chunk: ChatCompletionChunkObject) {
     if isRepeating { return }
-    let streams = safelyMutate { state in
+    let streams = inLock { state in
       if let streamStartedAt = state.streamStartedAt, var stream = state.streams.last {
         stream.chunks.append(.init(chunk: chunk, receivedAfter: Date().timeIntervalSince(streamStartedAt)))
         state.streams[state.streams.count - 1] = stream
@@ -53,14 +53,14 @@ final class RepeatDebugHelper: Sendable {
 
   func streamCompleted() {
     if isRepeating { return }
-    safelyMutate { state in
+    inLock { state in
       state.streamStartedAt = nil
     }
   }
 
   func repeatStream() throws -> AsyncThrowingStream<ChatCompletionChunkObject, any Error>? {
     guard isRepeating else { return nil }
-    let stream: Stream? = safelyMutate { state in
+    let stream: Stream? = inLock { state in
       if state.streams.isEmpty {
         return nil
       }

@@ -274,7 +274,7 @@ final class DefaultServer: Server {
           onReceiveJSONData: onReceiveJSONData,
           incompletedJSONData: Data(),
           totalData: Data())
-        safelyMutate { state in
+        inLock { state in
           state.inflightTasks[task] = taskHandler
         }
 

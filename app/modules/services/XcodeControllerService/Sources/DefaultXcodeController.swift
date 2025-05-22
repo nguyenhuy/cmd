@@ -164,7 +164,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
 
     return try await withCheckedThrowingContinuation { continuation in
       Task {
-        safelyMutate { state in
+        inLock { state in
           state.fileChange = fileChange
           state.currentContinuation = continuation
         }
@@ -182,7 +182,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
           defaultLogger.log("Time to trigger extension: \(duration)")
         } catch {
           defaultLogger.error("triggerExtension failed: \(error)")
-          let currentContinuation = safelyMutate { state in
+          let currentContinuation = inLock { state in
             let currentContinuation = state.currentContinuation
             state.currentContinuation = nil
             state.fileChange = nil
@@ -207,7 +207,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
   }
 
   private func timeOut(fileChange: FileChange) {
-    let currentContinuation: CheckedContinuation<Void, Error>? = safelyMutate { state in
+    let currentContinuation: CheckedContinuation<Void, Error>? = inLock { state in
       guard state.fileChange?.id == fileChange.id, let currentContinuation = state.currentContinuation else {
         return nil
       }
@@ -297,7 +297,7 @@ extension DefaultXcodeController {
       defaultLogger.log("Extension has succesfully applied the edit.")
     }
 
-    let currentContinuation = safelyMutate { state in
+    let currentContinuation = inLock { state in
       let currentContinuation = state.currentContinuation
       state.currentContinuation = nil
       state.fileChange = nil

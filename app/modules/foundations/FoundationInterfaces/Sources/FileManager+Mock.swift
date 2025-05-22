@@ -22,7 +22,7 @@ public final class MockFileManager: FileManagerI {
   }
 
   public init(files: [URL: Data], directories: [URL]) {
-    safelyMutate {
+    inLock {
       $0.files = files
       $0.directories = directories
     }
@@ -55,11 +55,11 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func write(data: Data, to url: URL, options _: Data.WritingOptions) throws {
-    safelyMutate { $0.files[url] = data }
+    inLock { $0.files[url] = data }
   }
 
   public func write(string: String, to url: URL, options _: Data.WritingOptions) throws {
-    safelyMutate { $0.files[url] = string.asData }
+    inLock { $0.files[url] = string.asData }
   }
 
   public func createDirectory(
@@ -86,13 +86,13 @@ public final class MockFileManager: FileManagerI {
     attributes _: [FileAttributeKey: Any]?)
     throws
   {
-    safelyMutate { $0.directories.append(url) }
+    inLock { $0.directories.append(url) }
     if createIntermediates {
       var url = url
       while !url.lastPathComponent.isEmpty {
         url = url.deletingLastPathComponent()
         let filePath = url.path() // URL is not Sendable, so use a String to silence the warning.
-        safelyMutate { $0.directories.append(URL(filePath: filePath)) }
+        inLock { $0.directories.append(URL(filePath: filePath)) }
       }
     }
   }
@@ -102,11 +102,11 @@ public final class MockFileManager: FileManagerI {
   }
 
   public func copyItem(atPath srcPath: String, toPath dstPath: String) throws {
-    safelyMutate { $0.files[URL(fileURLWithPath: dstPath)] = $0.files[URL(fileURLWithPath: srcPath)] }
+    inLock { $0.files[URL(fileURLWithPath: dstPath)] = $0.files[URL(fileURLWithPath: srcPath)] }
   }
 
   public func removeItem(atPath path: String) throws {
-    safelyMutate { $0.files[URL(fileURLWithPath: path)] = nil }
+    inLock { $0.files[URL(fileURLWithPath: path)] = nil }
   }
 
   public func fileExists(atPath path: String) -> Bool {

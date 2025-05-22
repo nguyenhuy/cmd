@@ -39,7 +39,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
             }
 
             @discardableResult
-              private func safelyMutate<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
                 _internalState.mutate(mutation)
               }
         }
@@ -86,7 +86,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
             }
 
             @discardableResult
-              private func safelyMutate<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
                 _internalState.mutate(mutation)
               }
         }
@@ -153,7 +153,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
             }
 
             @discardableResult
-              private func safelyMutate<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
                 _internalState.mutate(mutation)
               }
         }
@@ -196,7 +196,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
             }
 
             @discardableResult
-              private func safelyMutate<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
                 _internalState.mutate(mutation)
               }
         }
@@ -250,7 +250,7 @@ final class ThreadSafeMacroIntegrationTests: XCTestCase {
             }
 
             @discardableResult
-              private func safelyMutate<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+              private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
                 _internalState.mutate(mutation)
               }
         }

@@ -35,7 +35,7 @@ public final class Logger: Sendable {
     do {
       try fileManager.write(data: Data(), to: logFilePath)
       let logFile = try fileManager.fileHandle(forWritingTo: logFilePath)
-      safelyMutate { state in
+      inLock { state in
         state.logFile = logFile
         state.fileManager = fileManager
       }

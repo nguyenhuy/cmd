@@ -84,7 +84,7 @@ final class DefaultFileSuggestionService: FileSuggestionService {
   /// List files available in the project.
   /// As this can be called quickly in a row (as the user update their search), this method is mindful about resource usage.
   private func usingCachingListFilesAvailable(in workspace: URL) async throws -> [FileSuggestion] {
-    let listFiles: HowToListAvailableFiles = safelyMutate { state in
+    let listFiles: HowToListAvailableFiles = inLock { state in
       if let inflightTask = state.inflightTasks[workspace] {
         // Merge inflight tasks to avoid multiple calls.
         return .inflightTask(inflightTask)

@@ -44,7 +44,7 @@ final class DefaultPermissionsService: PermissionsService {
   func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?, Never> {
     switch permission {
     case .accessibility:
-      let isPolling: Bool = safelyMutate { state in
+      let isPolling: Bool = inLock { state in
         let isPolling = state.isPollingAccessibilityPermissionStatus
         state.isPollingAccessibilityPermissionStatus = true
         return isPolling
@@ -56,7 +56,7 @@ final class DefaultPermissionsService: PermissionsService {
         .readonly(removingDuplicate: true)
 
     case .xcodeExtension:
-      let isPolling: Bool = safelyMutate { state in
+      let isPolling: Bool = inLock { state in
         let isPolling = state.isPollingXcodeExtensionPermissionStatus
         state.isPollingXcodeExtensionPermissionStatus = true
         return isPolling

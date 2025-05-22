@@ -56,10 +56,10 @@ extension ThreadSafeMacro: MemberMacro {
       """)
     members.append(internalStateStruct)
 
-    // Generate `safelyMutate` function
+    // Generate `inLock` function
     let mutateFunc = DeclSyntax("""
         @discardableResult
-        private func safelyMutate<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
+        private func inLock<Result: Sendable>(_ mutation: @Sendable (inout _InternalState) -> Result) -> Result {
           _internalState.mutate(mutation)
         }
       """)

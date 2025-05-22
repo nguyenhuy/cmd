@@ -26,7 +26,7 @@ final class AppScope: Sendable, BaseProviding {
   @MainActor
   func create(isAppActive: AnyPublisher<Bool, Never>) {
     let initialDependencies = InitialDependencies(isAppActive: isAppActive)
-    safelyMutate { $0.sharedDependencies = AppScopeStorage(initial: initialDependencies) }
+    inLock { $0.sharedDependencies = AppScopeStorage(initial: initialDependencies) }
   }
 
   func _shared<T: Sendable>(key: String, _ build: @Sendable () -> T) -> T {

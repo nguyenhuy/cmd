@@ -23,7 +23,7 @@ final class DefaultXcodeObserver: XcodeObserver {
     let accessibilityPermissionStatus = permissionsService.status(for: .accessibility)
     update(with: accessibilityPermissionStatus.currentValue)
     let accessibilitySubscription = accessibilityPermissionStatus.sink(receiveValue: update(with:))
-    safelyMutate { state in state.accessibilitySubscription = accessibilitySubscription }
+    inLock { state in state.accessibilitySubscription = accessibilitySubscription }
   }
 
   deinit {
@@ -176,7 +176,7 @@ final class DefaultXcodeObserver: XcodeObserver {
       cancellable.cancel()
     }
 
-    let toBeCancelled = safelyMutate { state in
+    let toBeCancelled = inLock { state in
       let toBeCancelled = state.observationsCancellable
       state.observationsCancellable = cancelObservations
       return toBeCancelled
@@ -187,7 +187,7 @@ final class DefaultXcodeObserver: XcodeObserver {
 
   /// Remove all active observations.
   private func stopObservations() {
-    let cancellables = safelyMutate { state in
+    let cancellables = inLock { state in
       let cancellables = Array(state.xcodeObserverSubscriptions.values) + [state.observationsCancellable]
       state.observationsCancellable = nil
       state.xcodeObserverSubscriptions.removeAll()
@@ -243,7 +243,7 @@ final class DefaultXcodeObserver: XcodeObserver {
 
     let cancellable = Atomic<AnyCancellable?>(nil)
 
-    let (toCancel, toDeinit): (AnyCancellable?, XcodeAppInstanceObserver?) = safelyMutate { state in
+    let (toCancel, toDeinit): (AnyCancellable?, XcodeAppInstanceObserver?) = inLock { state in
       let toCancel = state.xcodeObserverSubscriptions[newXcodeApp.processIdentifier]
       state.xcodeObserverSubscriptions[newXcodeApp.processIdentifier] = AnyCancellable { cancellable.value?.cancel() }
       let toDeinit = state.xcodeObservers[newXcodeApp.processIdentifier]
@@ -284,7 +284,7 @@ final class DefaultXcodeObserver: XcodeObserver {
     }
     let xcodeState = xcodeApp.state.currentValue
 
-    let toRelease: (AnyCancellable?, XcodeAppInstanceObserver?) = safelyMutate { state in
+    let toRelease: (AnyCancellable?, XcodeAppInstanceObserver?) = inLock { state in
       let toCancel = state.xcodeObserverSubscriptions[xcodeState.processIdentifier]
       state.xcodeObserverSubscriptions.removeValue(forKey: xcodeState.processIdentifier)
 
