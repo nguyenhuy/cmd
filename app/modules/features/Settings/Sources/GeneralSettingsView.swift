@@ -15,6 +15,19 @@ struct GeneralSettingsView: View {
         Toggle("", isOn: $pointReleaseXcodeExtensionToDebugApp)
           .toggleStyle(.switch)
       }
+      HStack {
+        Text("Repeat last LLM interaction")
+        Spacer()
+        Toggle("", isOn: Binding<Bool>(
+          get: {
+            UserDefaults.standard.bool(forKey: "llmService.isRepeating")
+          },
+          set: { value in
+            UserDefaults.standard.set(value, forKey: "llmService.isRepeating")
+          }
+        ))
+        .toggleStyle(.switch)
+      }
 
       #endif
     }

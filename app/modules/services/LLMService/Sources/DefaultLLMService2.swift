@@ -125,7 +125,14 @@ final class DefaultLLMService2: LLMService {
             messageHistory.flatMap { message in message.mapped },
           model: .custom("claude-3-7-sonnet-20250219"),
           tools: tools.map(\.mapped))
+        #if DEBUG
+        let stream = try await {
+          if let stream = try repeatDebugHelper.repeatStream() { return stream }
+          return try await service.startStreamedChat(parameters: parameters)
+        }()
+        #else
         let stream = try await service.startStreamedChat(parameters: parameters)
+        #endif
 
         var currentToolUseToolName: String? = nil
         var currentToolUseId: String? = nil
@@ -140,6 +147,9 @@ final class DefaultLLMService2: LLMService {
 
         do {
           for try await chunk in stream {
+            #if DEBUG
+            repeatDebugHelper.receive(chunk: chunk)
+            #endif
             guard !isTaskCancelled.value else {
               // This should not be necessary. Cancelling the task should make the post request fail with an error.
               // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
@@ -240,6 +250,9 @@ final class DefaultLLMService2: LLMService {
           defaultLogger.error("Error processing chunk")
           err.mutate { $0 = $0 ?? error }
         }
+        #if DEBUG
+        repeatDebugHelper.streamCompleted()
+        #endif
         if let error = err.value {
           throw error
         }
@@ -260,6 +273,9 @@ final class DefaultLLMService2: LLMService {
     })
   }
 
+  #if DEBUG
+  private let repeatDebugHelper = RepeatDebugHelper()
+  #endif
   private let settingsService: SettingsService
   private let server: Server
 
@@ -320,20 +336,6 @@ extension Schema.Message.Role {
     }
   }
 }
-
-// extension Schema.MessageContent {
-//  var mapped: ChatCompletionParameters.Message.ContentType {
-//    switch self {
-//    case .textMessage(let message):
-//      return .text(message.text)
-//    case .toolResultMessage(let message):
-//      break
-//    case .toolUseRequest(let message):
-//      break
-//    }
-//    fatalError("Tool use request not supported")
-//  }
-// }
 
 extension ToolFoundation.Tool {
   var mapped: ChatCompletionParameters.Tool {
