@@ -119,7 +119,9 @@ final class DefaultLLMService2: LLMService {
           overrideVersion: "v1")
 
         let parameters = ChatCompletionParameters(
-          messages: [.init(role: .system, content: .text(Prompt.defaultPrompt(projectRoot: context.projectRoot)))] +
+          messages: [.init(
+            role: .system,
+            content: .text(Prompt.defaultPrompt(projectRoot: context.projectRoot, mode: context.chatMode)))] +
             messageHistory.flatMap { message in message.mapped },
           model: .custom("claude-3-7-sonnet-20250219"),
           tools: tools.map(\.mapped))

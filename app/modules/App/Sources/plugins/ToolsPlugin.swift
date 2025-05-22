@@ -14,7 +14,8 @@ extension ToolsPlugin {
     plugIn(tool: LSTool())
     plugIn(tool: ReadFileTool())
     plugIn(tool: SearchFilesTool())
-    plugIn(tool: EditFilesTool())
+    plugIn(tool: EditFilesTool(shouldAutoApply: true))
+    // plugIn(tool: EditFilesTool(shouldAutoApply: false))
     plugIn(tool: ExecuteCommandTool())
     plugIn(tool: AskFollowUpTool())
   }

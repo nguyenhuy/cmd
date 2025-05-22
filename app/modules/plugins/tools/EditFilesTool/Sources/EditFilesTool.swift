@@ -4,20 +4,20 @@
 import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
-import Dependencies
 import FileDiffFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import ThreadSafe
 import ToolFoundation
-import XcodeControllerServiceInterface
-import XcodeObserverServiceInterface
 
 // MARK: - EditFilesTool
 
 public final class EditFilesTool: Tool {
 
-  public init() { }
+  public init(shouldAutoApply: Bool) {
+    self.shouldAutoApply = shouldAutoApply
+  }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
@@ -110,43 +110,18 @@ public final class EditFilesTool: Tool {
     public func startExecuting() {
       updateStatus.yield(.running)
       guard isInputComplete.value else {
-        updateStatus.yield(.completed(.failure(AppError("Started ecxecuting before the input was entirely received"))))
+        updateStatus.yield(.completed(.failure(AppError("Started executing before the input was entirely received"))))
         return
       }
 
-      Task { @MainActor in
-        var results: [String: JSON.Value] = [:]
-
-        for fileChange in input.files {
-          do {
-            let filePath = URL(filePath: fileChange.path)
-
-            // Try to get the content from the editor over the content from disk if possible.
-            // TODO: look into doing this update _after_ the file has been made visible in Xcode.
-            let editorContent = xcodeObserver.state.wrapped?.xcodesState.compactMap { xc in
-              xc.workspaces.compactMap { ws in
-                ws.tabs.compactMap { tab in
-                  tab.knownPath == filePath ? tab.lastKnownContent : nil
-                }.first
-              }.first
-            }.first
-            let currentContent = try editorContent ?? fileManager.read(contentsOf: filePath, encoding: .utf8)
-            let targetContent = try FileDiff.apply(
-              changes: fileChange.changes.map { .init(search: $0.search, replace: $0.replace) },
-              to: currentContent)
-
-            let fileDiff = try FileDiff.getFileChange(changing: currentContent, to: targetContent)
-            try await xcodeController.apply(fileChange: FileChange(
-              filePath: filePath,
-              oldContent: currentContent,
-              suggestedNewContent: fileDiff.newContent,
-              selectedChange: fileDiff.diff))
-            results[fileChange.path] = "All changes applied."
-          } catch {
-            results[fileChange.path] = .string("Error applying changes: \(error.localizedDescription)")
-          }
+      if callingTool.shouldAutoApply {
+        Task { @MainActor in
+          await viewModel.applyAllChanges()
         }
-        updateStatus.yield(.completed(.success(.init(result: .object(results)))))
+      } else {
+        Task { @MainActor in
+          viewModel.acknowledgeSuggestionReceived()
+        }
       }
     }
 
@@ -160,7 +135,10 @@ public final class EditFilesTool: Tool {
       let viewModel = ToolUseViewModel(
         status: status,
         input: input,
-        isInputComplete: isInputComplete.value)
+        isInputComplete: isInputComplete.value,
+        updateToolStatus: { [weak self] newStatus in
+          self?.updateStatus.yield(newStatus)
+        })
       _viewModel = viewModel
       return viewModel
     }
@@ -170,58 +148,7 @@ public final class EditFilesTool: Tool {
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
     private let context: ToolExecutionContext
 
-    @Dependency(\.xcodeController) private var xcodeController
-    @Dependency(\.fileManager) private var fileManager
-    @Dependency(\.xcodeObserver) private var xcodeObserver
   }
-
-  public let name = "edit_or_create_files"
-
-  public let description = """
-    Request to replace existing code using search and replace blocks in a list of files.
-    This tool allows for precise, surgical replaces to files by specifying exactly what content to search for and what to replace it with.
-    The tool will maintain proper indentation and formatting while making changes.
-
-    The SEARCH section must exactly match existing content including whitespace and indentation.
-    If you're not confident in the exact content to search for, use the read_file tool first to get the exact content.
-    When applying the diffs, be extra careful to remember to change any closing brackets or other syntax that may be affected by the diff farther down in the file.
-    ALWAYS make as many changes in a single 'apply_diff' request as possible using multiple SEARCH/REPLACE blocks.
-    ALWAYS try to minimize duplicate content in search/replace block and use several blocks instead when possible.
-
-    example:
-
-    Good example:
-    - uses relative paths.
-    - updates several files at once.
-    - break down changes in one file into several blocks when possible.
-    ```
-    {
-        "files": [
-            {
-                "path": "./Sources/MyFile.swift",
-                "changes": [
-                    {
-                        "search": "import Foundation",
-                        "replace": "import Foundation\nimport UIKit"
-                    },
-                    {
-                        "search": "func add(a: Int, b: Int) -> Int",
-                        "replace": "// Add two numbers\nfunc add(a: Int, b: Int) -> Int"
-                    }
-                ]
-            },
-            {
-                "path": "./Tests/MyFileTests.swift",
-                "changes": [
-                    {
-                        "search": "import XCTest",
-                        "replace": "import Testing"
-                    }
-                ]
-            }
-        ]
-    ```
-    """
 
   public let inputSchema: JSON =
     try! JSONDecoder().decode(JSON.self, from: """
@@ -269,8 +196,68 @@ public final class EditFilesTool: Tool {
 
   public let canInputBeStreamed = true
 
+  public var name: String {
+    if shouldAutoApply {
+      "edit_or_create_files"
+    } else {
+      "suggest_files_changes"
+    }
+  }
+
+  public var description: String { """
+    \(shortDescription)
+    This tool allows for precise, surgical replaces to files by specifying exactly what content to search for and what to replace it with.
+    The tool will maintain proper indentation and formatting while making changes.
+
+    The SEARCH section must exactly match existing content including whitespace and indentation.
+    If you're not confident in the exact content to search for, use the read_file tool first to get the exact content.
+    When applying the diffs, be extra careful to remember to change any closing brackets or other syntax that may be affected by the diff farther down in the file.
+    ALWAYS make as many changes in a single 'apply_diff' request as possible using multiple SEARCH/REPLACE blocks.
+    ALWAYS try to minimize duplicate content in search/replace block and use several blocks instead when possible.
+
+    example:
+
+    Good example:
+    - uses relative paths.
+    - updates several files at once.
+    - break down changes in one file into several blocks when possible.
+    ```
+    {
+        "files": [
+            {
+                "path": "./Sources/MyFile.swift",
+                "changes": [
+                    {
+                        "search": "import Foundation",
+                        "replace": "import Foundation\nimport UIKit"
+                    },
+                    {
+                        "search": "func add(a: Int, b: Int) -> Int",
+                        "replace": "// Add two numbers\nfunc add(a: Int, b: Int) -> Int"
+                    }
+                ]
+            },
+            {
+                "path": "./Tests/MyFileTests.swift",
+                "changes": [
+                    {
+                        "search": "import XCTest",
+                        "replace": "import Testing"
+                    }
+                ]
+            }
+        ]
+    ```
+    """
+  }
+
   public func isAvailable(in mode: ChatMode) -> Bool {
-    mode == .agent
+    switch mode {
+    case .agent:
+      shouldAutoApply
+    case .ask:
+      !shouldAutoApply
+    }
   }
 
   public func use(
@@ -286,6 +273,16 @@ public final class EditFilesTool: Tool {
       input: input,
       isInputComplete: isInputComplete,
       context: context)
+  }
+
+  private let shouldAutoApply: Bool
+
+  private var shortDescription: String {
+    if shouldAutoApply {
+      "Replace existing code using search/replace blocks in a list of files and create new files."
+    } else {
+      "Suggest to replace existing code using search/replace blocks in a list of files and to create new files."
+    }
   }
 
 }

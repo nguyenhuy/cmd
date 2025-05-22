@@ -27,7 +27,12 @@ struct ToolUseView: View {
     ScrollView {
       VStack(spacing: 12) {
         ForEach(toolUse.changes, id: \.path) { fileChange in
-          FileChangeView(change: fileChange.change)
+          FileChangeView(
+            change: fileChange.change,
+            editState: fileChange.state,
+            handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
+            handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
+            handleCopy: { [weak toolUse] in toolUse?.copyChanges(to: fileChange.path) })
         }
       }
       .padding(.vertical)
@@ -57,6 +62,10 @@ extension FileDiffViewModel {
 
 struct FileChangeView: View {
   let change: FileDiffViewModel
+  let editState: FileEditState
+  let handleApply: () async -> Void
+  let handleReject: () async -> Void
+  let handleCopy: () -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
@@ -106,24 +115,59 @@ struct FileChangeView: View {
                 .foregroundColor(.secondary)
                 .help("Copy changes")
 
-              // Apply/Checkmark button
-              Button(action: { applyChanges() }) {
-                Image(systemName: "checkmark")
-                  .foregroundColor(.secondary)
-                  .font(.system(size: 10))
+              if !hasAppliedChanges {
+                if isApplyingChanges {
+                  ProgressView()
+                    .controlSize(.small)
+                    .frame(width: Constants.spinnerSize, height: Constants.spinnerSize)
+                    .help("Applying changes")
+                } else {
+                  // Apply/Checkmark button
+                  Button(action: { applyChanges() }) {
+                    Image(systemName: "checkmark")
+                      .foregroundColor(.secondary)
+                      .font(.system(size: 10))
+                  }
+                  .buttonStyle(PlainButtonStyle())
+                  .help("Apply changes")
+                }
+              } else if !hasRejectedChanges {
+                if isRejectingChanges {
+                  ProgressView()
+                    .controlSize(.small)
+                    .frame(width: Constants.spinnerSize, height: Constants.spinnerSize)
+                    .help("Rejecting changes")
+                } else {
+                  // Reject/X button
+                  Button(action: { rejectChanges() }) {
+                    Image(systemName: "xmark")
+                      .foregroundColor(.secondary)
+                      .font(.system(size: 10))
+                  }
+                  .buttonStyle(PlainButtonStyle())
+                  .help("Reject changes")
+                }
               }
-              .buttonStyle(PlainButtonStyle())
-              .help("Apply changes")
-
-              // Reject/X button
-              Button(action: { rejectChanges() }) {
-                Image(systemName: "xmark")
-                  .foregroundColor(.secondary)
-                  .font(.system(size: 10))
-              }
-              .buttonStyle(PlainButtonStyle())
-              .help("Reject changes")
             }
+          }
+
+          if hasAppliedChanges {
+            // Apply/Checkmark
+            Image(systemName: "checkmark")
+              .foregroundColor(colorScheme.addedLineDiffText)
+              .font(.system(size: 10))
+              .help("Changes applied")
+          } else if hasRejectedChanges {
+            // Reject/X button
+            Image(systemName: "xmark")
+              .foregroundColor(colorScheme.removedLineDiffText)
+              .font(.system(size: 10))
+              .help("Changes rejected")
+          }
+          if case .error = editState {
+            Image(systemName: "exclamationmark.triangle")
+              .foregroundColor(.orange)
+              .font(.system(size: 10))
           }
 
           // Expand/collapse button (hidden but keeps the tap area)
@@ -144,6 +188,10 @@ struct FileChangeView: View {
 
       // Main content - only shown when expanded
       if isExpanded {
+        if case .error(let error) = editState {
+          Text("error: \(error)")
+        }
+
         CodePreview(
           fileChange: change,
           collapsedHeight: 250,
@@ -160,26 +208,44 @@ struct FileChangeView: View {
 
   private enum Constants {
     static let cornerRadius: CGFloat = 5
+    static let spinnerSize: CGFloat = 11
   }
 
   @State private var isExpanded = false
   @State private var isHovering = false
+  @State private var isApplyingChanges = false
+  @State private var isRejectingChanges = false
 
   @Environment(\.colorScheme) private var colorScheme
 
+  private var hasAppliedChanges: Bool {
+    if case .applied = editState { return true }
+    return false
+  }
+
+  private var hasRejectedChanges: Bool {
+    if case .rejected = editState { return true }
+    return false
+  }
+
   private func copyChanges() {
-    // Implement copy functionality
-    print("Copy changes for \(change.filename)")
+    handleCopy()
   }
 
   private func applyChanges() {
-    // Implement apply functionality
-    print("Apply changes for \(change.filename)")
+    isApplyingChanges = true
+    Task {
+      await handleApply()
+      isApplyingChanges = false
+    }
   }
 
   private func rejectChanges() {
-    // Implement reject functionality
-    print("Reject changes for \(change.filename)")
+    isRejectingChanges = true
+    Task {
+      await handleApply()
+      isRejectingChanges = false
+    }
   }
 
   private func openFile() {
@@ -191,8 +257,23 @@ struct FileChangeView: View {
 #if DEBUG
 /// Add initiallyExpanded parameter to FileChangeView for preview purposes
 extension FileChangeView {
-  init(change: FileDiffViewModel, initiallyExpanded: Bool = false) {
+  init(
+    change: FileDiffViewModel,
+    editState: FileEditState,
+    initiallyExpanded: Bool = false,
+    handleApply: @escaping () async -> Void = {
+      try? await Task.sleep(nanoseconds: 1_000_000_000)
+    },
+    handleReject: @escaping () async -> Void = {
+      try? await Task.sleep(nanoseconds: 1_000_000_000)
+    },
+    handleCopy: @escaping () -> Void = { })
+  {
     self.change = change
+    self.editState = editState
+    self.handleApply = handleApply
+    self.handleReject = handleReject
+    self.handleCopy = handleCopy
     _isExpanded = State(initialValue: initiallyExpanded)
   }
 }

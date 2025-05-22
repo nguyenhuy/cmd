@@ -10,8 +10,8 @@ Target.module(
     "FoundationInterfaces",
     "JSONFoundation",
     "ServerServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
     "XcodeControllerServiceInterface",
-    "XcodeObserverServiceInterface",
   ],
   testDependencies: [])

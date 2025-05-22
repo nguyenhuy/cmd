@@ -4,6 +4,7 @@ Target.module(
     .product(name: "JSONScanner", package: "JSONScanner"),
     .product(name: "SwiftOpenAI", package: "SwiftOpenAI"),
     "AppFoundation",
+    "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "JSONFoundation",

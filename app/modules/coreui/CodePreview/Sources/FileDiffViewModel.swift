@@ -24,22 +24,23 @@ public final class FileDiffViewModel: Sendable {
     filePath: String,
     llmDiff: String)
   {
-    // Variables used to log debug info if something fails.
-    var _oldContent: String?
+    let fileContent: String
     do {
-      let path = URL(fileURLWithPath: filePath)
-      @Dependency(\.fileManager) var fileManager
-      let fileContent = try fileManager.read(contentsOf: path)
-      _oldContent = fileContent
+      fileContent = try Self.getCurrentContent(of: URL(fileURLWithPath: filePath))
+    } catch {
+      defaultLogger.error("Error reading file \(filePath)", error)
+      return nil
+    }
+    do {
       let changes = try FileDiff.parse(searchReplacePattern: llmDiff, for: fileContent)
-      self.init(filePath: filePath, changes: changes)
+      self.init(filePath: filePath, changes: changes, oldContent: fileContent)
     } catch {
       defaultLogger.error("""
         Could not format diff for \(filePath): \(error)
         -- Diff:
         \(llmDiff)
         -- Current content:
-        \(_oldContent ?? "?")
+        \(fileContent)
         --
         """)
       return nil
@@ -48,31 +49,33 @@ public final class FileDiffViewModel: Sendable {
 
   public convenience init?(
     filePath: String,
-    changes: [FileDiff.SearchReplace])
+    changes: [FileDiff.SearchReplace],
+    oldContent: String? = nil)
   {
-    // Variables used to log debug info if something fails.
-    var _oldContent: String?
-    var _newContent: String?
-    do {
-      let path = URL(fileURLWithPath: filePath)
-      @Dependency(\.fileManager) var fileManager
-      guard let oldContent = try? fileManager.read(contentsOf: path) else {
-        throw AppError(message: "File content not available for \(path)")
+    let path = URL(fileURLWithPath: filePath)
+    let fileContent: String
+    if let oldContent {
+      fileContent = oldContent
+    } else {
+      do {
+        fileContent = try Self.getCurrentContent(of: path)
+      } catch {
+        defaultLogger.error("Error reading file \(filePath)", error)
+        return nil
       }
-      _oldContent = oldContent
+    }
 
-      let newContent = try FileDiff.apply(changes: changes, to: oldContent)
-      _newContent = newContent
-
-      if newContent == oldContent {
+    do {
+      let newContent = try FileDiff.apply(changes: changes, to: fileContent)
+      if newContent == fileContent {
         return nil
       }
 
-      let gitDiff = try FileDiff.getGitDiff(oldContent: oldContent, newContent: newContent)
+      let gitDiff = try FileDiff.getGitDiff(oldContent: fileContent, newContent: newContent)
 
       self.init(
         filePath: path,
-        baseLineContent: oldContent,
+        baseLineContent: fileContent,
         targetContent: newContent,
         changes: changes,
         canBeApplied: true,
@@ -80,11 +83,11 @@ public final class FileDiffViewModel: Sendable {
 
       diffingTasks.queue {
         let formattedDiff = try await FileDiff.getColoredDiff(
-          oldContent: oldContent,
+          oldContent: fileContent,
           newContent: newContent,
           gitDiff: gitDiff,
           highlightColors: .dark(.xcode))
-        return .init(canBeApplied: true, formattedDiff: formattedDiff, baseLineContent: oldContent)
+        return .init(canBeApplied: true, formattedDiff: formattedDiff, baseLineContent: fileContent)
       }
     } catch {
       defaultLogger.error("""
@@ -92,9 +95,7 @@ public final class FileDiffViewModel: Sendable {
         -- Changes:
         \(changes.map { "replace:\n\($0.replace)\nwith:\n\($0.replace)" }.joined(separator: "\n-------\n"))
         -- Previous Content:
-        \(_oldContent ?? "?")
-        -- New Content:
-        \(_newContent ?? "?")
+        \(fileContent)
         --
         """)
       return nil
@@ -251,4 +252,20 @@ public final class FileDiffViewModel: Sendable {
   private let xcodeController: XcodeController
 
   private let diffingTasks = ReplaceableTaskQueue<SuggestionUpdate?>()
+
+  /// Get the current content of the file. It is possible that the editor has content that is not yet saved to disk.
+  private static func getCurrentContent(of file: URL) throws -> String {
+    @Dependency(\.fileManager) var fileManager
+    @Dependency(\.xcodeObserver) var xcodeObserver
+    let editorContent = xcodeObserver.state.wrapped?.xcodesState.compactMap { xc in
+      xc.workspaces.compactMap { ws in
+        ws.tabs.compactMap { tab in
+          tab.knownPath == file ? tab.lastKnownContent : nil
+        }.first
+      }.first
+    }.first
+    // TODO: is it fine to run on the main thread?
+    return try editorContent ?? fileManager.read(contentsOf: file, encoding: .utf8)
+  }
+
 }

@@ -1,6 +1,7 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import ChatFoundation
 import ConcurrencyFoundation
 import Foundation
 import ServerServiceInterface
@@ -15,6 +16,8 @@ public protocol ChatContext: Sendable {
   var projectRoot: URL { get }
   /// When a tool that is not read-only runs, this function will be called before.
   var prepareForWriteToolUse: @Sendable () async -> Void { get }
+  /// Which chat mode applies to the current context.
+  var chatMode: ChatMode { get }
 }
 
 // MARK: - LLMService

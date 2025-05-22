@@ -17,16 +17,22 @@ struct FileChangeView_Previews: PreviewProvider {
   static var previews: some View {
     Group {
       // Preview collapsed state
-      FileChangeView(change: mockFileDiffViewModel)
+      FileChangeView(change: mockFileDiffViewModel, editState: .applied)
         .frame(width: 500)
         .preferredColorScheme(.dark)
         .previewDisplayName("Collapsed State")
 
       // Preview expanded state (pre-expanded)
-      FileChangeView(change: mockFileDiffViewModel, initiallyExpanded: true)
+      FileChangeView(change: mockFileDiffViewModel, editState: .rejected, initiallyExpanded: true)
         .frame(width: 500, height: 600)
         .preferredColorScheme(.dark)
         .previewDisplayName("Expanded State")
+
+      // Error state
+      FileChangeView(change: mockFileDiffViewModel, editState: .error("Could not apply file change."))
+        .frame(width: 500)
+        .preferredColorScheme(.dark)
+        .previewDisplayName("Error State")
     }
     .padding()
     .background(Color.black)

@@ -123,7 +123,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
           model: selectedModel,
           context: DefaultChatContext(
             projectRoot: projectRoot,
-            prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() }),
+            prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() },
+            chatMode: input.mode),
           migrated: true,
           handleUpdateStream: { newMessages in
             Task { @MainActor [weak self] in
@@ -257,14 +258,17 @@ struct DefaultChatContext: ChatContext {
 
   init(
     projectRoot: URL,
-    prepareForWriteToolUse: @escaping @Sendable () async -> Void)
+    prepareForWriteToolUse: @escaping @Sendable () async -> Void,
+    chatMode: ChatMode)
   {
     self.projectRoot = projectRoot
     self.prepareForWriteToolUse = prepareForWriteToolUse
+    self.chatMode = chatMode
   }
 
   let projectRoot: URL
   let prepareForWriteToolUse: @Sendable () async -> Void
+  let chatMode: ChatMode
 }
 
 // MARK: - ChatEvent

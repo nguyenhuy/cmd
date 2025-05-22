@@ -1,14 +1,18 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import ChatFoundation
 import Foundation
 
 enum Prompt {
-  static func defaultPrompt(projectRoot: URL) -> String {
+  static func defaultPrompt(projectRoot: URL, mode: ChatMode) -> String {
     """
     You are an intelligent programmer. You are happy to help answer any questions that the user has (usually they will be about iOS/MacOS development).
 
-    1. When the user is asking for edits to their code, use the 'edit_files' tool to make the changes. When you need to reference code for something other than a change, for instance to illustrate something you are describing, be sure to use the correct format:
+    1. \(mode == .agent
+      ? "When the user is asking for edits to their code, use the 'edit_or_create_files' tool to make the changes. "
+      :
+      "")When you need to reference code for something other than a change, for instance to illustrate something you are describing, be sure to use the correct format:
 
     1.1 Code formatting:
 

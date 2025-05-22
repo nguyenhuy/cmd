@@ -1,27 +1,34 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import CodePreview
 import Combine
+import Dependencies
 import FileDiffFoundation
 import Foundation
+import FoundationInterfaces
+import JSONFoundation
 import Observation
+import SwiftUI
 import ToolFoundation
+import XcodeControllerServiceInterface
 
 // MARK: - ToolUseViewModel
 
 @Observable
 @MainActor
 final class ToolUseViewModel {
-
   init(
     status: EditFilesTool.Use.Status,
     input: EditFilesTool.Use.Input,
-    isInputComplete: Bool)
+    isInputComplete: Bool,
+    updateToolStatus: @escaping (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void)
   {
     self.status = status.value
     self.input = input
     self.isInputComplete = isInputComplete
+    self.updateToolStatus = updateToolStatus
 
     handleUpdatedInput()
 
@@ -32,8 +39,16 @@ final class ToolUseViewModel {
     }
   }
 
+  typealias Input = EditFilesTool.Use.Input
+
   var isInputComplete: Bool
   var status: ToolUseExecutionStatus<EditFilesTool.Output>
+
+  @ObservationIgnored var toolResults: [String: JSON.Value] = [:] {
+    didSet {
+      updateToolStatus(.completed(.success(.init(result: .object(toolResults)))))
+    }
+  }
 
   var input: EditFilesTool.Use.Input {
     didSet {
@@ -41,30 +56,108 @@ final class ToolUseViewModel {
     }
   }
 
-  var changes: [(path: URL, change: FileDiffViewModel)] {
-    changedFiles.compactMap { file in
-      guard let model = changedFilesModels[file.path] else { return nil }
-      return (file, model)
+  var changes: [(path: URL, change: FileDiffViewModel, state: FileEditState)] {
+    filesEdit.compactMap { file, state in
+      guard let model = filesEditModels[file.path] else { return nil }
+      return (file, model, state)
     }
   }
 
-  private var changedFiles = [URL]()
-  private var changedFilesModels = [String: FileDiffViewModel]()
+  /// Update the tool result status, acknowledging the suggestion received.
+  func acknowledgeSuggestionReceived() {
+    toolResults = input.files.reduce(into: [String: JSON.Value]()) { acc, fileChange in
+      acc[fileChange.path] = "Changes suggested."
+    }
+  }
 
+  /// Apply the suggested change to one file and update the tool result status.
+  @MainActor
+  func applyChanges(to file: URL) async {
+    do {
+      try await modifyOneFile(file: file)
+      toolResults[file.path] = "Changes applied."
+    } catch {
+      toolResults[file.path] = .string("Error applying changes: \(error.localizedDescription)")
+    }
+  }
+
+  /// Apply all the suggested change and update the tool result status.
+  @MainActor
+  func applyAllChanges() async {
+    var results: [String: JSON.Value] = [:]
+
+    for fileChange in input.files {
+      do {
+        try await modifyOneFile(file: URL(filePath: fileChange.path))
+        results[fileChange.path] = "Changes applied."
+      } catch {
+        results[fileChange.path] = .string("Error applying changes: \(error.localizedDescription)")
+      }
+    }
+    toolResults = results
+  }
+
+  /// Undo the changes applied to one file, and update the tool status.
+  @MainActor
+  func undoChangesApplied(to file: URL) async {
+    do {
+      try await undoModificationToOneFile(file: file)
+      toolResults[file.path] = "Changes rejected."
+    } catch {
+      toolResults[file.path] = .string("Error rejecting changes: \(error.localizedDescription)")
+    }
+  }
+
+  /// Undo all the changes applied for this tool use, and update the tool status.
+  @MainActor
+  func undoAllAppliedChanges() async {
+    var results: [String: JSON.Value] = [:]
+
+    for fileChange in input.files {
+      do {
+        try await undoModificationToOneFile(file: URL(filePath: fileChange.path))
+        results[fileChange.path] = "Changes rejected."
+      } catch {
+        results[fileChange.path] = .string("Error rejecting changes: \(error.localizedDescription)")
+      }
+    }
+    toolResults = results
+  }
+
+  func copyChanges(to file: URL) {
+    if let targetContent = filesEditModels[file.path]?.targetContent {
+      let pasteboard = NSPasteboard.general
+      pasteboard.clearContents()
+      pasteboard.setString(targetContent, forType: .string)
+    }
+  }
+
+  @ObservationIgnored
+  @Dependency(\.xcodeController) private var xcodeController
+  @ObservationIgnored
+  @Dependency(\.fileManager) private var fileManager
+  @ObservationIgnored
+  @Dependency(\.xcodeObserver) private var xcodeObserver
+
+  private let updateToolStatus: (ToolUseExecutionStatus<EditFilesTool.Output>) -> Void
+  private var filesEdit = [URL: FileEditState]()
+  private var filesEditModels = [String: FileDiffViewModel]()
+
+  /// As the input can be streamed, its value can change. Handle an update to the input.
   private func handleUpdatedInput() {
     // Ensure changes to each given file are grouped together, in case the LLM would not do this well.
     var changes = [String: [EditFilesTool.Use.Input.FileChange.Change]]()
-    var changedFiles = [URL]()
+    var filesEdit = filesEdit
     for file in input.files {
       if var existingChanges = changes[file.path] {
         existingChanges.append(contentsOf: file.changes)
         changes[file.path] = existingChanges
       } else {
         changes[file.path] = file.changes
-        changedFiles.append(URL(fileURLWithPath: file.path))
+        filesEdit[URL(fileURLWithPath: file.path)] = .suggested
       }
     }
-    self.changedFiles = changedFiles
+    self.filesEdit = filesEdit
 
     // For each file,
     for (filePath, changes) in changes {
@@ -72,8 +165,9 @@ final class ToolUseViewModel {
     }
   }
 
+  /// As the input can be streamed, its value can change. Handle an update to the input for one file change.
   private func updateChanges(for file: URL, changes: [EditFilesTool.Use.Input.FileChange.Change]) {
-    if let model = changedFilesModels[file.path] {
+    if let model = filesEditModels[file.path] {
       model.handle(newChanges: changes.map { .init(search: $0.search, replace: $0.replace) })
     } else {
       if
@@ -81,9 +175,62 @@ final class ToolUseViewModel {
           FileDiff.SearchReplace(search: $0.search, replace: $0.replace)
         })
       {
-        changedFilesModels[file.path] = model
+        filesEditModels[file.path] = model
       }
     }
   }
 
+  /// Change one file according to the specified change.
+  @MainActor
+  private func modifyOneFile(file: URL) async throws {
+    do {
+      guard let diffViewModel = filesEditModels[file.path] else {
+        throw AppError("No changes available for file \(file.path)")
+      }
+      let baseLineContent = diffViewModel.baseLineContent
+      let targetContent = diffViewModel.targetContent
+      let fileDiff = try FileDiff.getFileChange(changing: baseLineContent, to: targetContent)
+      try await xcodeController.apply(fileChange: FileChange(
+        filePath: file,
+        oldContent: baseLineContent,
+        suggestedNewContent: fileDiff.newContent,
+        selectedChange: fileDiff.diff))
+      filesEdit[file] = .applied
+    } catch {
+      filesEdit[file] = .error(error.localizedDescription)
+      throw error
+    }
+  }
+
+  /// Undo changes to one file.
+  @MainActor
+  private func undoModificationToOneFile(file: URL) async throws {
+    do {
+      guard let diffViewModel = filesEditModels[file.path] else {
+        throw AppError("No changes available for file \(file.path)")
+      }
+      let baseLineContent = diffViewModel.baseLineContent
+      let targetContent = diffViewModel.targetContent
+      let fileDiff = try FileDiff.getFileChange(changing: targetContent, to: baseLineContent)
+      try await xcodeController.apply(fileChange: FileChange(
+        filePath: file,
+        oldContent: targetContent,
+        suggestedNewContent: fileDiff.newContent,
+        selectedChange: fileDiff.diff))
+      filesEdit[file] = .rejected
+    } catch {
+      filesEdit[file] = .error(error.localizedDescription)
+      throw error
+    }
+  }
+
+}
+
+// MARK: - FileEditState
+
+enum FileEditState {
+  case suggested
+  case applied
+  case rejected
+  case error(String)
 }
