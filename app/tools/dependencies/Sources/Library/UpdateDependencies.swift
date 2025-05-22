@@ -263,7 +263,11 @@ extension UpdateDependencies {
       .compactMap({ $0.modulePath?.path })
       .uniqueSorted(by: \.self)
     {
-      try GenerateModulePackage(modulePath: modulePath, allTargets: allTargets, basePackageSource: basePackageSource).run()
+      try GenerateModulePackage(
+        modulePath: modulePath,
+        allTargets: allTargets,
+        basePackageSource: basePackageSource,
+        basePackagePath: basePackagePath).run()
     }
   }
 }

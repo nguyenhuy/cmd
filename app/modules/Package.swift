@@ -68,902 +68,746 @@ extension Target {
 
 var targets: [Target] = []
 
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "App",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
-      "AccessibilityFoundation",
-      "AccessibilityObjCFoundation",
-      "AppEventService",
-      "AppEventServiceInterface",
-      "AskFollowUpTool",
-      "Chat",
-      "ChatAppEvents",
-      "CheckpointService",
-      "CheckpointServiceInterface",
-      "DependencyFoundation",
-      "EditFilesTool",
-      "ExecuteCommandTool",
-      "ExtensionCommandHandler",
-      "FileSuggestionService",
-      "FileSuggestionServiceInterface",
-      "FoundationInterfaces",
-      "HighlighterServiceInterface",
-      "LLMService",
-      "LLMServiceInterface",
-      "LoggingServiceInterface",
-      "LSTool",
-      "Onboarding",
-      "PermissionsService",
-      "PermissionsServiceInterface",
-      "ReadFileTool",
-      "SearchFilesTool",
-      "ServerService",
-      "ServerServiceInterface",
-      "SettingsFeature",
-      "SettingsService",
-      "SettingsServiceInterface",
-      "ShellService",
-      "ShellServiceInterface",
-      "ThreadSafe",
-      "ToolFoundation",
-      "XcodeControllerService",
-      "XcodeControllerServiceInterface",
-      "XcodeObserverService",
-      "XcodeObserverServiceInterface",
-    ],
-    resources: [],
-    testDependencies: [],
-    path: "./App"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "DLS",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "LoggingServiceInterface",
-      "ServerServiceInterface",
-    ],
-    resources: [
-      .process("Resources/fileIcons"),
-    ],
-    testDependencies: [],
-    path: "./coreui/DLS"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "CodePreview",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DLS",
-      "FileDiffFoundation",
-      "FileDiffTypesFoundation",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "XcodeControllerServiceInterface",
-      "XcodeObserverServiceInterface",
-    ],
-    testDependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "FileDiffFoundation",
-      "FileDiffTypesFoundation",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "SwiftTesting",
-      "XcodeControllerServiceInterface",
-    ],
-    path: "./coreui/CodePreview"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "AskFollowUpTool",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DLS",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "ToolFoundation",
-    ],
-    testDependencies: [
-      "LSTool",
-      "ServerServiceInterface",
-      "SwiftTesting",
-    ],
-    path: "./plugins/tools/AskFollowUpTool"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ReadFileTool",
-    dependencies: [
-      "CodePreview",
-      "DLS",
-      "FoundationInterfaces",
-      "HighlighterServiceInterface",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "ToolFoundation",
-    ],
-    testDependencies: [
-      "FoundationInterfaces",
-      "LLMServiceInterface",
-      "SwiftTesting",
-    ],
-    path: "./plugins/tools/ReadFileTool"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "LSTool",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DLS",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "ToolFoundation",
-    ],
-    testDependencies: [
-      "ServerServiceInterface",
-      "SwiftTesting",
-    ],
-    path: "./plugins/tools/LSTool"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ExecuteCommandTool",
-    dependencies: [
-      "AppFoundation",
-      "CodePreview",
-      "ConcurrencyFoundation",
-      "DLS",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "ShellServiceInterface",
-      "ToolFoundation",
-    ],
-    testDependencies: [
-      "LLMServiceInterface",
-      "ServerServiceInterface",
-      "ShellServiceInterface",
-      "SwiftTesting",
-    ],
-    path: "./plugins/tools/ExecuteCommandTool"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "EditFilesTool",
-    dependencies: [
-      "AppFoundation",
-      "CodePreview",
-      "ConcurrencyFoundation",
-      "DLS",
-      "FileDiffFoundation",
-      "FileDiffTypesFoundation",
-      "FoundationInterfaces",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "ToolFoundation",
-      "XcodeControllerServiceInterface",
-      "XcodeObserverServiceInterface",
-    ],
-    testDependencies: [],
-    path: "./plugins/tools/EditFilesTool"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "SearchFilesTool",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DLS",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "ToolFoundation",
-    ],
-    testDependencies: [
-      "ServerServiceInterface",
-      "SwiftTesting",
-    ],
-    path: "./plugins/tools/SearchFilesTool"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ExtensionCommandHandler",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "AppEventServiceInterface",
-      "ExtensionEventsInterface",
-      "LoggingServiceInterface",
-      "SharedValuesFoundation",
-      "ShellServiceInterface",
-      "XcodeObserverServiceInterface",
-    ],
-    path: "./plugins/ExtensionCommandHandler"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "SettingsFeature",
-    dependencies: [
-      "DLS",
-      "SettingsServiceInterface",
-    ],
-    testDependencies: [],
-    path: "./features/Settings"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "Chat",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      .product(name: "Down", package: "Down"),
-      .product(name: "HighlightSwift", package: "highlightswift"),
-      "AppEventServiceInterface",
-      "AppFoundation",
-      "ChatAppEvents",
-      "ChatFoundation",
-      "CheckpointServiceInterface",
-      "CodePreview",
-      "ConcurrencyFoundation",
-      "DLS",
-      "FileDiffFoundation",
-      "FileDiffTypesFoundation",
-      "FileSuggestionServiceInterface",
-      "FoundationInterfaces",
-      "HighlighterServiceInterface",
-      "JSONFoundation",
-      "LLMServiceInterface",
-      "LoggingServiceInterface",
-      "ServerServiceInterface",
-      "SettingsServiceInterface",
-      "ToolFoundation",
-      "XcodeObserverServiceInterface",
-    ],
-    testDependencies: [
-      "AccessibilityFoundation",
-      "AppEventServiceInterface",
-      "ChatAppEvents",
-      "ChatFoundation",
-      "CheckpointServiceInterface",
-      "ConcurrencyFoundation",
-      "FileSuggestionServiceInterface",
-      "FoundationInterfaces",
-      "LLMServiceInterface",
-      "ServerServiceInterface",
-      "SettingsServiceInterface",
-      "SwiftTesting",
-      "XcodeObserverServiceInterface",
-    ],
-    path: "./features/Chat"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "Onboarding",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "DLS",
-      "PermissionsServiceInterface",
-    ],
-    path: "./features/Onboarding"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "AppExtension",
-    dependencies: [
-      "AccessibilityFoundation",
-      "DependencyFoundation",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "SharedValuesFoundation",
-      "ThreadSafe",
-    ],
-    path: "./AppExtension"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "FileDiffTypesFoundation",
-    dependencies: [],
-    path: "./foundations/FileDiffTypesFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "FoundationInterfaces",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "JSONFoundation",
-      "ThreadSafe",
-    ],
-    testDependencies: [],
-    path: "./foundations/FoundationInterfaces"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "FileDiffFoundation",
-    dependencies: [
-      .product(name: "HighlightSwift", package: "highlightswift"),
-      "AppFoundation",
-      "FileDiffTypesFoundation",
-      "LoggingServiceInterface",
-    ],
-    testDependencies: [
-      .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
-      "FileDiffTypesFoundation",
-    ],
-    testExclude: ["__Snapshots__"],
-    path: "./foundations/FileDiffFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ToolFoundation",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "AppFoundation",
-      "ChatFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "JSONFoundation",
-      "ThreadSafe",
-    ],
-    testDependencies: [],
-    path: "./foundations/ToolFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "AccessibilityObjCFoundation",
-    dependencies: [],
-    path: "./foundations/AccessibilityObjCFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ConcurrencyFoundation",
-    dependencies: [],
-    testDependencies: [
-      "SwiftTesting",
-    ],
-    path: "./foundations/ConcurrencyFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "AppFoundation",
-    dependencies: [],
-    testDependencies: [],
-    path: "./foundations/AppFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ChatAppEvents",
-    dependencies: [
-      "AppEventServiceInterface",
-      "ChatFoundation",
-    ],
-    path: "./foundations/ChatAppEvents"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "SwiftTesting",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-    ],
-    path: "./foundations/SwiftTesting"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ChatFoundation",
-    dependencies: [],
-    testDependencies: [
-      "SwiftTesting",
-    ],
-    path: "./foundations/ChatFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "DependencyFoundation",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-    ],
-    path: "./foundations/DependencyFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "SharedValuesFoundation",
-    dependencies: [
-      "FileDiffFoundation",
-    ],
-    path: "./foundations/SharedValuesFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "JSONFoundation",
-    dependencies: [],
-    testDependencies: [],
-    path: "./foundations/JSONFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "AccessibilityFoundation",
-    dependencies: [],
-    testDependencies: [],
-    path: "./foundations/AccessibilityFoundation"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.macroModule(
-    name: "ThreadSafe",
-    dependencies: [
-      .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-      .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-      "ConcurrencyFoundation",
-      "ThreadSafeMacro",
-    ],
-    macroDependencies: [
-      .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
-      .product(name: "SwiftSyntax", package: "swift-syntax"),
-      .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-      "ConcurrencyFoundation",
-    ],
-    testDependencies: [
-      .product(name: "MacroTesting", package: "swift-macro-testing"),
-      .product(name: "SwiftSyntax", package: "swift-syntax"),
-      .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
-      "ThreadSafeMacro",
-    ],
-    path: "./macros/ThreadSafe"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "FileSuggestionServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "ThreadSafe",
-    ],
-    testDependencies: [],
-    path: "./serviceInterfaces/FileSuggestionServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "CheckpointServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "AppFoundation",
-      "ConcurrencyFoundation",
-    ],
-    testDependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "SwiftTesting",
-    ],
-    path: "./serviceInterfaces/CheckpointServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "AppEventServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "ConcurrencyFoundation",
-    ],
-    path: "./serviceInterfaces/AppEventServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "PermissionsServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "ConcurrencyFoundation",
-      "ThreadSafe",
-    ],
-    testDependencies: [
-      "SwiftTesting",
-    ],
-    path: "./serviceInterfaces/PermissionsServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "LLMServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "ConcurrencyFoundation",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "ThreadSafe",
-      "ToolFoundation",
-    ],
-    testDependencies: [],
-    path: "./serviceInterfaces/LLMServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ExtensionEventsInterface",
-    dependencies: [
-      "AppEventServiceInterface",
-    ],
-    path: "./serviceInterfaces/ExtensionEventsInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "LoggingServiceInterface",
-    dependencies: [
-      "ConcurrencyFoundation",
-      "FoundationInterfaces",
-      "ThreadSafe",
-    ],
-    path: "./serviceInterfaces/LoggingServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "SettingsServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "ConcurrencyFoundation",
-    ],
-    testDependencies: [
-      "SwiftTesting",
-    ],
-    path: "./serviceInterfaces/SettingsServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ShellServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "LoggingServiceInterface",
-      "ThreadSafe",
-    ],
-    testDependencies: [],
-    path: "./serviceInterfaces/ShellServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ServerServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "JSONFoundation",
-    ],
-    testDependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "SwiftTesting",
-    ],
-    path: "./serviceInterfaces/ServerServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "HighlighterServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      .product(name: "HighlightSwift", package: "highlightswift"),
-      "DependencyFoundation",
-    ],
-    path: "./serviceInterfaces/HighlighterServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "XcodeControllerServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "FileDiffFoundation",
-      "FileDiffTypesFoundation",
-      "ThreadSafe",
-    ],
-    path: "./serviceInterfaces/XcodeControllerServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "XcodeObserverServiceInterface",
-    dependencies: [
-      .product(name: "Dependencies", package: "swift-dependencies"),
-      "AccessibilityFoundation",
-      "ConcurrencyFoundation",
-    ],
-    testDependencies: [],
-    path: "./serviceInterfaces/XcodeObserverServiceInterface"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ServerService",
-    dependencies: [
-      "AppEventServiceInterface",
-      "AppFoundation",
-      "DependencyFoundation",
-      "ExtensionEventsInterface",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "ServerServiceInterface",
-      "ThreadSafe",
-    ],
-    resources: [.process("Resources")],
-    testDependencies: [
-      "AppFoundation",
-      "JSONFoundation",
-      "ServerServiceInterface",
-      "SwiftTesting",
-    ],
-    path: "./services/ServerService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "CheckpointService",
-    dependencies: [
-      "AppFoundation",
-      "CheckpointServiceInterface",
-      "DependencyFoundation",
-      "JSONFoundation",
-      "ServerServiceInterface",
-    ],
-    testDependencies: [],
-    path: "./services/CheckpointService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "PermissionsService",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "LoggingServiceInterface",
-      "PermissionsServiceInterface",
-      "ShellServiceInterface",
-      "ThreadSafe",
-    ],
-    testDependencies: [
-      "ConcurrencyFoundation",
-      "ShellServiceInterface",
-      "SwiftTesting",
-    ],
-    path: "./services/PermissionsService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "ShellService",
-    dependencies: [
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "LoggingServiceInterface",
-      "ShellServiceInterface",
-      "ThreadSafe",
-    ],
-    testDependencies: [],
-    path: "./services/ShellService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "XcodeControllerService",
-    dependencies: [
-      "AppEventServiceInterface",
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "ExtensionEventsInterface",
-      "FileDiffFoundation",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "SettingsServiceInterface",
-      "SharedValuesFoundation",
-      "ShellServiceInterface",
-      "ThreadSafe",
-      "XcodeControllerServiceInterface",
-      "XcodeObserverServiceInterface",
-    ],
-    testDependencies: [],
-    path: "./services/XcodeControllerService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "FileSuggestionService",
-    dependencies: [
-      .product(name: "Ifrit", package: "Ifrit"),
-      .product(name: "XcodeProj", package: "XcodeProj"),
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "FileSuggestionServiceInterface",
-      "FoundationInterfaces",
-      "ShellServiceInterface",
-      "ThreadSafe",
-      "XcodeObserverServiceInterface",
-    ],
-    testDependencies: [
-      "ConcurrencyFoundation",
-      "FoundationInterfaces",
-      "ShellServiceInterface",
-      "SwiftTesting",
-      "XcodeObserverServiceInterface",
-    ],
-    testResources: [
-      .copy("resources/"),
-    ],
-    path: "./services/FileSuggestionService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "AppEventService",
-    dependencies: [
-      "AppEventServiceInterface",
-      "DependencyFoundation",
-      "LoggingServiceInterface",
-      "ThreadSafe",
-    ],
-    path: "./services/AppEventService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "SettingsService",
-    dependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "SettingsServiceInterface",
-      "SharedValuesFoundation",
-      "ThreadSafe",
-    ],
-    testDependencies: [
-      "ConcurrencyFoundation",
-      "FoundationInterfaces",
-      "SettingsServiceInterface",
-      "SharedValuesFoundation",
-      "SwiftTesting",
-    ],
-    path: "./services/SettingsService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "XcodeObserverService",
-    dependencies: [
-      "AccessibilityFoundation",
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "FoundationInterfaces",
-      "LoggingServiceInterface",
-      "PermissionsServiceInterface",
-      "ThreadSafe",
-      "XcodeObserverServiceInterface",
-    ],
-    testDependencies: [],
-    path: "./services/XcodeObserverService"))
-
-targets.append(contentsOf: // Copyright Xcompanion. All rights reserved.
-  // Licensed under the XXX License. See License.txt in the project root for license information.
-
-  Target.module(
-    name: "LLMService",
-    dependencies: [
-      .product(name: "JSONScanner", package: "JSONScanner"),
-      .product(name: "SwiftOpenAI", package: "SwiftOpenAI"),
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "DependencyFoundation",
-      "JSONFoundation",
-      "LLMServiceInterface",
-      "LoggingServiceInterface",
-      "ServerServiceInterface",
-      "SettingsServiceInterface",
-      "ToolFoundation",
-    ],
-    testDependencies: [
-      "AppFoundation",
-      "ConcurrencyFoundation",
-      "JSONFoundation",
-      "LLMServiceInterface",
-      "ServerServiceInterface",
-      "SettingsServiceInterface",
-      "SwiftTesting",
-      "ToolFoundation",
-    ],
-    path: "./services/LLMService"))
+targets.append(contentsOf: Target.module(
+  name: "App",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
+    "AccessibilityFoundation",
+    "AccessibilityObjCFoundation",
+    "AppEventService",
+    "AppEventServiceInterface",
+    "AskFollowUpTool",
+    "Chat",
+    "ChatAppEvents",
+    "CheckpointService",
+    "CheckpointServiceInterface",
+    "DependencyFoundation",
+    "EditFilesTool",
+    "ExecuteCommandTool",
+    "ExtensionCommandHandler",
+    "FileSuggestionService",
+    "FileSuggestionServiceInterface",
+    "FoundationInterfaces",
+    "HighlighterServiceInterface",
+    "LLMService",
+    "LLMServiceInterface",
+    "LoggingServiceInterface",
+    "LSTool",
+    "Onboarding",
+    "PermissionsService",
+    "PermissionsServiceInterface",
+    "ReadFileTool",
+    "SearchFilesTool",
+    "ServerService",
+    "ServerServiceInterface",
+    "SettingsFeature",
+    "SettingsService",
+    "SettingsServiceInterface",
+    "ShellService",
+    "ShellServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+    "XcodeControllerService",
+    "XcodeControllerServiceInterface",
+    "XcodeObserverService",
+    "XcodeObserverServiceInterface",
+  ],
+  resources: [],
+  testDependencies: [],
+  path: "./App"))
+
+targets.append(contentsOf: Target.module(
+  name: "DLS",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "LoggingServiceInterface",
+    "ServerServiceInterface",
+  ],
+  resources: [
+    .process("Resources/fileIcons"),
+  ],
+  testDependencies: [],
+  path: "./coreui/DLS"))
+
+targets.append(contentsOf: Target.module(
+  name: "CodePreview",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
+  ],
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "SwiftTesting",
+    "XcodeControllerServiceInterface",
+  ],
+  path: "./coreui/CodePreview"))
+
+targets.append(contentsOf: Target.module(
+  name: "AskFollowUpTool",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "LSTool",
+    "ServerServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./plugins/tools/AskFollowUpTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "ReadFileTool",
+  dependencies: [
+    "CodePreview",
+    "DLS",
+    "FoundationInterfaces",
+    "HighlighterServiceInterface",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./plugins/tools/ReadFileTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "LSTool",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "ServerServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./plugins/tools/LSTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "ExecuteCommandTool",
+  dependencies: [
+    "AppFoundation",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ShellServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "LLMServiceInterface",
+    "ServerServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./plugins/tools/ExecuteCommandTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "EditFilesTool",
+  dependencies: [
+    "AppFoundation",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "DLS",
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+    "FoundationInterfaces",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ToolFoundation",
+    "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
+  ],
+  testDependencies: [],
+  path: "./plugins/tools/EditFilesTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "SearchFilesTool",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "ServerServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./plugins/tools/SearchFilesTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "ExtensionCommandHandler",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppEventServiceInterface",
+    "ExtensionEventsInterface",
+    "LoggingServiceInterface",
+    "SharedValuesFoundation",
+    "ShellServiceInterface",
+    "XcodeObserverServiceInterface",
+  ],
+  path: "./plugins/ExtensionCommandHandler"))
+
+targets.append(contentsOf: Target.module(
+  name: "SettingsFeature",
+  dependencies: [
+    "DLS",
+    "SettingsServiceInterface",
+  ],
+  testDependencies: [],
+  path: "./features/Settings"))
+
+targets.append(contentsOf: Target.module(
+  name: "Chat",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    .product(name: "Down", package: "Down"),
+    .product(name: "HighlightSwift", package: "highlightswift"),
+    "AppEventServiceInterface",
+    "AppFoundation",
+    "ChatAppEvents",
+    "ChatFoundation",
+    "CheckpointServiceInterface",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "DLS",
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+    "FileSuggestionServiceInterface",
+    "FoundationInterfaces",
+    "HighlighterServiceInterface",
+    "JSONFoundation",
+    "LLMServiceInterface",
+    "LoggingServiceInterface",
+    "ServerServiceInterface",
+    "SettingsServiceInterface",
+    "ToolFoundation",
+    "XcodeObserverServiceInterface",
+  ],
+  testDependencies: [
+    "AccessibilityFoundation",
+    "AppEventServiceInterface",
+    "ChatAppEvents",
+    "ChatFoundation",
+    "CheckpointServiceInterface",
+    "ConcurrencyFoundation",
+    "FileSuggestionServiceInterface",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "ServerServiceInterface",
+    "SettingsServiceInterface",
+    "SwiftTesting",
+    "XcodeObserverServiceInterface",
+  ],
+  path: "./features/Chat"))
+
+targets.append(contentsOf: Target.module(
+  name: "Onboarding",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "DLS",
+    "PermissionsServiceInterface",
+  ],
+  path: "./features/Onboarding"))
+
+targets.append(contentsOf: Target.module(
+  name: "AppExtension",
+  dependencies: [
+    "AccessibilityFoundation",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "SharedValuesFoundation",
+    "ThreadSafe",
+  ],
+  path: "./AppExtension"))
+
+targets.append(contentsOf: Target.module(
+  name: "FileDiffTypesFoundation",
+  dependencies: [],
+  path: "./foundations/FileDiffTypesFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "FoundationInterfaces",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "JSONFoundation",
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./foundations/FoundationInterfaces"))
+
+targets.append(contentsOf: Target.module(
+  name: "FileDiffFoundation",
+  dependencies: [
+    .product(name: "HighlightSwift", package: "highlightswift"),
+    "AppFoundation",
+    "FileDiffTypesFoundation",
+    "LoggingServiceInterface",
+  ],
+  testDependencies: [
+    .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+    "FileDiffTypesFoundation",
+  ],
+  testExclude: ["__Snapshots__"],
+  path: "./foundations/FileDiffFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "ToolFoundation",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
+    "ChatFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "JSONFoundation",
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./foundations/ToolFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "AccessibilityObjCFoundation",
+  dependencies: [],
+  path: "./foundations/AccessibilityObjCFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "ConcurrencyFoundation",
+  dependencies: [],
+  testDependencies: [
+    "SwiftTesting",
+  ],
+  path: "./foundations/ConcurrencyFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "AppFoundation",
+  dependencies: [],
+  testDependencies: [],
+  path: "./foundations/AppFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "ChatAppEvents",
+  dependencies: [
+    "AppEventServiceInterface",
+    "ChatFoundation",
+  ],
+  path: "./foundations/ChatAppEvents"))
+
+targets.append(contentsOf: Target.module(
+  name: "SwiftTesting",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+  ],
+  path: "./foundations/SwiftTesting"))
+
+targets.append(contentsOf: Target.module(
+  name: "ChatFoundation",
+  dependencies: [],
+  testDependencies: [
+    "SwiftTesting",
+  ],
+  path: "./foundations/ChatFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "DependencyFoundation",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+  ],
+  path: "./foundations/DependencyFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "SharedValuesFoundation",
+  dependencies: [
+    "FileDiffFoundation",
+  ],
+  path: "./foundations/SharedValuesFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "JSONFoundation",
+  dependencies: [],
+  testDependencies: [],
+  path: "./foundations/JSONFoundation"))
+
+targets.append(contentsOf: Target.module(
+  name: "AccessibilityFoundation",
+  dependencies: [],
+  testDependencies: [],
+  path: "./foundations/AccessibilityFoundation"))
+
+targets.append(contentsOf: Target.macroModule(
+  name: "ThreadSafe",
+  dependencies: [
+    .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+    .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+    "ConcurrencyFoundation",
+    "ThreadSafeMacro",
+  ],
+  macroDependencies: [
+    .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+    .product(name: "SwiftSyntax", package: "swift-syntax"),
+    .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+    "ConcurrencyFoundation",
+  ],
+  testDependencies: [
+    .product(name: "MacroTesting", package: "swift-macro-testing"),
+    .product(name: "SwiftSyntax", package: "swift-syntax"),
+    .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+    "ThreadSafeMacro",
+  ],
+  path: "./macros/ThreadSafe"))
+
+targets.append(contentsOf: Target.module(
+  name: "FileSuggestionServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./serviceInterfaces/FileSuggestionServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "CheckpointServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
+    "ConcurrencyFoundation",
+  ],
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "SwiftTesting",
+  ],
+  path: "./serviceInterfaces/CheckpointServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "AppEventServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
+  ],
+  path: "./serviceInterfaces/AppEventServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "PermissionsServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
+    "ThreadSafe",
+  ],
+  testDependencies: [
+    "SwiftTesting",
+  ],
+  path: "./serviceInterfaces/PermissionsServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "LLMServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  testDependencies: [],
+  path: "./serviceInterfaces/LLMServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "ExtensionEventsInterface",
+  dependencies: [
+    "AppEventServiceInterface",
+  ],
+  path: "./serviceInterfaces/ExtensionEventsInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "LoggingServiceInterface",
+  dependencies: [
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "ThreadSafe",
+  ],
+  path: "./serviceInterfaces/LoggingServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "SettingsServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
+  ],
+  testDependencies: [
+    "SwiftTesting",
+  ],
+  path: "./serviceInterfaces/SettingsServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "ShellServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "LoggingServiceInterface",
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./serviceInterfaces/ShellServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "ServerServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+  ],
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "SwiftTesting",
+  ],
+  path: "./serviceInterfaces/ServerServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "HighlighterServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    .product(name: "HighlightSwift", package: "highlightswift"),
+    "DependencyFoundation",
+  ],
+  path: "./serviceInterfaces/HighlighterServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "XcodeControllerServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "FileDiffFoundation",
+    "FileDiffTypesFoundation",
+    "ThreadSafe",
+  ],
+  path: "./serviceInterfaces/XcodeControllerServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "XcodeObserverServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "AccessibilityFoundation",
+    "ConcurrencyFoundation",
+  ],
+  testDependencies: [],
+  path: "./serviceInterfaces/XcodeObserverServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "ServerService",
+  dependencies: [
+    "AppEventServiceInterface",
+    "AppFoundation",
+    "DependencyFoundation",
+    "ExtensionEventsInterface",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "ServerServiceInterface",
+    "ThreadSafe",
+  ],
+  resources: [.process("Resources")],
+  testDependencies: [
+    "AppFoundation",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./services/ServerService"))
+
+targets.append(contentsOf: Target.module(
+  name: "CheckpointService",
+  dependencies: [
+    "AppFoundation",
+    "CheckpointServiceInterface",
+    "DependencyFoundation",
+    "JSONFoundation",
+    "ServerServiceInterface",
+  ],
+  testDependencies: [],
+  path: "./services/CheckpointService"))
+
+targets.append(contentsOf: Target.module(
+  name: "PermissionsService",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "LoggingServiceInterface",
+    "PermissionsServiceInterface",
+    "ShellServiceInterface",
+    "ThreadSafe",
+  ],
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "ShellServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./services/PermissionsService"))
+
+targets.append(contentsOf: Target.module(
+  name: "ShellService",
+  dependencies: [
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "LoggingServiceInterface",
+    "ShellServiceInterface",
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./services/ShellService"))
+
+targets.append(contentsOf: Target.module(
+  name: "XcodeControllerService",
+  dependencies: [
+    "AppEventServiceInterface",
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "ExtensionEventsInterface",
+    "FileDiffFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "SettingsServiceInterface",
+    "SharedValuesFoundation",
+    "ShellServiceInterface",
+    "ThreadSafe",
+    "XcodeControllerServiceInterface",
+    "XcodeObserverServiceInterface",
+  ],
+  testDependencies: [],
+  path: "./services/XcodeControllerService"))
+
+targets.append(contentsOf: Target.module(
+  name: "FileSuggestionService",
+  dependencies: [
+    .product(name: "Ifrit", package: "Ifrit"),
+    .product(name: "XcodeProj", package: "XcodeProj"),
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "FileSuggestionServiceInterface",
+    "FoundationInterfaces",
+    "ShellServiceInterface",
+    "ThreadSafe",
+    "XcodeObserverServiceInterface",
+  ],
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "ShellServiceInterface",
+    "SwiftTesting",
+    "XcodeObserverServiceInterface",
+  ],
+  testResources: [
+    .copy("resources/"),
+  ],
+  path: "./services/FileSuggestionService"))
+
+targets.append(contentsOf: Target.module(
+  name: "AppEventService",
+  dependencies: [
+    "AppEventServiceInterface",
+    "DependencyFoundation",
+    "LoggingServiceInterface",
+    "ThreadSafe",
+  ],
+  path: "./services/AppEventService"))
+
+targets.append(contentsOf: Target.module(
+  name: "SettingsService",
+  dependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "SettingsServiceInterface",
+    "SharedValuesFoundation",
+    "ThreadSafe",
+  ],
+  testDependencies: [
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "SettingsServiceInterface",
+    "SharedValuesFoundation",
+    "SwiftTesting",
+  ],
+  path: "./services/SettingsService"))
+
+targets.append(contentsOf: Target.module(
+  name: "XcodeObserverService",
+  dependencies: [
+    "AccessibilityFoundation",
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "PermissionsServiceInterface",
+    "ThreadSafe",
+    "XcodeObserverServiceInterface",
+  ],
+  testDependencies: [],
+  path: "./services/XcodeObserverService"))
+
+targets.append(contentsOf: Target.module(
+  name: "LLMService",
+  dependencies: [
+    .product(name: "JSONScanner", package: "JSONScanner"),
+    .product(name: "SwiftOpenAI", package: "SwiftOpenAI"),
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "JSONFoundation",
+    "LLMServiceInterface",
+    "LoggingServiceInterface",
+    "ServerServiceInterface",
+    "SettingsServiceInterface",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "AppFoundation",
+    "ConcurrencyFoundation",
+    "JSONFoundation",
+    "LLMServiceInterface",
+    "ServerServiceInterface",
+    "SettingsServiceInterface",
+    "SwiftTesting",
+    "ToolFoundation",
+  ],
+  path: "./services/LLMService"))
 
 let package = Package(
   name: "Packages",
@@ -990,7 +834,8 @@ let package = Package(
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
     .package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.0"),
-    .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    // .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
 

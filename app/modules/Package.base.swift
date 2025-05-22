@@ -93,7 +93,8 @@ let package = Package(
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
     .package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.0"),
-    .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    // .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
 

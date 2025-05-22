@@ -10,10 +10,17 @@ import SwiftSyntax
 /// Generate the Package.swift file for one module.
 public final class GenerateModulePackage {
 
-  public init(modulePath: String, allTargets: [String: TargetInfo], basePackageSource: SourceFileSyntax) throws {
+  public init(
+    modulePath: String,
+    allTargets: [String: TargetInfo],
+    basePackageSource: SourceFileSyntax,
+    basePackagePath: URL)
+    throws
+  {
     self.modulePath = URL(fileURLWithPath: modulePath).canonicalURL
     self.allTargets = allTargets
     self.basePackageSource = basePackageSource
+    self.basePackagePath = basePackagePath
   }
 
   public func run() throws {
@@ -48,11 +55,14 @@ public final class GenerateModulePackage {
     }
 
     let packagePath = modulePath.appendingPathComponent("Package.swift")
-    let rewriter = try AddTargetToPackage(
-      source: basePackageSource,
+    var rewrittenFile = basePackageSource
+
+    rewrittenFile = UpdateRelativePathInPackage(packagePath: basePackagePath, targetPath: packagePath)
+      .visit(rewrittenFile)
+    rewrittenFile = try AddTargetToPackage(
+      source: rewrittenFile,
       packageDirPath: modulePath,
-      modules: [modulePath.path])
-    var rewrittenFile = rewriter.rewrite()
+      modules: [modulePath.path]).rewrite()
 
     rewrittenFile = UpdatePackage(
       packagePath: packagePath,
@@ -76,6 +86,7 @@ public final class GenerateModulePackage {
   let modulePath: URL
   let allTargets: [String: TargetInfo]
   let basePackageSource: SourceFileSyntax
+  let basePackagePath: URL
 
 }
 
@@ -154,5 +165,40 @@ final class UpdatePackage: SyntaxRewriter {
     }
 
     return ExprSyntax(super.visit(node.with(\.arguments, arguments)))
+  }
+}
+
+// MARK: - UpdateRelativePathInPackage
+
+/// Update relative path from the original package source to match their new location in the target package.
+final class UpdateRelativePathInPackage: SyntaxRewriter {
+
+  init(
+    packagePath: URL,
+    targetPath: URL)
+  {
+    self.packagePath = packagePath
+    self.targetPath = targetPath
+  }
+
+  let packagePath: URL
+  let targetPath: URL
+
+  override func visit(_ node: LabeledExprSyntax) -> LabeledExprSyntax {
+    guard node.label?.text.description == "path" else {
+      return super.visit(node)
+    }
+    guard
+      let segments = node.expression.as(StringLiteralExprSyntax.self)?.segments,
+      segments.count == 1, let path = segments.first?.description
+    else {
+      return super.visit(node)
+    }
+    guard path.starts(with: ".") else {
+      return super.visit(node)
+    }
+    let absolutePath = packagePath.deletingLastPathComponent().appending(path: path).canonicalURL
+    let newRelativePath = absolutePath.pathRelative(to: targetPath.deletingLastPathComponent())
+    return node.with(\.expression, ExprSyntax(makeExpr("\"\(newRelativePath)\"")))
   }
 }
