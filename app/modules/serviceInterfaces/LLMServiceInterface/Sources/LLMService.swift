@@ -12,8 +12,12 @@ public typealias UpdateStream = CurrentValueStream<[CurrentValueStream<Assistant
 // MARK: - ChatContext
 
 public protocol ChatContext: Sendable {
+  /// The path to the project that is being worked on.
+  var project: URL? { get }
   /// The root of the project that is being worked on.
-  var projectRoot: URL { get }
+  /// For a Swift package this is the same as the project. For an xcodeproj this is the containing directory.
+  var projectRoot: URL? { get }
+
   /// When a tool that is not read-only runs, this function will be called before.
   var prepareForWriteToolUse: @Sendable () async -> Void { get }
   /// Which chat mode applies to the current context.

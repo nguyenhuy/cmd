@@ -20,7 +20,7 @@ import Observation
 @Observable @MainActor
 class CodeBlockElement {
 
-  init(projectRoot: URL, rawContent: String, isComplete: Bool, id: Int) {
+  init(projectRoot: URL?, rawContent: String, isComplete: Bool, id: Int) {
     self.projectRoot = projectRoot
     self.id = id
     let content = rawContent.trimmed(isComplete: isComplete)
@@ -88,7 +88,7 @@ class CodeBlockElement {
     handleIsCompletedChanged()
   }
 
-  private let projectRoot: URL
+  private let projectRoot: URL?
 
   @ObservationIgnored
   @Dependency(\.fileManager) private var fileManager

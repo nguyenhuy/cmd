@@ -1,6 +1,7 @@
 Target.module(
   name: "XcodeControllerService",
   dependencies: [
+    .product(name: "XCLogParser", package: "XCLogParser"),
     "AppEventServiceInterface",
     "AppFoundation",
     "ConcurrencyFoundation",

@@ -75,6 +75,10 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     }
   }
 
+  let shellService: ShellService
+  let xcodeObserver: XcodeObserver
+  let fileManager: FileManagerI
+
   #if DEBUG
   var currentExecutionId: String? {
     fileChange?.id
@@ -90,10 +94,7 @@ public final class DefaultXcodeController: XcodeController, Sendable {
   private let canUseAppleScript: Bool
 
   private let appEventHandlerRegistry: AppEventHandlerRegistry
-  private let shellService: ShellService
-  private let xcodeObserver: XcodeObserver
   private let settingsService: SettingsService
-  private let fileManager: FileManagerI
 
   /// Start applying the code change, typically by selecting the extension menu item in Xcode.
   private let startApplyingFileChange: @Sendable () async throws -> Void
@@ -277,6 +278,28 @@ extension DefaultXcodeController {
     NSApplication.shared.activate()
   }
 
+  @MainActor
+  static func getXcode(xcodeObserver: XcodeObserver, shellService: ShellService) async -> NSRunningApplication? {
+    #if DEBUG
+    // When in DEBUG mode, we first check if there is an instance of Xcode that has been launched by attaching to the extension.
+    for pid in xcodeObserver.state.wrapped?.xcodesState.map(\.processIdentifier) ?? [] {
+      if await shellService.isXcodeInstanceUsedByDebugExtension(processIdentifier: pid) {
+        if let app = NSRunningApplication(processIdentifier: pid) {
+          return app
+        }
+      }
+    }
+    #endif
+    if
+      let processId = xcodeObserver.state.wrapped?.xcodesState.first?.processIdentifier,
+      let app = NSRunningApplication(processIdentifier: processId)
+    {
+      return app
+    }
+    defaultLogger.error("Could not find Xcode process id")
+    return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last
+  }
+
   ///  Called when the extension has applied the edit.
   func fileChangeApplied(withError error: String?) {
     if let error {
@@ -310,35 +333,13 @@ extension DefaultXcodeController {
     }
   }
 
-  @MainActor
-  private static func getXcode(xcodeObserver: XcodeObserver, shellService: ShellService) async -> NSRunningApplication? {
-    #if DEBUG
-    // When in DEBUG mode, we first check if there is an instance of Xcode that has been launched by attaching to the extension.
-    for pid in xcodeObserver.state.wrapped?.xcodesState.map(\.processIdentifier) ?? [] {
-      if await shellService.isXcodeInstanceUsedByDebugExtension(processIdentifier: pid) {
-        if let app = NSRunningApplication(processIdentifier: pid) {
-          return app
-        }
-      }
-    }
-    #endif
-    if
-      let processId = xcodeObserver.state.wrapped?.xcodesState.first?.processIdentifier,
-      let app = NSRunningApplication(processIdentifier: processId)
-    {
-      return app
-    }
-    defaultLogger.error("Could not find Xcode process id")
-    return NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last
-  }
-
 }
 
 // MARK: DefaultXcodeController + AppleScript
 extension DefaultXcodeController {
 
   @MainActor
-  private static func run(appleScript: String) throws {
+  static func run(appleScript: String) throws {
     guard let script = NSAppleScript(source: appleScript) else {
       assertionFailure("Could not create NSAppleScript object.")
       throw AppError(message: "Could not create NSAppleScript object.")
@@ -351,6 +352,14 @@ extension DefaultXcodeController {
       defaultLogger.error("AppleScript Error: \(error)")
       throw AppError(message: "AppleScript Error: \(error)")
     }
+  }
+
+  @MainActor
+  static func activateXcodeWithAppleScript() throws {
+    try run(appleScript: """
+        tell application "Xcode" to activate
+        delay 0.1
+      """)
   }
 
   /// Modify the content of the file using Apple Script. This might lead to a non ideal UX with the code moving around in the editor but is a good fallback.
@@ -370,14 +379,6 @@ extension DefaultXcodeController {
           end repeat
       end tell
       delay 0.1
-      """)
-  }
-
-  @MainActor
-  private static func activateXcodeWithAppleScript() throws {
-    try run(appleScript: """
-        tell application "Xcode" to activate
-        delay 0.1
       """)
   }
 

@@ -119,7 +119,7 @@ final class DefaultLLMService: LLMService {
     let params = try Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: nil,
-      projectRoot: context.projectRoot.path,
+      projectRoot: context.projectRoot?.path,
       tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: model.id,
       provider: provider(for: model))
@@ -180,7 +180,7 @@ final class DefaultLLMService: LLMService {
                     toolUseId: request.id,
                     input: data,
                     isInputComplete: true,
-                    context: ToolExecutionContext(projectRoot: context.projectRoot)))
+                    context: ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)))
                 } catch {
                   // If the above fails, this is because the input could not be parsed by the tool.
                   content.append(toolUse: FailedToolUse(

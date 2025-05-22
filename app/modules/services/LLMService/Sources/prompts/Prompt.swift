@@ -5,7 +5,7 @@ import ChatFoundation
 import Foundation
 
 enum Prompt {
-  static func defaultPrompt(projectRoot: URL, mode: ChatMode) -> String {
+  static func defaultPrompt(projectRoot: URL?, mode: ChatMode) -> String {
     """
     You are an intelligent programmer. You are happy to help answer any questions that the user has (usually they will be about iOS/MacOS development).
 
@@ -77,22 +77,29 @@ enum Prompt {
     -//import WrappingHStack
     ```
 
-    7. Always use path relative to the project root.
-
-    The directory root is \(
-      projectRoot
-        .path). Any relative path is relative to this root, and you should prefer using relative path whenever possible. Relative path should start with './', and only absolute paths should start with '/'.
-    For instance to describe the content of a file at the absolute path /path/to/new/file use:
-    ```language:/path/to/new/file
-    /// Some code file
-    ```
-
-    and to describe the content of a file at the relative path src/components/Button.tsx use:
-    ```language:./src/components/Button.tsx
-    /// Some code file
-    ```
-
-
+    \(pathFormattingDirection(projectRoot: projectRoot))
     """
+  }
+
+  private static func pathFormattingDirection(projectRoot: URL?) -> String {
+    guard let projectRoot else {
+      return "7. Always use absolute path."
+    }
+    return """
+                      7. Always use path relative to the project root.
+
+                      The directory root is \(
+      projectRoot
+      .path). Any relative path is relative to this root, and you should prefer using relative path whenever possible. Relative path should start with './', and only absolute paths should start with '/'.
+                      For instance to describe the content of a file at the absolute path /path/to/new/file use:
+                      ```language:/path/to/new/file
+                      /// Some code file
+                      ```
+
+                      and to describe the content of a file at the relative path src/components/Button.tsx use:
+                      ```language:./src/components/Button.tsx
+                      /// Some code file
+                      ```
+      """
   }
 }

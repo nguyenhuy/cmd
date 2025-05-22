@@ -52,11 +52,15 @@ public final class SearchFilesTool: NonStreamableTool {
 
     public func startExecuting() {
       updateStatus.yield(.running)
+      guard let projectRoot = context.projectRoot else {
+        updateStatus.yield(.completed(.failure(AppError("Cannot search files without a project"))))
+        return
+      }
 
       Task {
         do {
           let fullInput = Schema.SearchFilesToolInput(
-            projectRoot: context.projectRoot.path(),
+            projectRoot: projectRoot.path(),
             directoryPath: input.directoryPath,
             regex: input.regex,
             filePattern: input.filePattern)
@@ -66,7 +70,7 @@ public final class SearchFilesTool: NonStreamableTool {
             outputForLLm: response.outputForLLm,
             results: response.results.map { result in
               Schema.SearchFileResult(
-                path: result.path.resolvePath(from: context.projectRoot).path,
+                path: result.path.resolvePath(from: projectRoot).path,
                 searchResults: result.searchResults)
             },
             rootPath: response.rootPath,

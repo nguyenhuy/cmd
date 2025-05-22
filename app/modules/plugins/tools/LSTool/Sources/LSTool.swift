@@ -62,10 +62,14 @@ public final class LSTool: NonStreamableTool {
     public func startExecuting() {
       updateStatus.yield(.running)
 
+      guard let projectRoot = context.projectRoot else {
+        updateStatus.yield(.completed(.failure(AppError("Cannot list files without a project"))))
+        return
+      }
       Task {
         do {
           let fullInput = Schema.ListFilesToolInput(
-            projectRoot: context.projectRoot.path(),
+            projectRoot: projectRoot.path(),
             path: input.path,
             recursive: input.recursive)
 

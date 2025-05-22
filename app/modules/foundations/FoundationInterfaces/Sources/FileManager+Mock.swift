@@ -113,6 +113,21 @@ public final class MockFileManager: FileManagerI {
     files[URL(fileURLWithPath: path)] != nil
   }
 
+  public func contentsOfDirectory(
+    at url: URL,
+    includingPropertiesForKeys _: [URLResourceKey]?,
+    options _: FileManager.DirectoryEnumerationOptions)
+    throws -> [URL]
+  {
+    let url = url.standardized
+    // Check if the URL exists as a directory
+    guard isDirectory(at: url) else {
+      return []
+    }
+
+    return files.keys.filter { $0.path.hasPrefix(url.path) }
+  }
+
   public func enumerator(
     at url: URL,
     includingPropertiesForKeys _: [URLResourceKey]?,

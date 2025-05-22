@@ -201,7 +201,9 @@ final class DefaultLLMService2: LLMService {
                         toolUseId: toolUseId,
                         input: data,
                         isInputComplete: isInputComplete,
-                        context: ToolExecutionContext(projectRoot: context.projectRoot))
+                        context: ToolExecutionContext(
+                          project: context.project,
+                          projectRoot: context.projectRoot))
 
                       if !toolUse.isReadonly {
                         await context.prepareForWriteToolUse()

@@ -81,13 +81,13 @@ final class ChatMessageTextContent: EquatableByIdentifier {
   }
   #endif
 
-  init(projectRoot: URL, deltas: [String], attachments: [Attachment] = []) {
+  init(projectRoot: URL?, deltas: [String], attachments: [Attachment] = []) {
     self.attachments = attachments
     formatter = TextFormatter(projectRoot: projectRoot)
     catchUp(deltas: deltas)
   }
 
-  init(projectRoot: URL, text: String, attachments: [Attachment] = []) {
+  init(projectRoot: URL?, text: String, attachments: [Attachment] = []) {
     formatter = TextFormatter(projectRoot: projectRoot)
     self.attachments = attachments
     catchUp(deltas: [text])

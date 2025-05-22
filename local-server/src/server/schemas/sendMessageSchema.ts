@@ -1,7 +1,7 @@
 export interface SendMessageRequestParams {
 	messages: Message[]
 	system?: string
-	projectRoot: string
+	projectRoot: string | undefined
 	tools?: Tool[]
 	model: string
 	provider: APIProvider

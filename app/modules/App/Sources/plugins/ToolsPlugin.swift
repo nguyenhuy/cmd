@@ -2,6 +2,7 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import AskFollowUpTool
+import BuildTool
 import EditFilesTool
 import ExecuteCommandTool
 import LSTool
@@ -18,5 +19,6 @@ extension ToolsPlugin {
     // plugIn(tool: EditFilesTool(shouldAutoApply: false))
     plugIn(tool: ExecuteCommandTool())
     plugIn(tool: AskFollowUpTool())
+    plugIn(tool: BuildTool())
   }
 }

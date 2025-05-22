@@ -49,7 +49,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
     workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
       guard state.focusedWorkspace != nil else { return }
       Task { @MainActor in
-        _ = self.updateProjectRoot()
+        _ = self.updateProjectInfo()
         self.workspaceRootObservation = nil
       }
     }
@@ -60,6 +60,11 @@ final class ChatTabViewModel: Identifiable, Equatable {
         self?.hasSomeLLMModelsAvailable = !availableModels.isEmpty
       }
     }.store(in: &cancellables)
+  }
+
+  struct ProjectInfo {
+    let path: URL
+    let dirPath: URL
   }
 
   let id: UUID
@@ -85,7 +90,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
   /// Are we queing too much on the main thread?
   @MainActor
   func sendMessage() async {
-    let projectRoot = updateProjectRoot()
+    let projectInfo = updateProjectInfo()
 
     guard streamingTask == nil else {
       defaultLogger.error("not sending as already streaming")
@@ -103,7 +108,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     // TODO: reformat the string sent to the LLM
     let messageContent = ChatMessageContent.text(ChatMessageTextContent(
-      projectRoot: projectRoot,
+      projectRoot: projectInfo?.dirPath,
       text: textInput.string.string,
       attachments: attachments))
     let userMessage = ChatMessage(
@@ -122,7 +127,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
           tools: tools,
           model: selectedModel,
           context: DefaultChatContext(
-            projectRoot: projectRoot,
+            project: projectInfo?.path,
+            projectRoot: projectInfo?.dirPath,
             prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() },
             chatMode: input.mode),
           migrated: true,
@@ -135,7 +141,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
                   trackedMessages.insert(newMessage.id)
 
                   let newMessageState = ChatMessage(
-                    content: newMessage.content.map { $0.domainFormat(projectRoot: projectRoot) },
+                    content: newMessage.content.map { $0.domainFormat(projectRoot: projectInfo?.dirPath) },
                     role: .assistant)
                   messages.append(newMessageState)
 
@@ -143,7 +149,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
                     // new message content was received
                     if let newContent = update.content.last {
                       var content = newMessageState.content
-                      let newContent = newContent.domainFormat(projectRoot: projectRoot)
+                      let newContent = newContent.domainFormat(projectRoot: projectInfo?.dirPath)
                       content.append(newContent)
                       events.append(.message(.init(content: newContent, role: .assistant)))
                       newMessageState.content = content
@@ -177,7 +183,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
-  @ObservationIgnored private var projectRoot: URL?
+  @ObservationIgnored private var projectInfo: ProjectInfo?
 
   @ObservationIgnored
   @Dependency(\.toolsPlugin) private var toolsPlugin: ToolsPlugin
@@ -203,11 +209,13 @@ final class ChatTabViewModel: Identifiable, Equatable {
   }
 
   private func handlePrepareForWriteToolUse() async {
-    let projectRoot = updateProjectRoot()
+    guard let projectInfo = updateProjectInfo() else {
+      return
+    }
     do {
       // Create checkpoint and add it to events before the tool call is executed.
       let checkpoint = try await checkpointService.createCheckpoint(
-        projectRoot: projectRoot,
+        projectRoot: projectInfo.dirPath,
         taskId: "main",
         message: "checkpoint")
       if !events.compactMap(\.checkpoint).contains(where: { $0.id == checkpoint.id }) {
@@ -228,9 +236,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
-  private func updateProjectRoot() -> URL {
-    if let projectRoot {
-      return projectRoot
+  private func updateProjectInfo() -> ProjectInfo? {
+    if let projectInfo {
+      return projectInfo
     }
     if let workspace = xcodeObserver.state.focusedWorkspace {
       let projectRoot = fileManager.isDirectory(at: workspace.url) ? workspace.url.deletingLastPathComponent() : workspace.url
@@ -243,11 +251,11 @@ final class ChatTabViewModel: Identifiable, Equatable {
           defaultLogger.error("Failed to create context message for workspace", error)
         }
       }
-
-      self.projectRoot = projectRoot
-      return projectRoot
+      let projectInfo = ProjectInfo(path: workspace.url, dirPath: projectRoot)
+      self.projectInfo = projectInfo
+      return projectInfo
     }
-    return URL(filePath: "/")
+    return nil
   }
 
 }
@@ -257,16 +265,19 @@ final class ChatTabViewModel: Identifiable, Equatable {
 struct DefaultChatContext: ChatContext {
 
   init(
-    projectRoot: URL,
+    project: URL?,
+    projectRoot: URL?,
     prepareForWriteToolUse: @escaping @Sendable () async -> Void,
     chatMode: ChatMode)
   {
+    self.project = project
     self.projectRoot = projectRoot
     self.prepareForWriteToolUse = prepareForWriteToolUse
     self.chatMode = chatMode
   }
 
-  let projectRoot: URL
+  let project: URL?
+  let projectRoot: URL?
   let prepareForWriteToolUse: @Sendable () async -> Void
   let chatMode: ChatMode
 }

@@ -168,7 +168,10 @@ export const registerEndpoint = (router: Router, clients: ClientBuilder[]) => {
 				messages: [
 					{
 						role: "system",
-						content: (system || defaultSystemPrompt).replace(/DIRECTORY_ROOT/g, body.projectRoot),
+						content: (system || defaultSystemPrompt).replace(
+							/DIRECTORY_ROOT/g,
+							body.projectRoot || "<no project specificed>",
+						),
 					},
 					...transformedMessages,
 				],

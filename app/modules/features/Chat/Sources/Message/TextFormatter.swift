@@ -10,7 +10,7 @@ import Observation
 @Observable @MainActor
 final class TextFormatter {
 
-  init(projectRoot: URL) {
+  init(projectRoot: URL?) {
     self.projectRoot = projectRoot
     text = ""
     deltas = []
@@ -88,7 +88,7 @@ final class TextFormatter {
     processUnconsumedText()
   }
 
-  private let projectRoot: URL
+  private let projectRoot: URL?
 
   private var unconsumed = ""
   private var isEscaping = false

@@ -395,15 +395,15 @@ extension AXUIElement {
 
     // Element type/identifier
     if let role = element.role {
-      result += "\(role)"
+      result += "\(role) - "
     } else {
-      result += "AXUIElement"
+      result += "AXUIElement - "
     }
 
     if let identifier = element.identifier {
-      result += ": \(identifier)"
+      result += "id: \(identifier)"
     } else if let title = element.title {
-      result += ": \(title)"
+      result += "title: \(title)"
     }
 
     // Append all properties on the same line

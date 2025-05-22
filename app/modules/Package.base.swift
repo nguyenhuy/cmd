@@ -97,6 +97,7 @@ let package = Package(
     .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
+    .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),

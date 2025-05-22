@@ -28,6 +28,11 @@ public protocol FileManagerI: Sendable {
   func copyItem(atPath srcPath: String, toPath dstPath: String) throws
   func removeItem(atPath path: String) throws
   func fileExists(atPath path: String) -> Bool
+  func contentsOfDirectory(
+    at url: URL,
+    includingPropertiesForKeys keys: [URLResourceKey]?,
+    options mask: FileManager.DirectoryEnumerationOptions)
+    throws -> [URL]
 
   func read(dataFrom url: URL) throws -> Data
   func read(contentsOf url: URL, encoding enc: String.Encoding) throws -> String
@@ -81,6 +86,9 @@ extension FileManagerI {
     enumerator(at: url, includingPropertiesForKeys: keys, options: mask, errorHandler: nil)
   }
 
+  public func contentsOfDirectory(at url: URL, includingPropertiesForKeys keys: [URLResourceKey]? = nil) throws -> [URL] {
+    try contentsOfDirectory(at: url, includingPropertiesForKeys: keys, options: [])
+  }
 }
 
 // MARK: - Foundation.FileManager + FileManager

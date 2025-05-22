@@ -73,7 +73,7 @@ public final class EditFilesTool: Tool {
 
       public let files: [FileChange]
 
-      func withPathsResolved(from root: URL) -> Input {
+      func withPathsResolved(from root: URL?) -> Input {
         Input(files: files.map { fileChange in
           FileChange(
             path: fileChange.path.resolvePath(from: root).path(),

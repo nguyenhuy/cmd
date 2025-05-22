@@ -3,4 +3,4 @@
 
 import Testing
 
-struct EditFileToolTests { }
+struct BuildToolTests { }

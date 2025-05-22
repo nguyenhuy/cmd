@@ -69,7 +69,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
         do {
           let shellResult = try await shellService.run(
             input.command,
-            cwd: input.cwd ?? context.projectRoot.path(),
+            cwd: input.cwd ?? context.projectRoot?.path(),
             useInteractiveShell: true,
             handleStdoutStream: { stream in self.setStdoutStream(.init(stream)) },
             handleSterrStream: { stream in self.setStderrStream(.init(stream)) })

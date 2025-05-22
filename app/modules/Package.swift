@@ -78,6 +78,7 @@ targets.append(contentsOf: Target.module(
     "AppEventService",
     "AppEventServiceInterface",
     "AskFollowUpTool",
+    "BuildTool",
     "Chat",
     "ChatAppEvents",
     "CheckpointService",
@@ -191,6 +192,21 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./plugins/tools/ReadFileTool"))
+
+targets.append(contentsOf: Target.module(
+  name: "BuildTool",
+  dependencies: [
+    "AppFoundation",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ToolFoundation",
+    "XcodeControllerServiceInterface",
+  ],
+  testDependencies: [],
+  path: "./plugins/tools/BuildTool"))
 
 targets.append(contentsOf: Target.module(
   name: "LSTool",
@@ -535,6 +551,7 @@ targets.append(contentsOf: Target.module(
   name: "LLMServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
+    "ChatFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
     "ServerServiceInterface",
@@ -691,6 +708,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "XcodeControllerService",
   dependencies: [
+    .product(name: "XCLogParser", package: "XCLogParser"),
     "AppEventServiceInterface",
     "AppFoundation",
     "ConcurrencyFoundation",
@@ -796,6 +814,7 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [
@@ -839,6 +858,7 @@ let package = Package(
     .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
+    .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),

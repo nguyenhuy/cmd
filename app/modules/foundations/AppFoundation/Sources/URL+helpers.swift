@@ -35,11 +35,14 @@ extension URL {
 
 extension String {
   /// Given a path, that might be relative to the project root or absolute, resolve it to an absolute path.
-  public func resolvePath(from base: URL) -> URL {
+  public func resolvePath(from base: URL?) -> URL {
+    guard let base else {
+      return URL(fileURLWithPath: self).standardized
+    }
     if hasPrefix("/") {
-      URL(fileURLWithPath: self)
+      return URL(fileURLWithPath: self)
     } else {
-      base.appendingPathComponent(self).standardized
+      return base.appendingPathComponent(self).standardized
     }
   }
 }

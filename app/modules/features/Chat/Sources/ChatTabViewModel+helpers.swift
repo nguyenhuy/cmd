@@ -176,7 +176,7 @@ extension Attachment {
 
 extension AssistantMessageContent {
   @MainActor
-  func domainFormat(projectRoot: URL) -> ChatMessageContent {
+  func domainFormat(projectRoot: URL?) -> ChatMessageContent {
     switch self {
     case .text(let value):
       let content = ChatMessageTextContent(projectRoot: projectRoot, text: value.content, attachments: [])

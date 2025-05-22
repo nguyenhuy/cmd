@@ -9,7 +9,7 @@ extension Schema {
   public struct SendMessageRequestParams: Codable, Sendable {
     public let messages: [Message]
     public let system: String?
-    public let projectRoot: String
+    public let projectRoot: String?
     public let tools: [Tool]?
     public let model: String
     public let provider: APIProvider
@@ -26,7 +26,7 @@ extension Schema {
     public init(
         messages: [Message],
         system: String? = nil,
-        projectRoot: String,
+        projectRoot: String? = nil,
         tools: [Tool]? = nil,
         model: String,
         provider: APIProvider
@@ -43,7 +43,7 @@ extension Schema {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       messages = try container.decode([Message].self, forKey: .messages)
       system = try container.decodeIfPresent(String?.self, forKey: .system)
-      projectRoot = try container.decode(String.self, forKey: .projectRoot)
+      projectRoot = try container.decodeIfPresent(String?.self, forKey: .projectRoot)
       tools = try container.decodeIfPresent([Tool]?.self, forKey: .tools)
       model = try container.decode(String.self, forKey: .model)
       provider = try container.decode(APIProvider.self, forKey: .provider)
@@ -53,7 +53,7 @@ extension Schema {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(messages, forKey: .messages)
       try container.encodeIfPresent(system, forKey: .system)
-      try container.encode(projectRoot, forKey: .projectRoot)
+      try container.encodeIfPresent(projectRoot, forKey: .projectRoot)
       try container.encodeIfPresent(tools, forKey: .tools)
       try container.encode(model, forKey: .model)
       try container.encode(provider, forKey: .provider)

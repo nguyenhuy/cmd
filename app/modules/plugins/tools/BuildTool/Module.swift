@@ -1,12 +1,13 @@
 Target.module(
-  name: "LLMServiceInterface",
+  name: "BuildTool",
   dependencies: [
-    .product(name: "Dependencies", package: "swift-dependencies"),
-    "ChatFoundation",
+    "AppFoundation",
+    "CodePreview",
     "ConcurrencyFoundation",
+    "DLS",
     "JSONFoundation",
     "ServerServiceInterface",
-    "ThreadSafe",
     "ToolFoundation",
+    "XcodeControllerServiceInterface",
   ],
   testDependencies: [])

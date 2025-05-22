@@ -8,6 +8,7 @@ Target.module(
     "AppEventService",
     "AppEventServiceInterface",
     "AskFollowUpTool",
+    "BuildTool",
     "Chat",
     "ChatAppEvents",
     "CheckpointService",

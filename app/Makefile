@@ -18,7 +18,6 @@ clean:
 	swift package clean && \
 	find . -not -path './.git/*' 2> /dev/null | \
 	git check-ignore --stdin | \
-	tr '\n' '\0' | \
-	xargs -0 rm -rf
+	xargs rm -rf
 test:
 	@cd modules && swift test -Xswiftc -suppress-warnings --quiet

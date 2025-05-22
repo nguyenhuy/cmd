@@ -133,10 +133,14 @@ public protocol DisplayableToolUse: ToolUse {
 
 /// The context in which a tool use has been created.
 public struct ToolExecutionContext: Sendable {
+  /// The path to the project.
+  public let project: URL?
   /// The path to the root of the project.
-  public let projectRoot: URL
+  /// For a Swift package this is the same as the project. For an xcodeproj this is the containing directory.
+  public let projectRoot: URL?
 
-  public init(projectRoot: URL) {
+  public init(project: URL?, projectRoot: URL?) {
+    self.project = project
     self.projectRoot = projectRoot
   }
 }
