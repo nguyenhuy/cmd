@@ -31,18 +31,51 @@ public final class ReplaceableTaskQueue<Output: Sendable>: Sendable, Publisher {
 
   public typealias Failure = Never
 
+  public typealias QueuedTask = @Sendable () async throws -> Output
+
   public func receive<S>(subscriber: S) where S: Subscriber, S.Input == Output, S.Failure == Never {
     publisher.compactMap(\.self).receive(subscriber: subscriber)
   }
 
-  public func queue(_ task: @escaping @Sendable () async throws -> Output) {
+  public func queue(_ task: @escaping QueuedTask) {
     state.mutate { $0.nextTask = task }
     dequeue()
   }
 
+  /// Waits until the queue has no running or pending tasks.
+  ///
+  /// This function is useful for synchronization in tests or when you need to ensure
+  /// all tasks have completed before proceeding.
+  ///
+  /// Example usage:
+  /// ```swift
+  /// let queue = ReplaceableTaskQueue<String>()
+  /// queue.queue { await task1() }
+  /// queue.queue { await task2() }
+  ///
+  /// // Wait until all tasks have completed
+  /// await queue.waitForIdle()
+  /// ```
+  public func waitForIdle() async {
+    let (future, continuation) = Future<Void, Never>.make()
+    let needToWait = state.mutate { state in
+      if state.currentTask == nil, state.nextTask == nil {
+        return false
+      } else {
+        state.onIdle.append { continuation(.success(())) }
+        return true
+      }
+    }
+    if !needToWait {
+      continuation(.success(()))
+    }
+    await future.value
+  }
+
   private struct State: Sendable {
-    var currentTask: (@Sendable () async throws -> Output)?
-    var nextTask: (@Sendable () async throws -> Output)?
+    var currentTask: QueuedTask?
+    var nextTask: QueuedTask?
+    var onIdle: [@Sendable () -> Void] = []
   }
 
   private let publisher = CurrentValueSubject<Output?, Failure>(nil)
@@ -50,24 +83,29 @@ public final class ReplaceableTaskQueue<Output: Sendable>: Sendable, Publisher {
   private let state = Atomic<State>(State())
 
   private func dequeue(clearingCurrentTask: Bool = false) {
-    let task: (@Sendable () async throws -> Output)? = state.mutate { state in
+    let (taskToExecute, onIdle): (QueuedTask?, [@Sendable () -> Void]?) = state.mutate { state in
       if
         state.currentTask == nil || clearingCurrentTask,
         let nextTask = state.nextTask
       {
         state.nextTask = nil
         state.currentTask = nextTask
-        return nextTask
+        return (nextTask, nil)
       } else if clearingCurrentTask {
         state.currentTask = nil
       }
-      return nil
+      if state.currentTask == nil {
+        let onIdle = state.onIdle
+        state.onIdle = []
+        return (nil, onIdle)
+      }
+      return (nil, nil)
     }
 
-    if let task {
+    if let taskToExecute {
       Task { [weak self] in
         do {
-          let output = try await task()
+          let output = try await taskToExecute()
           guard let self else { return }
           publisher.send(output)
           dequeue(clearingCurrentTask: true)
@@ -77,6 +115,7 @@ public final class ReplaceableTaskQueue<Output: Sendable>: Sendable, Publisher {
         }
       }
     }
+    onIdle?.forEach { $0() }
   }
 
 }

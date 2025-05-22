@@ -238,4 +238,112 @@ struct ReplaceableTaskQueueTests {
     try await fulfillment(of: [completion])
     #expect(results == [3], "Only the replacing task should execute after failure")
   }
+
+  @Test("waitForIdle returns immediately when queue is already idle")
+  func test_waitForIdleImmediate() async throws {
+    let queue = ReplaceableTaskQueue<Int>()
+
+    // Measure time to verify it returns quickly
+    let startTime = Date()
+    await queue.waitForIdle()
+    let elapsedTime = Date().timeIntervalSince(startTime)
+
+    #expect(elapsedTime < 0.1, "Should return almost immediately when queue is idle")
+  }
+
+  @Test("waitForIdle waits until all tasks complete")
+  func test_waitForIdleWithTasks() async throws {
+    let queue = ReplaceableTaskQueue<Int>()
+    let taskStarted = expectation(description: "Task started")
+    let taskReady = expectation(description: "Task ready to complete")
+    let taskCompletedExpectation = expectation(description: "Task completed")
+    let waitCompletedExpectation = expectation(description: "Wait completed")
+
+    // Queue a task that we can control completion of
+    queue.queue {
+      taskStarted.fulfill()
+      do {
+        try await fulfillment(of: [taskReady])
+      } catch {
+        Issue.record(error)
+      }
+      taskCompletedExpectation.fulfill()
+      return 1
+    }
+
+    // Wait for task to start
+    try await fulfillment(of: [taskStarted])
+
+    // Start waiting for idle in a separate task
+    Task {
+      await queue.waitForIdle()
+      waitCompletedExpectation.fulfill()
+    }
+
+    #expect(waitCompletedExpectation.isFulfilled == false)
+
+    // Allow task to complete
+    taskReady.fulfill()
+
+    // Now waitForIdle should complete
+    try await fulfillment(of: [taskCompletedExpectation, waitCompletedExpectation], timeout: 1.0)
+  }
+
+  @Test("waitForIdle works with multiple sequential tasks")
+  func test_waitForIdleWithMultipleTasks() async throws {
+    let queue = ReplaceableTaskQueue<Int>()
+    let receivedValues = Atomic<[Int]>([])
+    let cancellable = queue.sink { @Sendable value in
+      receivedValues.mutate { $0.append(value) }
+    }
+
+    // Queue multiple tasks
+    queue.queue {
+      try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+      return 1
+    }
+    queue.queue {
+      try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+      return 2
+    }
+    queue.queue {
+      try? await Task.sleep(nanoseconds: 1_000_000) // 1ms
+      return 3
+    }
+
+    // Wait for all tasks to complete
+    await queue.waitForIdle()
+
+    // The second task should be replaced by the third task
+    #expect(receivedValues.value == [1, 3])
+    _ = cancellable
+  }
+
+  @Test("waitForIdle works after task failure")
+  func test_waitForIdleAfterFailure() async throws {
+    let queue = ReplaceableTaskQueue<Int>()
+    let completedTasks = Atomic<[Int]>([])
+    let successTaskCompleted = expectation(description: "Success task completed")
+
+    // Queue a task that will fail
+    queue.queue {
+      try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+      throw NSError(domain: "test", code: 1)
+    }
+
+    // Queue a task that will succeed
+    queue.queue {
+      try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+      completedTasks.mutate { $0.append(1) }
+      successTaskCompleted.fulfill()
+      return 1
+    }
+
+    // Wait for all tasks to complete
+    await queue.waitForIdle()
+
+    // Verify the second task completed despite the first task's failure
+    try await fulfillment(of: [successTaskCompleted])
+    #expect(completedTasks.value == [1], "Second task should complete after first task fails")
+  }
 }

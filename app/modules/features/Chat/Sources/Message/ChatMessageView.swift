@@ -38,7 +38,7 @@ struct ChatMessageView: View {
           }
 
         case .toolUse(let toolUse):
-          toolUseView(toolUse.toolUse)
+          ToolUseView(toolUse: toolUse.toolUse)
 
         case .nonUserFacingText:
           EmptyView()
@@ -74,25 +74,6 @@ struct ChatMessageView: View {
     }
   }
 
-  @ViewBuilder
-  private func toolUseView(_ toolUse: any ToolUse) -> some View {
-    VStack {
-      if let display = (toolUse as? (any DisplayableToolUse))?.body {
-        AnyView(display)
-      } else {
-        HStack(spacing: 0) {
-          Image(systemName: "hammer")
-            .foregroundColor(colorScheme.toolUseForeground)
-          Text(" Tool used: \(toolUse.toolName)")
-            .foregroundColor(colorScheme.toolUseForeground)
-            .font(.system(size: 11))
-            .font(.body)
-        }
-        .padding(3)
-      }
-    }
-  }
-
   private func markdown(for text: TextFormatter.Element.TextElement) -> AttributedString {
     let markDown = Down(markdownString: text.text)
     let style = MarkdownStyle(colorScheme: colorScheme)
@@ -105,6 +86,62 @@ struct ChatMessageView: View {
       return AttributedString(text.text)
     }
   }
+}
+
+// MARK: - ToolUseView
+
+struct ToolUseView: View {
+  let toolUse: any ToolUse
+
+  var body: some View {
+    VStack {
+      HStack(spacing: 0) {
+        if let display = (toolUse as? (any DisplayableToolUse))?.body {
+          AnyView(display)
+        } else {
+          HStack(spacing: 0) {
+            Image(systemName: "hammer")
+              .foregroundColor(colorScheme.toolUseForeground)
+            Text(" Tool used: \(toolUse.toolName)")
+              .foregroundColor(colorScheme.toolUseForeground)
+              .font(.system(size: 11))
+              .font(.body)
+          }
+          .padding(3)
+        }
+        #if DEBUG
+        Spacer()
+        IconButton(
+          action: {
+            if let debugInput {
+              NSPasteboard.general.clearContents()
+              NSPasteboard.general.setString(debugInput, forType: .string)
+            }
+          },
+          systemName: "doc.on.doc",
+          cornerRadius: 0,
+          withCheckMark: true)
+          .frame(width: 10, height: 10)
+          .font(.system(size: 10))
+          .foregroundColor(.orange)
+        #endif
+      }
+    }
+  }
+
+  @Environment(\.colorScheme) private var colorScheme
+
+  #if DEBUG
+  private var debugInput: String? {
+    if
+      let data = try? JSONEncoder().encode(toolUse.input),
+      let string = String(data: data, encoding: .utf8)
+    {
+      return string
+    }
+    return nil
+  }
+  #endif
 }
 
 // MARK: - CodeBlockContentView

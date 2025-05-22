@@ -32,7 +32,7 @@ struct ToolUseView: View {
             editState: fileChange.state,
             handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
             handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
-            handleCopy: { [weak toolUse] in toolUse?.copyChanges(to: fileChange.path) })
+            handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
         }
       }
       .padding(.vertical)
@@ -65,7 +65,7 @@ struct FileChangeView: View {
   let editState: FileEditState
   let handleApply: () async -> Void
   let handleReject: () async -> Void
-  let handleCopy: () -> Void
+  let handleCopy: () async -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
@@ -229,7 +229,9 @@ struct FileChangeView: View {
   }
 
   private func copyChanges() {
-    handleCopy()
+    Task {
+      await handleCopy()
+    }
   }
 
   private func applyChanges() {
@@ -267,7 +269,7 @@ extension FileChangeView {
     handleReject: @escaping () async -> Void = {
       try? await Task.sleep(nanoseconds: 1_000_000_000)
     },
-    handleCopy: @escaping () -> Void = { })
+    handleCopy: @escaping () async -> Void = { })
   {
     self.change = change
     self.editState = editState

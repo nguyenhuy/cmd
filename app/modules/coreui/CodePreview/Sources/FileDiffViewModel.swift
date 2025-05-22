@@ -87,7 +87,7 @@ public final class FileDiffViewModel: Sendable {
           newContent: newContent,
           gitDiff: gitDiff,
           highlightColors: .dark(.xcode))
-        return .init(canBeApplied: true, formattedDiff: formattedDiff, baseLineContent: fileContent)
+        return .init(canBeApplied: true, formattedDiff: formattedDiff, baseLineContent: fileContent, targetContent: newContent)
       }
     } catch {
       defaultLogger.error("""
@@ -112,7 +112,7 @@ public final class FileDiffViewModel: Sendable {
   {
     self.filePath = filePath
     self.baseLineContent = baseLineContent
-    self.targetContent = targetContent
+    _targetContent = targetContent
     self.changes = changes
     self.canBeApplied = canBeApplied
     self.formattedDiff = formattedDiff
@@ -130,6 +130,7 @@ public final class FileDiffViewModel: Sendable {
         guard let self, let newValue else { return }
         self.canBeApplied = newValue.canBeApplied
         self.formattedDiff = newValue.formattedDiff
+        _targetContent = newValue.targetContent
       }
     }
   }
@@ -141,12 +142,18 @@ public final class FileDiffViewModel: Sendable {
   /// The content of the file when the suggestion was made.
   public let baseLineContent: String
 
-  /// The content of the file if the suggestion was applied.
-  public private(set) var targetContent: String
   /// Whether the suggestion can be applied at this time, given the current state of the file.
   public private(set) var canBeApplied: Bool
   /// A representation of the change in diff format with syntax highlighting.
   public private(set) var formattedDiff: FormattedFileChange?
+
+  /// The content of the file if the suggestion was applied.
+  public var targetContent: String {
+    get async {
+      await diffingTasks.waitForIdle()
+      return _targetContent
+    }
+  }
 
   @MainActor
   public func handleApply(changes: [FormattedLineChange]) async throws {
@@ -191,7 +198,7 @@ public final class FileDiffViewModel: Sendable {
     let newDiff = formattedDiff.changes.suggestedContent(rejecting: changes)
     let newTargetContent = newDiff.map(\.change).targetContent
 
-    targetContent = newTargetContent
+    _targetContent = newTargetContent
     self.formattedDiff = FormattedFileChange(changes: newDiff)
   }
 
@@ -232,9 +239,12 @@ public final class FileDiffViewModel: Sendable {
       return SuggestionUpdate(
         canBeApplied: true,
         formattedDiff: formatterDiff,
-        baseLineContent: newContent)
+        baseLineContent: newContent,
+        targetContent: newContent)
     }
   }
+
+  private(set) var _targetContent: String
 
   private struct SuggestionUpdate: Sendable {
     /// Whether the suggestion can be applied at this time, given the current state of the file.
@@ -243,6 +253,8 @@ public final class FileDiffViewModel: Sendable {
     public let formattedDiff: FormattedFileChange
     /// The current content of the file.
     public let baseLineContent: String
+    /// The content the file would have if the suggestion was applied.
+    public let targetContent: String
   }
 
   private var cancellable: AnyCancellable?

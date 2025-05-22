@@ -33,9 +33,11 @@ extension FileDiff {
         continue
       }
       // Add the unchanged content between the diffs
-      for i in (result.count - removedLines)..<addedLineOffset - 1 {
-        let range = newLinesOffset[i]..<newLinesOffset[i + 1]
-        result.append(LineChange(i, range, newLines[i], .unchanged))
+      if result.count - removedLines < addedLineOffset - 1 {
+        for i in (result.count - removedLines)..<addedLineOffset - 1 {
+          let range = newLinesOffset[i]..<newLinesOffset[i + 1]
+          result.append(LineChange(i, range, newLines[i], .unchanged))
+        }
       }
 
       for l in diffContent.splitLines() {

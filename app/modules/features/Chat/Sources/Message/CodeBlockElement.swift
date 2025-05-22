@@ -39,7 +39,7 @@ class CodeBlockElement {
       Task {
         @MainActor [weak self] in
         self?.fileChange = fileChange
-        self?.copyableContent = fileChange?.targetContent ?? self?.content
+        self?.copyableContent = await fileChange?.targetContent ?? self?.content
       }
     }.store(in: &cancellables)
 

@@ -247,7 +247,7 @@ final class DefaultServer: Server {
     let filePaths = files.compactMap { resourceBundle.path(forResource: $0, ofType: nil) }
 
     guard filePaths.count == files.count else {
-      throw AppError(message: "Failed to locate all files to copy.")
+      throw AppError(message: "Failed to locate all files to copy. Could not start the local server.")
     }
 
     // Create application support directory if it doesn't exist

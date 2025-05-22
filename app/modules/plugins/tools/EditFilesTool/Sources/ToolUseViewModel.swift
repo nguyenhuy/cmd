@@ -124,8 +124,8 @@ final class ToolUseViewModel {
     toolResults = results
   }
 
-  func copyChanges(to file: URL) {
-    if let targetContent = filesEditModels[file.path]?.targetContent {
+  func copyChanges(to file: URL) async {
+    if let targetContent = await filesEditModels[file.path]?.targetContent {
       let pasteboard = NSPasteboard.general
       pasteboard.clearContents()
       pasteboard.setString(targetContent, forType: .string)
@@ -185,10 +185,11 @@ final class ToolUseViewModel {
   private func modifyOneFile(file: URL) async throws {
     do {
       guard let diffViewModel = filesEditModels[file.path] else {
+        // TODO: wait on view model to clear its diffing task queue.
         throw AppError("No changes available for file \(file.path)")
       }
       let baseLineContent = diffViewModel.baseLineContent
-      let targetContent = diffViewModel.targetContent
+      let targetContent = await diffViewModel.targetContent
       let fileDiff = try FileDiff.getFileChange(changing: baseLineContent, to: targetContent)
       try await xcodeController.apply(fileChange: FileChange(
         filePath: file,
@@ -210,7 +211,7 @@ final class ToolUseViewModel {
         throw AppError("No changes available for file \(file.path)")
       }
       let baseLineContent = diffViewModel.baseLineContent
-      let targetContent = diffViewModel.targetContent
+      let targetContent = await diffViewModel.targetContent
       let fileDiff = try FileDiff.getFileChange(changing: targetContent, to: baseLineContent)
       try await xcodeController.apply(fileChange: FileChange(
         filePath: file,
