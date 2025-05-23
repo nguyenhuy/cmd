@@ -13,17 +13,17 @@ public final class MockXcodeController: XcodeController {
 
   public var onApplyFileChange: (@Sendable (FileChange) -> Void)?
 
-  public var onBuild: (@Sendable (URL, BuildType) async throws -> [BuildMessage])?
+  public var onBuild: (@Sendable (URL, BuildType) async throws -> BuildSection)?
 
   public func apply(fileChange: FileChange) async throws {
     onApplyFileChange?(fileChange)
   }
 
-  public func build(project: URL, buildType: BuildType) async throws -> [BuildMessage] {
+  public func build(project: URL, buildType: BuildType) async throws -> BuildSection {
     if let onBuild {
       try await onBuild(project, buildType)
     } else {
-      []
+      BuildSection(title: "Build", messages: [], subSections: [], duration: 0)
     }
   }
 

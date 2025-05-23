@@ -14,7 +14,7 @@ import XcodeObserverServiceInterface
 extension DefaultXcodeController {
 
   @MainActor
-  public func build(project: URL, buildType: BuildType) async throws -> [BuildMessage] {
+  public func build(project: URL, buildType: BuildType) async throws -> BuildSection {
     let buildLogsDirectory = buildLogsDirectory(for: project)
     let existingBuildLogs = try buildLogFiles(in: buildLogsDirectory)
     try await Self.triggerBuildAction(
@@ -24,38 +24,40 @@ extension DefaultXcodeController {
       shellService: shellService)
     let newBuildLog = try await waitForNewBuildLog(in: buildLogsDirectory, existingLogs: existingBuildLogs)
 
-    // Collect all messages from the build logs.
-    var messages: [IDEActivityLogMessage] = []
-    func collectMessages(from section: IDEActivityLogSection) {
-      messages.append(contentsOf: section.messages)
-      for subsection in section.subSections {
-        collectMessages(from: subsection)
-      }
-    }
-    collectMessages(from: newBuildLog.mainSection)
+    return newBuildLog.mainSection.mapped
 
-    return messages.compactMap { message in
-      guard let severity = BuildMessage.Severity(rawValue: message.severity) else {
-        return nil
-      }
-      let textLocation = message.location as? DVTTextDocumentLocation
-      let location: BuildMessage.Location? =
-        if let file = URL(string: message.location.documentURLString) {
-          BuildMessage.Location(
-            file: file,
-            startingLineNumber: (textLocation?.startingLineNumber).map { Int($0) },
-            startingColumnNumber: (textLocation?.startingColumnNumber).map { Int($0) },
-            endingLineNumber: (textLocation?.endingLineNumber).map { Int($0) },
-            endingColumnNumber: (textLocation?.endingColumnNumber).map { Int($0) })
-        } else {
-          nil
-        }
-
-      return BuildMessage(
-        message: message.title,
-        severity: severity,
-        location: location)
-    }
+//    // Collect all messages from the build logs.
+//    var messages: [IDEActivityLogMessage] = []
+//    func collectMessages(from section: IDEActivityLogSection) {
+//      messages.append(contentsOf: section.messages)
+//      for subsection in section.subSections {
+//        collectMessages(from: subsection)
+//      }
+//    }
+//    collectMessages(from: newBuildLog.mainSection)
+//
+//    return messages.compactMap { message in
+//      guard let severity = BuildMessage.Severity(rawValue: message.severity) else {
+//        return nil
+//      }
+//      let textLocation = message.location as? DVTTextDocumentLocation
+//      let location: BuildMessage.Location? =
+//        if let file = URL(string: message.location.documentURLString) {
+//          BuildMessage.Location(
+//            file: file,
+//            startingLineNumber: (textLocation?.startingLineNumber).map { Int($0) },
+//            startingColumnNumber: (textLocation?.startingColumnNumber).map { Int($0) },
+//            endingLineNumber: (textLocation?.endingLineNumber).map { Int($0) },
+//            endingColumnNumber: (textLocation?.endingColumnNumber).map { Int($0) })
+//        } else {
+//          nil
+//        }
+//
+//      return BuildMessage(
+//        message: message.title,
+//        severity: severity,
+//        location: location)
+//    }
   }
 
   /// The path to the Derived Data folder.
@@ -73,6 +75,7 @@ extension DefaultXcodeController {
     return URL(fileURLWithPath: customLocation)
   }
 
+  /// Using AX, trigger a build in Xcode.
   @MainActor
   private static func triggerBuildAction(
     project _: URL,
@@ -118,6 +121,7 @@ extension DefaultXcodeController {
     NSApplication.shared.activate()
   }
 
+  /// Monitor the content of derived data for the given project until a new build log is created.
   private func waitForNewBuildLog(in buildLogsDirectory: URL?, existingLogs: [URL]) async throws -> IDEActivityLog {
     let existingLogs = Set<URL>(existingLogs)
     let (future, continuation) = Future<IDEActivityLog, Error>.make()
@@ -151,6 +155,7 @@ extension DefaultXcodeController {
     return try await future.value
   }
 
+  /// List all the build logs in the given directory.
   private func buildLogFiles(in directory: URL?) throws -> [URL] {
     guard let directory, fileManager.fileExists(atPath: directory.path) else {
       return []
@@ -184,3 +189,35 @@ extension DefaultXcodeController {
 }
 
 extension IDEActivityLog: @retroactive @unchecked Sendable { }
+
+extension IDEActivityLogSection {
+  var mapped: BuildSection {
+    BuildSection(
+      title: title,
+      messages: messages.map { message in
+        BuildMessage(
+          message: message.title,
+          severity: BuildMessage.Severity(rawValue: message.severity) ?? .info,
+          location: message.location.mapped)
+      },
+      // Xcode also doesn't show cached results in its UI.
+      subSections: subSections.filter { !$0.wasFetchedFromCache }.map(\.mapped),
+      duration: timeStoppedRecording - timeStartedRecording)
+  }
+}
+
+extension DVTDocumentLocation {
+  var mapped: BuildMessage.Location? {
+    if let file = URL(string: documentURLString) {
+      let textLocation = self as? DVTTextDocumentLocation
+      return BuildMessage.Location(
+        file: file,
+        startingLineNumber: (textLocation?.startingLineNumber).map { Int($0) },
+        startingColumnNumber: (textLocation?.startingColumnNumber).map { Int($0) },
+        endingLineNumber: (textLocation?.endingLineNumber).map { Int($0) },
+        endingColumnNumber: (textLocation?.endingColumnNumber).map { Int($0) })
+    } else {
+      return nil
+    }
+  }
+}

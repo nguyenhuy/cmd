@@ -8,7 +8,7 @@ import Foundation
 
 public protocol XcodeController: Sendable {
   func apply(fileChange: FileChange) async throws
-  func build(project: URL, buildType: BuildType) async throws -> [BuildMessage]
+  func build(project: URL, buildType: BuildType) async throws -> BuildSection
 }
 
 // MARK: - XcodeControllerProviding
@@ -34,6 +34,38 @@ public struct BuildError: Error {
     self.exitCode = exitCode
     self.output = output
   }
+}
+
+// MARK: - BuildSection
+
+public struct BuildSection: Codable, Sendable {
+  public init(title: String, messages: [BuildMessage], subSections: [BuildSection], duration: TimeInterval) {
+    self.title = title
+    self.messages = messages
+    self.subSections = subSections
+    self.duration = duration
+
+    var maxSeverity = BuildMessage.Severity.info
+    for message in messages {
+      if message.severity.rawValue > maxSeverity.rawValue {
+        maxSeverity = message.severity
+      }
+    }
+    for section in subSections {
+      let sectionSeverity = section.maxSeverity
+      if sectionSeverity.rawValue > maxSeverity.rawValue {
+        maxSeverity = sectionSeverity
+      }
+    }
+    self.maxSeverity = maxSeverity
+  }
+
+  public let title: String
+  public let messages: [BuildMessage]
+  public let subSections: [BuildSection]
+  public let duration: TimeInterval
+  public let maxSeverity: BuildMessage.Severity
+
 }
 
 // MARK: - BuildMessage

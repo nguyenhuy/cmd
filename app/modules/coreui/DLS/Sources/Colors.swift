@@ -139,4 +139,24 @@ extension ColorScheme {
   public var textAreaBorderColor: Color {
     self == .dark ? .gray.opacity(0.5) : .gray.opacity(0.3)
   }
+
+  public var xcodeWarningColor: Color {
+    self == .dark
+      ? Color(red: 255 / 255, green: 198 / 255, blue: 0 / 255)
+      : Color(red: 202 / 255, green: 9 / 255, blue: 0 / 255)
+  }
+
+  /// 236,35,56 || 202,9,0
+  public var xcodeErrorColor: Color {
+    self == .dark
+      ? Color(red: 236 / 255, green: 35 / 255, blue: 56 / 255)
+      : Color(red: 202 / 255, green: 9 / 255, blue: 0 / 255)
+  }
+
+  /// 92,200,35 || 73,197,13
+  public var xcodeSuccessColor: Color {
+    self == .dark
+      ? Color(red: 92 / 255, green: 200 / 255, blue: 35 / 255)
+      : Color(red: 73 / 255, green: 197 / 255, blue: 13 / 255)
+  }
 }

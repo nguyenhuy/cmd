@@ -41,7 +41,10 @@ public final class BuildTool: NonStreamableTool {
       }
     }
 
-    public typealias Output = [BuildMessage]
+    public struct Output: Codable, Sendable {
+      let buildResult: BuildSection
+      let isSuccess: Bool
+    }
 
     /// True as building only modifies derived data.
     public let isReadonly = true
@@ -65,12 +68,8 @@ public final class BuildTool: NonStreamableTool {
           let buildType = input.for
           let buildResult = try await xcodeController.build(project: project, buildType: buildType)
 
-          if buildResult.contains(where: { $0.severity == .error }) {
-            updateStatus.yield(.completed(.success(buildResult)))
-          } else {
-            let buildResultRepresentation = buildResult.map(\.description).joined(separator: "\n")
-            updateStatus.yield(.completed(.failure(AppError("Build failed:\n\(buildResultRepresentation)"))))
-          }
+          let isSuccess = buildResult.maxSeverity != .error
+          updateStatus.yield(.completed(.success(Output(buildResult: buildResult, isSuccess: isSuccess))))
         } catch {
           updateStatus.yield(.completed(.failure(error)))
         }
@@ -106,8 +105,8 @@ public final class BuildTool: NonStreamableTool {
     ])
   }
 
-  public func isAvailable(in _: ChatMode) -> Bool {
-    true
+  public func isAvailable(in chatMode: ChatMode) -> Bool {
+    chatMode == .agent
   }
 
   public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
