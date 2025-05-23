@@ -54,13 +54,14 @@ public final class EditFilesTool: Tool {
       }
 
       public struct FileChange: Codable, Sendable {
-        public let path: String
-        public let isNewFile: Bool?
-        public let changes: [Change]
-
         public struct Change: Codable, Sendable {
           public let search: String
           public let replace: String
+
+          public init(search: String, replace: String) {
+            self.search = search
+            self.replace = replace
+          }
 
           public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: String.self)
@@ -69,6 +70,11 @@ public final class EditFilesTool: Tool {
             replace = (try? container.decode(String.self, forKey: "replace")) ?? ""
           }
         }
+
+        public let path: String
+        public let isNewFile: Bool?
+        public let changes: [Change]
+
       }
 
       public let files: [FileChange]

@@ -260,7 +260,17 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
     "XcodeControllerServiceInterface",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "AppFoundation",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "FileDiffFoundation",
+    "FoundationInterfaces",
+    "JSONFoundation",
+    "SwiftTesting",
+    "ToolFoundation",
+    "XcodeControllerServiceInterface",
+  ],
   path: "./plugins/tools/EditFilesTool"))
 
 targets.append(contentsOf: Target.module(
@@ -853,9 +863,9 @@ let package = Package(
     .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.4"),
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
-    // .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
     // Use the pre-built swift-syntax for faster local builds. Doesn't work with tests.
-    .package(path: "./pre-built/swift-syntax"),
+    // .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),

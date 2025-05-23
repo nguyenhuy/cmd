@@ -251,18 +251,144 @@ struct FileDiffViewModelTests {
   // }
 
   @MainActor
+  @Test("Handles streaming input correctly")
+  func test_streamingInput() async throws {
+    let change = withDependencies {
+      $0.fileManager = MockFileManager(files: [filePath.path(): "line1\nline2\nline3"])
+    } operation: {
+      FileDiffViewModel(
+        filePath: filePath.path(),
+        changes: [FileDiff.SearchReplace(search: "line1", replace: "")])
+    }
+
+    let initialChange = try #require(change)
+    try await waitForInitialization(of: initialChange)
+
+    #expect(await initialChange.targetContent == "line2\nline3")
+
+    let streamingUpdateExpectation = expectation(description: "Streaming update processed")
+    let cancellable = initialChange.didSet(\.formattedDiff, perform: { _ in
+      streamingUpdateExpectation.fulfillAtMostOnce()
+    })
+
+    // Simulate streaming input with additional changes
+    initialChange.handle(newChanges: [
+      FileDiff.SearchReplace(search: "line1", replace: "modified1"),
+      FileDiff.SearchReplace(search: "line2", replace: "modified2"),
+    ])
+
+    try await fulfillment(of: streamingUpdateExpectation)
+    let finalContent = await initialChange.targetContent
+    #expect(finalContent == "modified1\nmodified2\nline3")
+    _ = cancellable
+  }
+
+  @MainActor
+  @Test("Processes multiple streaming updates")
+  func test_multipleStreamingUpdates() async throws {
+    let change = withDependencies {
+      $0.fileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld\nTest"])
+    } operation: {
+      FileDiffViewModel(
+        filePath: filePath.path(),
+        changes: [FileDiff.SearchReplace(search: "Hello", replace: "Hi")])
+    }
+
+    let initialChange = try #require(change)
+    try await waitForInitialization(of: initialChange)
+
+    #expect(await initialChange.targetContent == "Hi\nWorld\nTest")
+
+    let firstUpdateExpectation = expectation(description: "First streaming update")
+    let secondUpdateExpectation = expectation(description: "Second streaming update")
+
+    let updateCount = Atomic(0)
+    let cancellable = initialChange.didSet(\.formattedDiff, perform: { _ in
+      let count = updateCount.mutate { $0 += 1
+        return $0
+      }
+      if count == 1 {
+        firstUpdateExpectation.fulfill()
+      } else if count == 2 {
+        secondUpdateExpectation.fulfill()
+      }
+    })
+
+    // First streaming update
+    initialChange.handle(newChanges: [
+      FileDiff.SearchReplace(search: "Hello", replace: "Hiii!"),
+      FileDiff.SearchReplace(search: "World", replace: "Universe"),
+    ])
+
+    try await fulfillment(of: firstUpdateExpectation)
+    let firstContent = await initialChange.targetContent
+    #expect(firstContent == "Hiii!\nUniverse\nTest")
+
+    // Second streaming update
+    initialChange.handle(newChanges: [
+      FileDiff.SearchReplace(search: "Hello", replace: "Hiii!"),
+      FileDiff.SearchReplace(search: "World", replace: "Universe"),
+      FileDiff.SearchReplace(search: "Test", replace: "Example"),
+    ])
+
+    try await fulfillment(of: secondUpdateExpectation)
+    let secondContent = await initialChange.targetContent
+    #expect(secondContent == "Hiii!\nUniverse\nExample")
+    _ = cancellable
+  }
+
+  @MainActor
+  @Test("Handles concurrent streaming updates safely")
+  func test_concurrentStreamingUpdates() async throws {
+    let change = withDependencies {
+      $0.fileManager = MockFileManager(files: [filePath.path(): "A\nB\nC\nD"])
+    } operation: {
+      FileDiffViewModel(
+        filePath: filePath.path(),
+        changes: [FileDiff.SearchReplace(search: "A", replace: "A1")])
+    }
+
+    let initialChange = try #require(change)
+    try await waitForInitialization(of: initialChange)
+
+    let updateExpectation = expectation(description: "Concurrent updates processed")
+
+    let cancellable = initialChange.didSet(\.formattedDiff, perform: { _ in
+      updateExpectation.fulfillAtMostOnce()
+    })
+
+    // Simulate concurrent streaming updates on main actor
+    Task { @MainActor in
+      initialChange.handle(newChanges: [
+        FileDiff.SearchReplace(search: "B", replace: "B1"),
+      ])
+    }
+
+    Task { @MainActor in
+      initialChange.handle(newChanges: [
+        FileDiff.SearchReplace(search: "C", replace: "C1"),
+      ])
+    }
+
+    Task { @MainActor in
+      initialChange.handle(newChanges: [
+        FileDiff.SearchReplace(search: "D", replace: "D1"),
+      ])
+    }
+
+    try await fulfillment(of: updateExpectation)
+
+    // Verify that the latest replacement is applied
+    let finalContent = await initialChange.targetContent
+    #expect(finalContent == "A\nB\nC\nD1")
+    _ = cancellable
+  }
+
+  @MainActor
   private func waitForInitialization(of change: FileDiffViewModel?) async throws {
     if change?.formattedDiff != nil {
       return
     }
-    let exp = expectation(description: "State updated")
-
-    let cancellable = change?.didSet(\.formattedDiff, perform: { newValue in
-      if newValue != nil {
-        exp.fulfillAtMostOnce()
-      }
-    })
-    try await fulfillment(of: exp)
-    _ = cancellable
+    _ = await change?.targetContent
   }
 }

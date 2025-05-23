@@ -14,4 +14,14 @@ Target.module(
     "ToolFoundation",
     "XcodeControllerServiceInterface",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "AppFoundation",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "FileDiffFoundation",
+    "FoundationInterfaces",
+    "JSONFoundation",
+    "SwiftTesting",
+    "ToolFoundation",
+    "XcodeControllerServiceInterface",
+  ])

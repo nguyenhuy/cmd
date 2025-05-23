@@ -33,7 +33,6 @@ extension FormattedFileChange {
       filePath: URL(filePath: "/"),
       baseLineContent: "",
       targetContent: "",
-      changes: [],
       canBeApplied: true,
       formattedDiff: self)
   }

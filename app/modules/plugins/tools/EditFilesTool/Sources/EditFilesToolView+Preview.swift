@@ -70,22 +70,10 @@ struct FileChangeView_Previews: PreviewProvider {
       }
       """
 
-    let changes: [FileDiff.SearchReplace] = [
-      .init(search: "import Foundation", replace: "import Foundation\nimport AppKit"),
-      .init(search: "struct WindowInfo {", replace: "struct WindowInfo: Identifiable {"),
-      .init(
-        search: "    let id: String\n    let title: String",
-        replace: "    let id: String\n    let title: String\n    var isActive: Bool = false"),
-      .init(
-        search: "    func describe() -> String {\n        return \"Window \\(id): \\(title)\"\n    }",
-        replace: "    func describe() -> String {\n        let status = isActive ? \"active\" : \"inactive\"\n        return \"Window \\(id): \\(title) (\\(status))\"\n    }"),
-    ]
-
     return FileDiffViewModel(
       filePath: filePath,
       baseLineContent: baseContent,
       targetContent: targetContent,
-      changes: changes,
       canBeApplied: true,
       formattedDiff: nil // Setting to nil to test the fallback in our extension
     )

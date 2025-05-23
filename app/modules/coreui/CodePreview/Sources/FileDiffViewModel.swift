@@ -77,7 +77,6 @@ public final class FileDiffViewModel: Sendable {
         filePath: path,
         baseLineContent: fileContent,
         targetContent: newContent,
-        changes: changes,
         canBeApplied: true,
         formattedDiff: nil)
 
@@ -106,14 +105,12 @@ public final class FileDiffViewModel: Sendable {
     filePath: URL,
     baseLineContent: String,
     targetContent: String,
-    changes: [FileDiff.SearchReplace],
     canBeApplied: Bool,
     formattedDiff: FormattedFileChange?)
   {
     self.filePath = filePath
     self.baseLineContent = baseLineContent
     _targetContent = targetContent
-    self.changes = changes
     self.canBeApplied = canBeApplied
     self.formattedDiff = formattedDiff
 
@@ -137,8 +134,6 @@ public final class FileDiffViewModel: Sendable {
 
   /// The path to the file to change.
   public let filePath: URL
-  /// The suggested changes.
-  public let changes: [FileDiff.SearchReplace]
   /// The content of the file when the suggestion was made.
   public let baseLineContent: String
 

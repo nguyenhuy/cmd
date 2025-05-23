@@ -15,7 +15,7 @@ struct ErrorParsingTests {
   func testSuccessfulDecoding() async throws {
     // Setup
     let server = MockServer()
-    let responseData = try #require("{ \"name\": \"Test User\", \"age\": 30 }".utf8Data)
+    let responseData = "{ \"name\": \"Test User\", \"age\": 30 }".utf8Data
 
     server.onPostRequest = { _, _, _ in
       responseData
@@ -33,7 +33,7 @@ struct ErrorParsingTests {
   func testErrorParsingComplete() async throws {
     // Setup
     let server = MockServer()
-    let errorResponse = try #require("""
+    let errorResponse = """
       {
           "type": "error",
           "success": false,
@@ -41,7 +41,7 @@ struct ErrorParsingTests {
           "message": "User not found",
           "stack": "Error stack trace information"
       }
-      """.utf8Data)
+      """.utf8Data
 
     server.onPostRequest = { _, _, _ in
       errorResponse
@@ -63,14 +63,14 @@ struct ErrorParsingTests {
   func testErrorParsingWithoutStack() async throws {
     // Setup
     let server = MockServer()
-    let errorResponse = try #require("""
+    let errorResponse = """
       {
           "type": "error",
           "success": false,
           "statusCode": 403,
           "message": "Forbidden"
       }
-      """.utf8Data)
+      """.utf8Data
 
     server.onPostRequest = { _, _, _ in
       errorResponse
@@ -92,7 +92,7 @@ struct ErrorParsingTests {
   func testInvalidErrorType() async throws {
     // Setup
     let server = MockServer()
-    let errorResponse = try #require("""
+    let errorResponse = """
       {
           "type": "not_an_error",
           "success": false,
@@ -100,7 +100,7 @@ struct ErrorParsingTests {
           "message": "Server error",
           "stack": "Error details"
       }
-      """.utf8Data)
+      """.utf8Data
 
     server.onPostRequest = { _, _, _ in
       errorResponse
@@ -121,7 +121,7 @@ struct ErrorParsingTests {
   func testRegularDecodingError() async throws {
     // Setup
     let server = MockServer()
-    let responseData = try #require("{ \"invalid\": \"json\" }".utf8Data)
+    let responseData = "{ \"invalid\": \"json\" }".utf8Data
 
     server.onPostRequest = { _, _, _ in
       responseData
