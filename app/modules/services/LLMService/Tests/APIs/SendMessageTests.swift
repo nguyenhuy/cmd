@@ -154,7 +154,7 @@ final class SendMessageTests {
               ]},
               {"role":"user","content":[{"tool_use_id":"123","type":"tool_result","result":{"type":"tool_result_success","success":"test_result"}}]}
             ],
-            "model" : "claude-3-7-sonnet-latest",
+            "model" : "claude-sonnet-4-20250514",
             "provider" : {
               "name" : "anthropic",
               "settings" : { "apiKey" : "anthropic-key" }
@@ -221,7 +221,7 @@ final class SendMessageTests {
               ]},
               {"role":"user","content":[{"tool_use_id":"123","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
             ],
-            "model" : "claude-3-7-sonnet-latest",
+            "model" : "claude-sonnet-4-20250514",
             "provider" : {
               "name" : "anthropic",
               "settings" : { "apiKey" : "anthropic-key" }

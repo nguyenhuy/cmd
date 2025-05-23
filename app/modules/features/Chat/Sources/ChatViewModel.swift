@@ -116,7 +116,7 @@ public class ChatViewModel {
 
   private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {
     Task { @MainActor in
-      if ProcessInfo.processInfo.processName != "xctest" {
+      if !["swiftpm-testing-helper", "xctest"].contains(ProcessInfo.processInfo.processName) {
         NSApp.setActivationPolicy(.regular)
         // TODO: make sure the app is activated. Sometimes it doesn't work.
         Task { try await NSApplication.activateCurrentApp() }

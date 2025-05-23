@@ -216,12 +216,12 @@ struct ChatInputViewModelTests {
         availableModels: nil) // Pass nil to read from the settings service
     }
 
-    #expect(viewModel.availableModels.count == 2)
+    #expect(viewModel.availableModels.count == 3)
     #expect(viewModel.selectedModel == .claudeSonnet40)
 
     mockSettingsService.update(setting: \.openAISettings, to: nil)
 
-    #expect(viewModel.availableModels.count == 1)
+    #expect(viewModel.availableModels.count == 2)
     #expect(viewModel.availableModels.contains(.claudeSonnet40))
     #expect(!viewModel.availableModels.contains(.gpt4o))
     #expect(viewModel.selectedModel == .claudeSonnet40)

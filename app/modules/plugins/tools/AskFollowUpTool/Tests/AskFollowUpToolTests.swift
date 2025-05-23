@@ -40,7 +40,7 @@ struct LSToolTests {
       let toolUse = LSTool().use(
         toolUseId: "123",
         input: .init(path: "./path/to/dir", recursive: false),
-        context: .init(projectRoot: URL(filePath: "/path/to/root")))
+        context: .init(project: URL(filePath: "/path/to/root/project"), projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }
@@ -65,7 +65,7 @@ struct LSToolTests {
       let toolUse = LSTool().use(
         toolUseId: "123",
         input: .init(path: "./path/to/dir", recursive: false),
-        context: .init(projectRoot: URL(filePath: "/path/to/root")))
+        context: .init(project: URL(filePath: "/path/to/root/project"), projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }

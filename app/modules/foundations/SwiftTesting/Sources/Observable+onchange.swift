@@ -19,6 +19,7 @@ extension Observable where Self: Sendable {
       },
       token: { [weak cancellable] in
         guard let cancellable else { return nil }
+        _ = cancellable
         return ""
       },
       willChange: nil,

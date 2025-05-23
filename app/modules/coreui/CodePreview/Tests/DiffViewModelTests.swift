@@ -23,7 +23,7 @@ struct FileDiffViewModelTests {
   @MainActor
   @Test("Initializes with valid changes")
   func test_initialization() async throws {
-    withDependencies {
+    let change = withDependencies {
       $0.fileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
     } operation: {
       let llmDiff = """
@@ -34,15 +34,15 @@ struct FileDiffViewModelTests {
         >>>>>>> REPLACE
         """
 
-      let change = FileDiffViewModel(
+      return FileDiffViewModel(
         filePath: filePath.path(),
         llmDiff: llmDiff)
-
-      #expect(change != nil)
-      #expect(change?.baseLineContent == "Hello\nWorld")
-      #expect(change?.targetContent == "Hi\nWorld")
-      #expect(change?.canBeApplied == true)
     }
+
+    #expect(change != nil)
+    #expect(change?.baseLineContent == "Hello\nWorld")
+    #expect(await change?.targetContent == "Hi\nWorld")
+    #expect(change?.canBeApplied == true)
   }
 
   @MainActor
@@ -111,7 +111,7 @@ struct FileDiffViewModelTests {
   @Test("Rejects changes correctly")
   @MainActor
   func test_rejectChanges() async throws {
-    try await withDependencies {
+    let change = try await withDependencies {
       $0.fileManager = MockFileManager(files: [filePath.path(): "Hello\nWorld"])
     } operation: {
       let llmDiff = """
@@ -127,14 +127,14 @@ struct FileDiffViewModelTests {
         llmDiff: llmDiff)
       try await waitForInitialization(of: suggestedChange)
 
-      let change = try #require(suggestedChange)
-      #expect(change.targetContent == "Hi\nWorld")
-      let formattedDiff = try #require(change.formattedDiff)
-
-      try change.handleReject(changes: formattedDiff.changes)
-      #expect(change.targetContent == "Hello\nWorld")
-      #expect(change.formattedDiff?.changes.map(\.change).targetContent == "Hello\nWorld")
+      return try #require(suggestedChange)
     }
+    #expect(await change.targetContent == "Hi\nWorld")
+    let formattedDiff = try #require(change.formattedDiff)
+
+    try change.handleReject(changes: formattedDiff.changes)
+    #expect(await change.targetContent == "Hello\nWorld")
+    #expect(change.formattedDiff?.changes.map(\.change).targetContent == "Hello\nWorld")
   }
 
 //  @Test("Reapplies changes correctly")

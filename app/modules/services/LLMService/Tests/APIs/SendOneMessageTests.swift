@@ -34,7 +34,7 @@ final class SendOneMessageTests {
               "role" : "user"
             }
           ],
-          "model" : "claude-3-7-sonnet-latest",
+          "model" : "claude-sonnet-4-20250514",
             "provider" : {
               "name" : "anthropic",
               "settings" : { "apiKey" : "anthropic-key" }

@@ -145,14 +145,20 @@ let okServerResponse = Data()
 struct TestChatContext: ChatContext {
 
   init(
+    project: URL? = nil,
     projectRoot: URL,
+    chatMode: ChatMode = .ask,
     prepareForWriteToolUse: @escaping @Sendable () async -> Void = { })
   {
+    self.project = project
     self.projectRoot = projectRoot
+    self.chatMode = chatMode
     self.prepareForWriteToolUse = prepareForWriteToolUse
   }
 
-  let projectRoot: URL
+  let project: URL?
+  let projectRoot: URL?
+  let chatMode: ChatMode
 
   let prepareForWriteToolUse: @Sendable () async -> Void
 }
