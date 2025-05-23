@@ -7,36 +7,88 @@ interface StreamDelta {
 	partial_json?: string
 }
 
+interface InputJsonDelta {
+	type: "input_json_delta"
+	partial_json: string
+}
+
 interface StreamData {
 	type: string
 	delta: StreamDelta
+	index?: number
 }
 
-function extractTextFromStream(inputText: string): { text: string; tool: string } {
+interface ContentBlock {
+	type: string
+	id?: string
+	name?: string
+	input?: unknown
+}
+
+interface ContentBlockStart {
+	type: string
+	index: number
+	content_block: ContentBlock
+}
+
+interface AnthropicToolCall {
+	name?: string
+	parameters?: unknown
+	raw?: string
+}
+
+function extractTextFromStream(inputText: string): { text: string; tool: AnthropicToolCall | null } {
 	// Split the input into lines
 	const lines = inputText.trim().split("\n")
 
 	// Initialize variables
 	let currentText = ""
 	let currentTool = ""
+	let toolName = ""
+	let toolId = ""
 
 	// Process each line
 	for (let i = 0; i < lines.length; i++) {
 		const line = lines[i]
-		if (line.startsWith("event: content_block_delta")) {
-			// Get the next line which contains the data
+
+		// Handle content_block_start events for tool_use
+		if (line.startsWith("event: content_block_start")) {
 			const dataLine = lines[i + 1]
 			if (dataLine && dataLine.startsWith("data:")) {
 				try {
-					// Extract the JSON data
-					const jsonStr = dataLine.slice(5).trim() // Remove 'data: ' prefix
+					const jsonStr = dataLine.slice(5).trim()
+					const data = JSON.parse(jsonStr) as ContentBlockStart
+
+					if (data.content_block?.type === "tool_use") {
+						toolName = data.content_block.name || ""
+						toolId = data.content_block.id || ""
+					}
+				} catch {
+					// Skip invalid JSON
+					continue
+				}
+			}
+		}
+
+		// Handle content_block_delta events
+		else if (line.startsWith("event: content_block_delta")) {
+			const dataLine = lines[i + 1]
+			if (dataLine && dataLine.startsWith("data:")) {
+				try {
+					const jsonStr = dataLine.slice(5).trim()
 					const data = JSON.parse(jsonStr) as StreamData
 
-					// Extract the text from the delta
+					// Extract text from text_delta
 					if (data.delta?.text) {
 						currentText += data.delta.text
-					} else if (data.delta?.partial_json) {
+					}
+					// Extract tool parameters from partial_json (old format)
+					else if (data.delta?.partial_json) {
 						currentTool += data.delta.partial_json
+					}
+					// Extract tool parameters from input_json_delta (new format)
+					else if (data.delta && "partial_json" in data.delta && data.delta.type === "input_json_delta") {
+						currentTool += (data.delta as InputJsonDelta).partial_json
 					}
 				} catch {
 					// Skip invalid JSON
@@ -46,8 +98,38 @@ function extractTextFromStream(inputText: string): { text: string; tool: string 
 		}
 	}
 
-	return { text: currentText, tool: JSON.parse(currentTool) }
+	// Parse tool JSON if present, otherwise return null
+	let toolCall: AnthropicToolCall | null = null
+	if (toolName || currentTool.trim()) {
+		try {
+			if (toolName && currentTool.trim()) {
+				// New format: we have tool name from content_block_start and parameters from input_json_delta
+				const parsedParameters = JSON.parse(currentTool)
+				toolCall = {
+					name: toolName,
+					parameters: parsedParameters,
+				}
+			} else if (currentTool.trim()) {
+				// Old format: everything is in partial_json
+				const parsedTool = JSON.parse(currentTool)
+				toolCall = {
+					name: parsedTool.name,
+					parameters: parsedTool.parameters,
+				}
+			}
+		} catch {
+			// If tool JSON is malformed, return the raw string
+			toolCall = {
+				raw: currentTool,
+			}
+		}
+	}
+
+	return { text: currentText, tool: toolCall }
 }
+
+// Export the function for testing
+export { extractTextFromStream }
 
 // Read from stdin if no file is provided
 async function main() {
