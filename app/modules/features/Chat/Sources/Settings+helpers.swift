@@ -7,10 +7,10 @@ import SettingsServiceInterface
 extension SettingsServiceInterface.Settings {
   /// The LLM models that have been configured and are available for use.
   var availableModels: [LLMModel] {
-    let allModels: [LLMModel] = [.claudeSonnet, .gpt4o]
+    let allModels: [LLMModel] = [.claudeSonnet40, .claudeSonnet37, .gpt4o]
     return allModels.filter { model in
       switch model {
-      case .claudeSonnet:
+      case .claudeSonnet40, .claudeSonnet37:
         anthropicSettings != nil
       case .gpt4o, .gpt4o_mini, .o1:
         openAISettings != nil

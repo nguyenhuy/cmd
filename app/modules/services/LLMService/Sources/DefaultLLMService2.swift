@@ -96,7 +96,7 @@ final class DefaultLLMService2: LLMService {
   func sendOneMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
-    model _: LLMModel,
+    model: LLMModel,
     context: any ChatContext,
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void)
     async throws -> AssistantMessage
@@ -112,18 +112,19 @@ final class DefaultLLMService2: LLMService {
 
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 360 // e.g., 360 seconds or more.
+        let settings = settingsService.values()
         let service = OpenAIServiceFactory.service(
-          apiKey: settingsService.value(for: \.anthropicSettings)?.apiKey ?? "",
-          overrideBaseURL: "https://api.anthropic.com",
+          apiKey: model.apiKey(settings: settings),
+          overrideBaseURL: model.baseURL(settings: settings),
           configuration: configuration,
-          overrideVersion: "v1")
+          overrideVersion: model.versionOverride)
 
         let parameters = ChatCompletionParameters(
           messages: [.init(
             role: .system,
             content: .text(Prompt.defaultPrompt(projectRoot: context.projectRoot, mode: context.chatMode)))] +
             messageHistory.flatMap { message in message.mapped },
-          model: .custom("claude-3-7-sonnet-20250219"),
+          model: model.model,
           tools: tools.map(\.mapped))
         #if DEBUG
         let stream = try await {
@@ -428,4 +429,53 @@ struct PartialToolUse {
   var arguments: String
 
   var parseableJSON: Data?
+}
+
+extension LLMModel {
+  var versionOverride: String? {
+    switch self {
+    case .claudeSonnet37, .claudeSonnet40:
+      "/v1"
+    default:
+      nil
+    }
+  }
+
+  var model: SwiftOpenAI.Model {
+    switch self {
+    case .claudeSonnet37, .claudeSonnet40:
+      .custom(id)
+    case .gpt4o:
+      .gpt4o
+    case .gpt4o_mini:
+      .gpt4omini
+    case .o1:
+      .o1Mini
+    default:
+      .gpt4
+    }
+  }
+
+  func baseURL(settings: Settings) -> String {
+    switch self {
+    case .claudeSonnet37, .claudeSonnet40:
+      settings.anthropicSettings?.apiUrl ?? "https://api.anthropic.com"
+    case .gpt4o, .gpt4o_mini, .o1:
+      settings.openAISettings?.apiUrl ?? "https://api.openai.com"
+    default:
+      "https://api.openai.com"
+    }
+  }
+
+  func apiKey(settings: Settings) -> String {
+    switch self {
+    case .claudeSonnet37, .claudeSonnet40:
+      settings.anthropicSettings?.apiKey ?? "<missing-key>"
+    case .gpt4o, .gpt4o_mini, .o1:
+      settings.openAISettings?.apiKey ?? "<missing-key>"
+    default:
+      "<missing-key>"
+    }
+  }
+
 }

@@ -22,7 +22,7 @@ struct ChatInputViewModelTests {
   @Test("initializing with a selected model that is in available models keeps that model")
   func test_initialization_withSelectedModelInAvailableModels() {
     let selectedModel = LLMModel.gpt4o
-    let availableModels = [LLMModel.claudeSonnet, LLMModel.gpt4o]
+    let availableModels = [LLMModel.claudeSonnet40, LLMModel.gpt4o]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -40,7 +40,7 @@ struct ChatInputViewModelTests {
   @Test("initializing with a selected model that is not in available models selects the first available model")
   func test_initialization_withSelectedModelNotInAvailableModels() {
     let selectedModel = LLMModel.o1
-    let availableModels = [LLMModel.claudeSonnet, LLMModel.gpt4o]
+    let availableModels = [LLMModel.claudeSonnet40, LLMModel.gpt4o]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -57,7 +57,7 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with nil selected model selects the first available model")
   func test_initialization_withNilSelectedModel() {
-    let availableModels = [LLMModel.claudeSonnet, LLMModel.gpt4o]
+    let availableModels = [LLMModel.claudeSonnet40, LLMModel.gpt4o]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -102,7 +102,7 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: .gpt4o,
-        availableModels: [.claudeSonnet, .gpt4o, .gpt4o_mini])
+        availableModels: [.claudeSonnet40, .gpt4o, .gpt4o_mini])
     }
 
     #expect(viewModel.selectedModel == .gpt4o)
@@ -122,11 +122,11 @@ struct ChatInputViewModelTests {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatInputViewModel(
-        selectedModel: .claudeSonnet,
+        selectedModel: .claudeSonnet40,
         availableModels: nil)
     }
 
-    #expect(viewModel.selectedModel == .claudeSonnet)
+    #expect(viewModel.selectedModel == .claudeSonnet40)
     mockSettingsService.update(setting: \.anthropicSettings, to: nil)
 
     #expect(viewModel.selectedModel == .gpt4o)
@@ -146,11 +146,11 @@ struct ChatInputViewModelTests {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatInputViewModel(
-        selectedModel: .claudeSonnet,
+        selectedModel: .claudeSonnet40,
         availableModels: nil)
     }
 
-    #expect(viewModel.selectedModel == .claudeSonnet)
+    #expect(viewModel.selectedModel == .claudeSonnet40)
     mockSettingsService.update(setting: \.anthropicSettings, to: nil)
 
     #expect(viewModel.selectedModel == nil)
@@ -188,8 +188,8 @@ struct ChatInputViewModelTests {
       $0.settingsService = mockSettingsService
     } operation: {
       ChatInputViewModel(
-        selectedModel: .claudeSonnet,
-        availableModels: [.claudeSonnet, .gpt4o])
+        selectedModel: .claudeSonnet40,
+        availableModels: [.claudeSonnet40, .gpt4o])
     }
 
     #expect(mockUserDefaults.string(forKey: "selectedLLMModel") == nil)
@@ -212,19 +212,19 @@ struct ChatInputViewModelTests {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatInputViewModel(
-        selectedModel: .claudeSonnet,
+        selectedModel: .claudeSonnet40,
         availableModels: nil) // Pass nil to read from the settings service
     }
 
     #expect(viewModel.availableModels.count == 2)
-    #expect(viewModel.selectedModel == .claudeSonnet)
+    #expect(viewModel.selectedModel == .claudeSonnet40)
 
     mockSettingsService.update(setting: \.openAISettings, to: nil)
 
     #expect(viewModel.availableModels.count == 1)
-    #expect(viewModel.availableModels.contains(.claudeSonnet))
+    #expect(viewModel.availableModels.contains(.claudeSonnet40))
     #expect(!viewModel.availableModels.contains(.gpt4o))
-    #expect(viewModel.selectedModel == .claudeSonnet)
+    #expect(viewModel.selectedModel == .claudeSonnet40)
 
     mockSettingsService.update(setting: \.anthropicSettings, to: nil)
 

@@ -282,7 +282,7 @@ final class DefaultLLMService: LLMService {
   private func provider(for model: LLMModel) throws -> Schema.APIProvider {
     let settings = settingsService.values()
     switch model {
-    case .claudeSonnet:
+    case .claudeSonnet40, .claudeSonnet37:
       guard let anthropicSettings = settings.anthropicSettings else {
         throw AppError(message: "Anthropic API not configured")
       }

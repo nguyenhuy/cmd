@@ -24,13 +24,14 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
     self.id = id
   }
 
-  public static let claudeSonnet = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-latest")
+  public static let claudeSonnet37 = LLMModel(displayName: "claude-3.7-sonnet", id: "claude-3-7-sonnet-20250219")
+  public static let claudeSonnet40 = LLMModel(displayName: "claude-4.0-sonnet", id: "claude-sonnet-4-20250514")
   public static let gpt4o = LLMModel(displayName: "gpt-4o", id: "gpt-4o")
   public static let gpt4o_mini = LLMModel(displayName: "gpt-4o-mini", id: "gpt-4o-mini")
   public static let o1 = LLMModel(displayName: "o1", id: "o1-preview")
 
   public static var allCases: [LLMModel] {
-    [.claudeSonnet, .gpt4o, .gpt4o_mini, .o1]
+    [.claudeSonnet40, .claudeSonnet37, .gpt4o, .gpt4o_mini, .o1]
   }
 
   public let displayName: String

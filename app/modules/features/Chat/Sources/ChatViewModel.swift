@@ -23,7 +23,7 @@ public class ChatViewModel {
   convenience init(
     defaultMode: ChatMode? = nil,
     tabs: [ChatTabViewModel],
-    currentModel: LLMModel = .claudeSonnet,
+    currentModel: LLMModel = .claudeSonnet40,
     selectedTab: ChatTabViewModel? = nil)
   {
     self.init(
@@ -39,7 +39,7 @@ public class ChatViewModel {
     self.init(
       defaultMode: defaultMode ?? .agent,
       tabs: tabs,
-      currentModel: .claudeSonnet,
+      currentModel: .claudeSonnet40,
       selectedTab: tabs.first)
   }
 
