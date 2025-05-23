@@ -37,15 +37,14 @@ interface AnthropicToolCall {
 	raw?: string
 }
 
-function extractTextFromStream(inputText: string): { text: string; tool: AnthropicToolCall | null } {
+function extractTextFromStream(inputText: string): { text: string; tools: AnthropicToolCall[] } {
 	// Split the input into lines
 	const lines = inputText.trim().split("\n")
 
 	// Initialize variables
 	let currentText = ""
-	let currentTool = ""
-	let toolName = ""
-	let toolId = ""
+	const tools: AnthropicToolCall[] = []
+	const toolDataByIndex: Map<number, { name: string; json: string }> = new Map()
 
 	// Process each line
 	for (let i = 0; i < lines.length; i++) {
@@ -60,8 +59,11 @@ function extractTextFromStream(inputText: string): { text: string; tool: Anthrop
 					const data = JSON.parse(jsonStr) as ContentBlockStart
 
 					if (data.content_block?.type === "tool_use") {
-						toolName = data.content_block.name || ""
-						toolId = data.content_block.id || ""
+						const toolName = data.content_block.name || ""
+						const index = data.index
+						if (toolName && index !== undefined) {
+							toolDataByIndex.set(index, { name: toolName, json: "" })
+						}
 					}
 				} catch {
 					// Skip invalid JSON
@@ -82,13 +84,70 @@ function extractTextFromStream(inputText: string): { text: string; tool: Anthrop
 					if (data.delta?.text) {
 						currentText += data.delta.text
 					}
-					// Extract tool parameters from partial_json (old format)
-					else if (data.delta?.partial_json) {
-						currentTool += data.delta.partial_json
+					// Extract tool parameters from partial_json (old format) or input_json_delta (new format)
+					else if (
+						data.delta?.partial_json ||
+						(data.delta && "partial_json" in data.delta && data.delta.type === "input_json_delta")
+					) {
+						const partialJson = data.delta.partial_json || (data.delta as InputJsonDelta).partial_json
+						const index = data.index
+
+						if (index !== undefined) {
+							const toolData = toolDataByIndex.get(index)
+							if (toolData) {
+								// New format: we have tool name from content_block_start, or old format continuation
+								toolData.json += partialJson
+							} else {
+								// Old format: create new entry for this index
+								const existingData = { name: "", json: partialJson }
+								toolDataByIndex.set(index, existingData)
+							}
+						}
 					}
-					// Extract tool parameters from input_json_delta (new format)
-					else if (data.delta && "partial_json" in data.delta && data.delta.type === "input_json_delta") {
-						currentTool += (data.delta as InputJsonDelta).partial_json
+				} catch {
+					// Skip invalid JSON
+					continue
+				}
+			}
+		}
+
+		// Handle content_block_stop events to finalize tools
+		else if (line.startsWith("event: content_block_stop")) {
+			const dataLine = lines[i + 1]
+			if (dataLine && dataLine.startsWith("data:")) {
+				try {
+					const jsonStr = dataLine.slice(5).trim()
+					const data = JSON.parse(jsonStr)
+					const index = data.index
+
+					if (index !== undefined) {
+						const toolData = toolDataByIndex.get(index)
+						if (toolData && (toolData.name || toolData.json.trim())) {
+							try {
+								if (toolData.name && toolData.json.trim()) {
+									// New format: we have tool name from content_block_start and parameters from input_json_delta
+									const parsedParameters = JSON.parse(toolData.json)
+									tools.push({
+										name: toolData.name,
+										parameters: parsedParameters,
+									})
+								} else if (toolData.json.trim()) {
+									// Old format: everything is in partial_json
+									const parsedTool = JSON.parse(toolData.json)
+									tools.push({
+										name: parsedTool.name,
+										parameters: parsedTool.parameters,
+									})
+								}
+							} catch {
+								// If tool JSON is malformed, return the raw string
+								tools.push({
+									raw: toolData.json,
+								})
+							}
+							// Remove processed tool data
+							toolDataByIndex.delete(index)
+						}
 					}
 				} catch {
 					// Skip invalid JSON
@@ -98,34 +157,35 @@ function extractTextFromStream(inputText: string): { text: string; tool: Anthrop
 		}
 	}
 
-	// Parse tool JSON if present, otherwise return null
-	let toolCall: AnthropicToolCall | null = null
-	if (toolName || currentTool.trim()) {
-		try {
-			if (toolName && currentTool.trim()) {
-				// New format: we have tool name from content_block_start and parameters from input_json_delta
-				const parsedParameters = JSON.parse(currentTool)
-				toolCall = {
-					name: toolName,
-					parameters: parsedParameters,
+	// Handle any remaining tools that didn't have content_block_stop events
+	for (const [, toolData] of toolDataByIndex) {
+		if (toolData.name || toolData.json.trim()) {
+			try {
+				if (toolData.name && toolData.json.trim()) {
+					// New format: we have tool name from content_block_start and parameters from input_json_delta
+					const parsedParameters = JSON.parse(toolData.json)
+					tools.push({
+						name: toolData.name,
+						parameters: parsedParameters,
+					})
+				} else if (toolData.json.trim()) {
+					// Old format: everything is in partial_json
+					const parsedTool = JSON.parse(toolData.json)
+					tools.push({
+						name: parsedTool.name,
+						parameters: parsedTool.parameters,
+					})
 				}
-			} else if (currentTool.trim()) {
-				// Old format: everything is in partial_json
-				const parsedTool = JSON.parse(currentTool)
-				toolCall = {
-					name: parsedTool.name,
-					parameters: parsedTool.parameters,
-				}
-			}
-		} catch {
-			// If tool JSON is malformed, return the raw string
-			toolCall = {
-				raw: currentTool,
+			} catch {
+				// If tool JSON is malformed, return the raw string
+				tools.push({
+					raw: toolData.json,
+				})
 			}
 		}
 	}
 
-	return { text: currentText, tool: toolCall }
+	return { text: currentText, tools }
 }
 
 // Export the function for testing

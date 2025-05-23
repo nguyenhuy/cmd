@@ -4,42 +4,6 @@
 
 import { extractTextFromStream } from "./parseAnthropicResponse"
 
-interface StreamDelta {
-	type: string
-	text?: string
-	partial_json?: string
-}
-
-interface InputJsonDelta {
-	type: "input_json_delta"
-	partial_json: string
-}
-
-interface StreamData {
-	type: string
-	delta: StreamDelta
-	index?: number
-}
-
-interface ContentBlock {
-	type: string
-	id?: string
-	name?: string
-	input?: unknown
-}
-
-interface ContentBlockStart {
-	type: string
-	index: number
-	content_block: ContentBlock
-}
-
-interface AnthropicToolCall {
-	name?: string
-	parameters?: unknown
-	raw?: string
-}
-
 describe("parseAnthropicResponse", () => {
 	test("should parse text-only response correctly", () => {
 		const input = `event: message_start
@@ -67,7 +31,7 @@ data: {"type":"message_stop"     }`
 
 		expect(result).toEqual({
 			text: "none",
-			tool: null,
+			tools: [],
 		})
 	})
 
@@ -85,7 +49,7 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text
 
 		expect(result).toEqual({
 			text: "Hello World",
-			tool: null,
+			tools: [],
 		})
 	})
 
@@ -97,30 +61,40 @@ event: content_block_delta
 data: {"type":"content_block_delta","index":1,"delta":{"partial_json":"{\\"name\\":\\"test_tool\\","}}
 
 event: content_block_delta
-data: {"type":"content_block_delta","index":1,"delta":{"partial_json":"\\"parameters\\":{\\"param1\\":\\"value1\\"}}"}}}`
+data: {"type":"content_block_delta","index":1,"delta":{"partial_json":"\\"parameters\\":{\\"param1\\":\\"value1\\"}}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1}`
 
 		const result = extractTextFromStream(input)
 
 		expect(result.text).toBe("I'll help you with that.")
-		expect(result.tool).toEqual({
-			name: "test_tool",
-			parameters: {
-				param1: "value1",
+		expect(result.tools).toEqual([
+			{
+				name: "test_tool",
+				parameters: {
+					param1: "value1",
+				},
 			},
-		})
+		])
 	})
 
 	test("should parse complete tool call JSON correctly (old format)", () => {
 		const input = `event: content_block_delta
-data: {"type":"content_block_delta","index":1,"delta":{"partial_json":"{\\"name\\":\\"test_tool\\",\\"parameters\\":{\\"param1\\":\\"value1\\"}}"}}}`
+data: {"type":"content_block_delta","index":1,"delta":{"partial_json":"{\\"name\\":\\"test_tool\\",\\"parameters\\":{\\"param1\\":\\"value1\\"}}"}}
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1}`
 
 		const result = extractTextFromStream(input)
 
 		expect(result.text).toBe("")
-		expect(result.tool).toEqual({
-			name: "test_tool",
-			parameters: { param1: "value1" },
-		})
+		expect(result.tools).toEqual([
+			{
+				name: "test_tool",
+				parameters: { param1: "value1" },
+			},
+		])
 	})
 
 	test("should handle empty input gracefully", () => {
@@ -130,7 +104,7 @@ data: {"type":"content_block_delta","index":1,"delta":{"partial_json":"{\\"name\
 
 		expect(result).toEqual({
 			text: "",
-			tool: null,
+			tools: [],
 		})
 	})
 
@@ -141,9 +115,11 @@ data: {"type":"content_block_delta","index":1,"delta":{"partial_json":"{\\"incom
 		const result = extractTextFromStream(input)
 
 		expect(result.text).toBe("")
-		expect(result.tool).toEqual({
-			raw: '{"incomplete":"json',
-		})
+		expect(result.tools).toEqual([
+			{
+				raw: '{"incomplete":"json',
+			},
+		])
 	})
 
 	test("should skip lines with invalid JSON data", () => {
@@ -157,7 +133,7 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text
 
 		expect(result).toEqual({
 			text: "valid text",
-			tool: null,
+			tools: [],
 		})
 	})
 
@@ -258,13 +234,15 @@ data: {"type":"message_stop"             }`
 		const result = extractTextFromStream(input)
 
 		expect(result.text).toBe("")
-		expect(result.tool).toEqual({
-			name: "Bash",
-			parameters: {
-				command: "cd /Users/guigui/dev/Xcompanion/app/modules && swift test 2>&1 | head -100",
-				description: "Run tests again after fixing ChatContext",
+		expect(result.tools).toEqual([
+			{
+				name: "Bash",
+				parameters: {
+					command: "cd /Users/guigui/dev/Xcompanion/app/modules && swift test 2>&1 | head -100",
+					description: "Run tests again after fixing ChatContext",
+				},
 			},
-		})
+		])
 	})
 
 	test("should parse Anthropic tool_use format correctly (new format)", () => {
@@ -461,7 +439,30 @@ data: {"type":"message_stop" }
 
 		const result = extractTextFromStream(input)
 
-		// TODO.
+		expect(result.text).toBe("")
+		expect(result.tools).toEqual([
+			{
+				name: "Read",
+				parameters: {
+					file_path:
+						"/Users/guigui/dev/Xcompanion/app/modules/coreui/CodePreview/Tests/DiffViewModelTests.swift",
+				},
+			},
+			{
+				name: "Read",
+				parameters: {
+					file_path:
+						"/Users/guigui/dev/Xcompanion/app/modules/plugins/tools/EditFilesTool/Tests/EditFileToolTests.swift",
+				},
+			},
+			{
+				name: "Read",
+				parameters: {
+					file_path:
+						"/Users/guigui/dev/Xcompanion/app/modules/foundations/SwiftTesting/Sources/Expectation.swift",
+				},
+			},
+		])
 	})
 
 	test("should parse simple tool use with input_json_delta format", () => {
@@ -474,12 +475,14 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta"
 		const result = extractTextFromStream(input)
 
 		expect(result.text).toBe("")
-		expect(result.tool).toEqual({
-			name: "simple_tool",
-			parameters: {
-				param: "value",
+		expect(result.tools).toEqual([
+			{
+				name: "simple_tool",
+				parameters: {
+					param: "value",
+				},
 			},
-		})
+		])
 	})
 
 	test("should handle tool call with empty parameters", () => {
@@ -492,10 +495,12 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta"
 		const result = extractTextFromStream(input)
 
 		expect(result.text).toBe("")
-		expect(result.tool).toEqual({
-			name: "empty_tool",
-			parameters: {},
-		})
+		expect(result.tools).toEqual([
+			{
+				name: "empty_tool",
+				parameters: {},
+			},
+		])
 	})
 
 	test("should handle malformed JSON in new format", () => {
@@ -508,8 +513,10 @@ data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta"
 		const result = extractTextFromStream(input)
 
 		expect(result.text).toBe("")
-		expect(result.tool).toEqual({
-			raw: '{"incomplete":"json',
-		})
+		expect(result.tools).toEqual([
+			{
+				raw: '{"incomplete":"json',
+			},
+		])
 	})
 })
