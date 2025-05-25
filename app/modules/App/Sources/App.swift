@@ -23,11 +23,6 @@ public struct XcompanionApp: App {
     self.isAppActive = isAppActive
     AppScope.shared.create(isAppActive: isAppActive)
 
-    // Setup logging
-    if AppScope.shared.settingsService.values().enablePersistedLogging {
-      defaultLogger.startFileLogging(fileManager: AppScope.shared.fileManager)
-    }
-
     let windowsViewModel = WindowsViewModel()
     self.windowsViewModel = windowsViewModel
     windows = WindowsView(viewModel: windowsViewModel)

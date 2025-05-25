@@ -4,7 +4,10 @@ Target.module(
     "AccessibilityFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
+    "LoggingService",
     "LoggingServiceInterface",
+    "SettingsService",
+    "SettingsServiceInterface",
     "SharedValuesFoundation",
     "ThreadSafe",
   ])

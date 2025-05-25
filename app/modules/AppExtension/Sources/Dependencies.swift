@@ -3,6 +3,12 @@
 
 import Dependencies
 import Foundation
+import FoundationInterfaces
+import SettingsService
+import SettingsServiceInterface
+
+// TODO: find a way to ensure that all required dependencies are provided here.
+// One possible solution could be to grab the dependencies from this module's package.swift, search their code for any `*Providing` protocol, and ensure that they are all extended here.
 
 // MARK: - SharedUserDefaultsDependencyKey + DependencyKey
 
@@ -27,3 +33,11 @@ extension AppExtensionScope: UserDefaultsProviding {
   }
 
 }
+
+// MARK: - AppExtensionScope + SettingsServiceProviding
+
+extension AppExtensionScope: SettingsServiceProviding { }
+
+// MARK: - AppExtensionScope + FileManagerProviding
+
+extension AppExtensionScope: FileManagerProviding { }

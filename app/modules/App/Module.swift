@@ -23,6 +23,7 @@ Target.module(
     "HighlighterServiceInterface",
     "LLMService",
     "LLMServiceInterface",
+    "LoggingService",
     "LoggingServiceInterface",
     "LSTool",
     "Onboarding",

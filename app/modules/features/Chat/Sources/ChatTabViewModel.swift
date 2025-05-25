@@ -232,7 +232,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
         }
       }
     } catch {
-      defaultLogger.error("Failed to create checkpoint: \(error.localizedDescription)")
+      defaultLogger.error("Failed to create checkpoint", error)
     }
   }
 

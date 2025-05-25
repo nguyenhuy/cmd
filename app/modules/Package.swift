@@ -93,6 +93,7 @@ targets.append(contentsOf: Target.module(
     "HighlighterServiceInterface",
     "LLMService",
     "LLMServiceInterface",
+    "LoggingService",
     "LoggingServiceInterface",
     "LSTool",
     "Onboarding",
@@ -370,7 +371,10 @@ targets.append(contentsOf: Target.module(
     "AccessibilityFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
+    "LoggingService",
     "LoggingServiceInterface",
+    "SettingsService",
+    "SettingsServiceInterface",
     "SharedValuesFoundation",
     "ThreadSafe",
   ],
@@ -704,6 +708,18 @@ targets.append(contentsOf: Target.module(
   path: "./services/PermissionsService"))
 
 targets.append(contentsOf: Target.module(
+  name: "LoggingService",
+  dependencies: [
+    .product(name: "Sentry", package: "sentry-cocoa"),
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./services/LoggingService"))
+
+targets.append(contentsOf: Target.module(
   name: "ShellService",
   dependencies: [
     "ConcurrencyFoundation",
@@ -864,6 +880,8 @@ let package = Package(
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
     .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.51.1"),
+
     // Use the pre-built swift-syntax for faster local builds. Doesn't work with tests.
     // .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),

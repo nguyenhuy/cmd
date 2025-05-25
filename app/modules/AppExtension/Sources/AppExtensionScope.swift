@@ -4,6 +4,8 @@
 @preconcurrency import Combine
 import DependencyFoundation
 import Foundation
+import LoggingService
+import LoggingServiceInterface
 import ThreadSafe
 
 // MARK: - AppExtensionScope
@@ -11,7 +13,19 @@ import ThreadSafe
 @ThreadSafe
 public final class AppExtensionScope: Sendable, BaseProviding {
 
-  init() { }
+  init() {
+    // Setup logging
+    let logger = DefaultLogger(
+      subsystem: defaultLogger.subsystem,
+      category: defaultLogger.category,
+      fileManager: fileManager)
+    /// Override the default global logger. This is not thread safe. By doing it very early in the lifecycle there should be little change of this causing a crash.
+    defaultLogger = logger
+
+    if settingsService.values().enablePersistedLogging {
+      logger.startFileLogging()
+    }
+  }
 
   public static let shared = AppExtensionScope()
 

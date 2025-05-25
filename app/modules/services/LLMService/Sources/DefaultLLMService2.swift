@@ -239,7 +239,8 @@ final class DefaultLLMService2: LLMService {
                     error: Self.failedToParseToolInputError(toolName: toolName, error: error)))
                   result.update(with: AssistantMessage(content: content))
                 } else {
-                  defaultLogger.error("Failed to update tool with input \(partiaInput)", error)
+                  // Do nothing with the error here.
+                  // While we are receiving the input, it can happen that we don't have enough data to parse the input well.
                 }
               }
               if isInputComplete {
