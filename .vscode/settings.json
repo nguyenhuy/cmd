@@ -15,7 +15,6 @@
         "**/.build": true,
         "**/build": true
     },
-    "explorer.excludeGitIgnore": true,
     "cursor-retrieval.canAttemptGithubLogin": false,
     "eslint.timeBudget.onValidation": {
         
