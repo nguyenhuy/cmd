@@ -24,6 +24,7 @@ struct DefaultSettingsServiceTests {
 
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
+    #expect(service.value(for: \.allowAnonymousAnalytics) == true)
     #expect(service.value(for: \.anthropicSettings) == nil)
     #expect(service.value(for: \.openAISettings) == nil)
   }
@@ -91,6 +92,7 @@ struct DefaultSettingsServiceTests {
 
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
+    #expect(service.value(for: \.allowAnonymousAnalytics) == true)
     #expect(service.value(for: \.anthropicSettings) == nil)
     #expect(service.value(for: \.openAISettings) == nil)
   }
