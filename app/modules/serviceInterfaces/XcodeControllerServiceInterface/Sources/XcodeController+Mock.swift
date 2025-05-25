@@ -15,6 +15,8 @@ public final class MockXcodeController: XcodeController {
 
   public var onBuild: (@Sendable (URL, BuildType) async throws -> BuildSection)?
 
+  public var onOpen: (@Sendable (URL, Int?, Int?) async throws -> Void)?
+
   public func apply(fileChange: FileChange) async throws {
     onApplyFileChange?(fileChange)
   }
@@ -25,6 +27,10 @@ public final class MockXcodeController: XcodeController {
     } else {
       BuildSection(title: "Build", messages: [], subSections: [], duration: 0)
     }
+  }
+
+  public func open(file: URL, line: Int?, column: Int?) async throws {
+    try await onOpen?(file, line, column)
   }
 
 }

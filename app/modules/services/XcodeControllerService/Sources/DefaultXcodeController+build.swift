@@ -25,39 +25,6 @@ extension DefaultXcodeController {
     let newBuildLog = try await waitForNewBuildLog(in: buildLogsDirectory, existingLogs: existingBuildLogs)
 
     return newBuildLog.mainSection.mapped
-
-//    // Collect all messages from the build logs.
-//    var messages: [IDEActivityLogMessage] = []
-//    func collectMessages(from section: IDEActivityLogSection) {
-//      messages.append(contentsOf: section.messages)
-//      for subsection in section.subSections {
-//        collectMessages(from: subsection)
-//      }
-//    }
-//    collectMessages(from: newBuildLog.mainSection)
-//
-//    return messages.compactMap { message in
-//      guard let severity = BuildMessage.Severity(rawValue: message.severity) else {
-//        return nil
-//      }
-//      let textLocation = message.location as? DVTTextDocumentLocation
-//      let location: BuildMessage.Location? =
-//        if let file = URL(string: message.location.documentURLString) {
-//          BuildMessage.Location(
-//            file: file,
-//            startingLineNumber: (textLocation?.startingLineNumber).map { Int($0) },
-//            startingColumnNumber: (textLocation?.startingColumnNumber).map { Int($0) },
-//            endingLineNumber: (textLocation?.endingLineNumber).map { Int($0) },
-//            endingColumnNumber: (textLocation?.endingColumnNumber).map { Int($0) })
-//        } else {
-//          nil
-//        }
-//
-//      return BuildMessage(
-//        message: message.title,
-//        severity: severity,
-//        location: location)
-//    }
   }
 
   /// The path to the Derived Data folder.

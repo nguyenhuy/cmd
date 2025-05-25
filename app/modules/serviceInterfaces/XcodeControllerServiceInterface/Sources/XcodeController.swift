@@ -7,8 +7,27 @@ import Foundation
 // MARK: - XcodeController
 
 public protocol XcodeController: Sendable {
+  /// Apply file changes to a project using Xcode.
+  /// - Parameter fileChange: The file change to apply containing the target file and new content
+  /// - Throws: An error if the file change cannot be applied
   func apply(fileChange: FileChange) async throws
+
+  /// Build a project in Xcode.
+  /// - Parameters:
+  ///   - project: The URL of the project to build
+  ///   - buildType: The type of build to perform (test or run)
+  /// - Returns: A build section containing the build results, messages, and duration.
+  /// If the build failes, a result will be return and the failures will be included in the sections.
+  /// - Throws: An error if the build could not be triggered.
   func build(project: URL, buildType: BuildType) async throws -> BuildSection
+
+  /// Open a file in Xcode at the specified location.
+  /// - Parameters:
+  ///   - file: The URL of the file to open
+  ///   - line: The optional line number to navigate to
+  ///   - column: The optional column number to navigate to
+  /// - Throws: An error if the file cannot be opened
+  func open(file: URL, line: Int?, column: Int?) async throws
 }
 
 // MARK: - XcodeControllerProviding

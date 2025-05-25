@@ -2,12 +2,14 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import CodePreview
+import Dependencies
 import DLS
 import FileDiffFoundation
 import FileDiffTypesFoundation
 import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
+import XcodeControllerServiceInterface
 
 // MARK: - EditFilesTool.Use + DisplayableToolUse
 
@@ -218,6 +220,8 @@ struct FileChangeView: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
+  @Dependency(\.xcodeController) private var xcodeController
+
   private var hasAppliedChanges: Bool {
     if case .applied = editState { return true }
     return false
@@ -251,9 +255,15 @@ struct FileChangeView: View {
   }
 
   private func openFile() {
-    // Implement file opening functionality
-    print("Open file: \(change.filePath)")
+    Task {
+      do {
+        try await xcodeController.open(file: change.filePath, line: nil, column: nil)
+      } catch {
+        print("Failed to open file: \(error)")
+      }
+    }
   }
+
 }
 
 #if DEBUG

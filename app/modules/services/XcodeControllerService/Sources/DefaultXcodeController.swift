@@ -75,6 +75,17 @@ public final class DefaultXcodeController: XcodeController, Sendable {
     }
   }
 
+  /// Open a file in Xcode at the specified line and column.
+  public func open(file: URL, line _: Int?, column _: Int?) async throws {
+    Task {
+      do {
+        try await Self.openFileWithAppleScript(at: file)
+      } catch {
+        defaultLogger.error("Failed to open file with AppleScript", error)
+      }
+    }
+  }
+
   let shellService: ShellService
   let xcodeObserver: XcodeObserver
   let fileManager: FileManagerI
