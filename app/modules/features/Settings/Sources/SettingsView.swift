@@ -44,7 +44,9 @@ public struct SettingsView: View {
             case .providers:
               ProvidersView(providerSettings: $viewModel.providerSettings)
             case .general, nil:
-              GeneralSettingsView(pointReleaseXcodeExtensionToDebugApp: $viewModel.settings.pointReleaseXcodeExtensionToDebugApp)
+              GeneralSettingsView(
+                pointReleaseXcodeExtensionToDebugApp: $viewModel.settings.pointReleaseXcodeExtensionToDebugApp,
+                allowAnonymousAnalytics: $viewModel.settings.allowAnonymousAnalytics)
             }
           }
           .padding()
