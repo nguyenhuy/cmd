@@ -18,6 +18,9 @@ fi
 ./tmp/bin/sync-package-dependencies sync --path "${ROOT_DIR}/app/modules/Package.swift"
 
 cd "${ROOT_DIR}/app"
-make lint
+
+# lint
+mkdir -p .build/caches/swiftformat
+swiftformat --config rules.swiftformat ./**/Module.swift ./**/Package.swift --cache .build/caches/swiftformat
 
 cd "${CURRENT_DIR}"
