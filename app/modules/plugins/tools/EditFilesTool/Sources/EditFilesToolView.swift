@@ -36,6 +36,12 @@ struct ToolUseView: View {
             handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
             handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
         }
+        #if DEBUG
+        // TODO: remove this
+        if toolUse.changes.isEmpty {
+          Text("no change found???")
+        }
+        #endif
       }
       .padding(.vertical)
     }

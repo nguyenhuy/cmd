@@ -120,12 +120,11 @@ public struct ChatView: View {
           .frame(width: 16, height: 16)
 
         Text(projectName)
-          .font(.caption)
           .foregroundColor(.primary)
           .lineLimit(1)
       }
       .padding(.horizontal, 8)
-      .padding(.vertical, 4)
+      .padding(.vertical, 6)
       .cornerRadius(6)
     }
   }
@@ -140,6 +139,8 @@ public struct ChatView: View {
     }
   }
 
+  /// Display a helpful message when the project focussed in Xcode is not the one focussed on in the chat,
+  /// to avoid the user wondering how to add info from the current workspace.
   @ViewBuilder
   private var focusOnNewProjectCTA: some View {
     if let workspaceName = focusedWorkspaceName {
