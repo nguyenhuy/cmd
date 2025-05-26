@@ -1,5 +1,5 @@
 {
-  "originHash" : "0bc4af70f8a772ebac70b3421c86e98fa998216499f756e47af4efb7df2250c3",
+  "originHash" : "342dc69efa7f270156e44223c5b81297fe24b5a357fae3d3bd0c43693deabbaf",
   "pins" : [
     {
       "identity" : "aexml",
@@ -106,6 +106,15 @@
       "state" : {
         "revision" : "26cc5e9ae0947092c7139ef7ba612e34646086c7",
         "version" : "0.10.1"
+      }
+    },
+    {
+      "identity" : "statsig-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/statsig-io/statsig-kit",
+      "state" : {
+        "revision" : "9b88b4cef0cd55fd4fcecd4bed93cff118cf1533",
+        "version" : "1.53.5"
       }
     },
     {

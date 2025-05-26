@@ -26,6 +26,8 @@ public protocol Logger: Sendable {
   func error(_ error: any Error)
   /// Logs an error with an optional descriptive message.
   func error(_ message: String?, _ error: any Error)
+  /// Records an event with value and optional metadata.
+  func record(event: StaticString, value: String, metadata: [StaticString: String]?)
 
   var subsystem: String { get }
   var category: String { get }
@@ -37,3 +39,20 @@ public protocol Logger: Sendable {
 nonisolated(unsafe) public var defaultLogger: Logger = TransientLogger(
   subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp",
   category: "Xcompanion")
+
+// MARK: - StaticString + @retroactive Hashable
+
+extension StaticString: @retroactive Hashable {
+  public var string: String {
+    "\(self)"
+  }
+
+  public static func ==(lhs: StaticString, rhs: StaticString) -> Bool {
+    lhs.string == rhs.string
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    string.hash(into: &hasher)
+  }
+
+}

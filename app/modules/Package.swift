@@ -711,6 +711,7 @@ targets.append(contentsOf: Target.module(
   name: "LoggingService",
   dependencies: [
     .product(name: "Sentry", package: "sentry-cocoa"),
+    .product(name: "Statsig", package: "statsig-kit"),
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",
@@ -881,6 +882,7 @@ let package = Package(
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
     .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
     .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.51.1"),
+    .package(url: "https://github.com/statsig-io/statsig-kit", from: "1.53.5"),
 
     // Use the pre-built swift-syntax for faster local builds. Doesn't work with tests.
     // .package(path: "./pre-built/swift-syntax"),

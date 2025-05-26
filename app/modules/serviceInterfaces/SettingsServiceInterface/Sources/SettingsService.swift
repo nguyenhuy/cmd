@@ -10,13 +10,13 @@ public struct Settings: Sendable, Codable, Equatable {
   #if DEBUG
   public init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
-    enablePersistedLogging: Bool = false,
+    enableAnalytics: Bool = false,
     allowAnonymousAnalytics: Bool = true,
     anthropicSettings: AnthropicSettings?,
     openAISettings: OpenAISettings?)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
-    self.enablePersistedLogging = enablePersistedLogging
+    self.enableAnalytics = enableAnalytics
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.anthropicSettings = anthropicSettings
     self.openAISettings = openAISettings
@@ -29,9 +29,9 @@ public struct Settings: Sendable, Codable, Equatable {
       Bool.self,
       forKey: .pointReleaseXcodeExtensionToDebugApp) ?? false
     #if DEBUG
-    enablePersistedLogging = try container.decodeIfPresent(Bool.self, forKey: .enablePersistedLogging) ?? true
+    enableAnalytics = try container.decodeIfPresent(Bool.self, forKey: .enableAnalytics) ?? true
     #else
-    enablePersistedLogging = try container.decodeIfPresent(Bool.self, forKey: .enablePersistedLogging) ?? false
+    enableAnalytics = try container.decodeIfPresent(Bool.self, forKey: .enableAnalytics) ?? false
     #endif
     allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? true
     anthropicSettings = try container.decodeIfPresent(Settings.AnthropicSettings.self, forKey: .anthropicSettings)
@@ -64,7 +64,7 @@ public struct Settings: Sendable, Codable, Equatable {
     }
   }
 
-  public var enablePersistedLogging: Bool
+  public var enableAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var allowAnonymousAnalytics: Bool
   public var anthropicSettings: AnthropicSettings?

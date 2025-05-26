@@ -228,7 +228,7 @@ struct DefaultSettingsServiceTests {
         "anthropicSettings" : {
           "apiKey" : "ANTHROPIC_API_KEY"
         },
-        "enablePersistedLogging" : true,
+        "enableAnalytics" : true,
         "pointReleaseXcodeExtensionToDebugApp" : false
       }
       """)

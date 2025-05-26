@@ -78,6 +78,12 @@ public final class TransientLogger: Logger {
     }
   }
 
+  public func record(event: StaticString, value: String, metadata: [StaticString: String]? = nil) {
+    let formattedMessage = "[Event] \(event)"
+    logger.log("\(formattedMessage, privacy: .public)")
+    writeToFile("\(subsystem).\(category) \(formattedMessage)")
+  }
+
   /// Current log file URL, created with timestamp for each session
   private var logFile: FileHandle?
   /// Queue for handling concurrent write operations to the log file

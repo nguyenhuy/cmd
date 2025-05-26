@@ -14,17 +14,7 @@ import ThreadSafe
 public final class AppExtensionScope: Sendable, BaseProviding {
 
   init() {
-    // Setup logging
-    let logger = DefaultLogger(
-      subsystem: defaultLogger.subsystem,
-      category: defaultLogger.category,
-      fileManager: fileManager)
-    /// Override the default global logger. This is not thread safe. By doing it very early in the lifecycle there should be little change of this causing a crash.
-    defaultLogger = logger
-
-    if settingsService.values().enablePersistedLogging {
-      logger.startFileLogging()
-    }
+    setupLogging()
   }
 
   public static let shared = AppExtensionScope()
@@ -38,6 +28,24 @@ public final class AppExtensionScope: Sendable, BaseProviding {
   }
 
   private var sharedDependencies = AppScopeStorage()
+  private var cancellables = Set<AnyCancellable>()
+
+  private func setupLogging() {
+    let logger = DefaultLogger(
+      subsystem: defaultLogger.subsystem,
+      category: defaultLogger.category,
+      fileManager: fileManager)
+    /// Override the default global logger. This is not thread safe. By doing it very early in the lifecycle there should be little change of this causing a crash.
+    defaultLogger = logger
+
+    settingsService.liveValue(for: \.enableAnalytics).sink { [weak logger] enableAnalytics in
+      if enableAnalytics {
+        logger?.startExternalLogging()
+      } else {
+        logger?.stopExternalLogging()
+      }
+    }.store(in: &cancellables)
+  }
 
 }
 
