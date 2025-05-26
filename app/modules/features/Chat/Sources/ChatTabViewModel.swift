@@ -62,9 +62,16 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }.store(in: &cancellables)
   }
 
-  struct ProjectInfo {
+  /// Information about the Xcode project/workspace/swift package that this thread is about.
+  struct SelectedProjectInfo {
+    /// The path to the project
     let path: URL
+    /// The dir containing the project (same as the path for a Swift Package)
     let dirPath: URL
+    /// Whether the project is a Swift package
+    var isSwiftPackage: Bool {
+      dirPath != path
+    }
   }
 
   let id: UUID
@@ -76,6 +83,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
   var hasSomeLLMModelsAvailable = true
 
   private(set) var messages: [ChatMessage] = []
+
+  private(set) var projectInfo: SelectedProjectInfo?
 
   nonisolated static func ==(lhs: ChatTabViewModel, rhs: ChatTabViewModel) -> Bool {
     lhs.id == rhs.id
@@ -183,8 +192,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
-  @ObservationIgnored private var projectInfo: ProjectInfo?
-
   @ObservationIgnored
   @Dependency(\.toolsPlugin) private var toolsPlugin: ToolsPlugin
 
@@ -236,7 +243,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
-  private func updateProjectInfo() -> ProjectInfo? {
+  private func updateProjectInfo() -> SelectedProjectInfo? {
     if let projectInfo {
       return projectInfo
     }
@@ -251,7 +258,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
           defaultLogger.error("Failed to create context message for workspace", error)
         }
       }
-      let projectInfo = ProjectInfo(path: workspace.url, dirPath: projectRoot)
+      let projectInfo = SelectedProjectInfo(path: workspace.url, dirPath: projectRoot)
       self.projectInfo = projectInfo
       return projectInfo
     }

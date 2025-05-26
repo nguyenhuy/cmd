@@ -339,6 +339,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
     "XcodeObserverServiceInterface",
   ],
+  resources: [.process("Resources")],
   testDependencies: [
     "AccessibilityFoundation",
     "AppEventServiceInterface",

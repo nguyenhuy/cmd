@@ -54,6 +54,14 @@ public class ChatViewModel {
     self.selectedTab = selectedTab
     self.defaultMode = defaultMode
     registerAsAppEventHandler()
+
+    xcodeObserver.statePublisher.map(\.focusedWorkspace).map(\.?.url).removeDuplicates()
+      .sink { @Sendable [weak self] focusedWorkspacePath in
+        print("got new workspace path \(focusedWorkspacePath?.path ?? "nil")")
+        Task { @MainActor in
+          self?.focusedWorkspacePath = focusedWorkspacePath
+        }
+      }.store(in: &cancellables)
   }
 
   var tabs: [ChatTabViewModel]
@@ -62,6 +70,7 @@ public class ChatViewModel {
   var selectedTab: ChatTabViewModel?
   // TODO: persist to user defaults and load
   var defaultMode: ChatMode
+  private(set) var focusedWorkspacePath: URL? = nil
 
   /// Create a new tab/thread.
   /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
@@ -89,6 +98,8 @@ public class ChatViewModel {
       addTab()
     }
   }
+
+  @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
   @ObservationIgnored @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
   @ObservationIgnored @Dependency(\.xcodeObserver) private var xcodeObserver

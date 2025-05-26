@@ -24,26 +24,21 @@ public struct IconButton: View {
   }
 
   public var body: some View {
-    Button(action: {
-      action()
-      hasTapped = true
-      Task {
-        try await Task.sleep(nanoseconds: 1_000_000_000)
-        hasTapped = false
-      }
-    }, label: {
+    HoveredButton(
+      action: {
+        action()
+        hasTapped = true
+        Task {
+          try await Task.sleep(nanoseconds: 1_000_000_000)
+          hasTapped = false
+        }
+      },
+      onHoverColor: onHoverColor,
+      padding: padding,
+      cornerRadius: cornerRadius)
+    {
       Icon(systemName: hasTapped && withCheckMark ? "checkmark" : systemName)
-        .padding(padding)
-        .tappableTransparentBackground()
-        .background(isHovered ? onHoverColor : .clear)
-        .cornerRadius(cornerRadius)
-    })
-    .buttonStyle(.plain)
-    .scaledToFit()
-    .onHover(perform: { isHovered in
-      self.isHovered = isHovered
-    })
-    .acceptClickThrough()
+    }
   }
 
   let action: () -> Void
@@ -54,7 +49,6 @@ public struct IconButton: View {
   let withCheckMark: Bool
 
   @State private var hasTapped = false
-  @State private var isHovered = false
 }
 
 #if DEBUG

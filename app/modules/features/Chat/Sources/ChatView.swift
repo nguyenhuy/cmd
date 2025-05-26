@@ -3,8 +3,10 @@
 
 import Combine
 import ConcurrencyFoundation
+import Dependencies
 import DLS
 import SwiftUI
+import XcodeObserverServiceInterface
 
 // MARK: - ChatView
 
@@ -37,11 +39,10 @@ public struct ChatView: View {
     NavigationStack(path: $path) {
       VStack(spacing: 0) {
         quickActionsRow
+        secondaryActionRow
         if let selectedTab = viewModel.selectedTab {
-          ChatMessageList(events: selectedTab.events, onRestoreTapped: { [weak selectedTab] checkpoint in
-            selectedTab?.handleRestore(checkpoint: checkpoint)
-          })
-          .id("ChatMessageList-\(selectedTab.id)")
+          ChatMessageList(viewModel: selectedTab)
+            .id("ChatMessageList-\(selectedTab.id)")
           ChatInputView(
             inputViewModel: selectedTab.input,
             isStreamingResponse: Bindable(selectedTab).isStreamingResponse,
@@ -64,6 +65,14 @@ public struct ChatView: View {
     .background(colorScheme.primaryBackground)
   }
 
+  var projectName: String? {
+    viewModel.selectedTab?.projectInfo?.path.lastPathComponent.split(separator: ".").first.map(String.init)
+  }
+
+  var focusedWorkspaceName: String? {
+    viewModel.focusedWorkspacePath?.lastPathComponent.split(separator: ".").first.map(String.init)
+  }
+
   @State private var path = NavigationPath()
 
   @Environment(\.colorScheme) private var colorScheme
@@ -77,6 +86,7 @@ public struct ChatView: View {
   @ViewBuilder
   private var quickActionsRow: some View {
     HStack(spacing: 0) {
+      projectHeader
       Spacer(minLength: 0)
       IconButton(
         action: {
@@ -97,6 +107,62 @@ public struct ChatView: View {
         padding: 4)
         .frame(width: iconSizes, height: iconSizes)
         .padding(4)
+    }
+  }
+
+  @ViewBuilder
+  private var projectHeader: some View {
+    if let projectName {
+      HStack(spacing: 8) {
+        Image("xcodeproj-icon")
+          .resizable()
+          .scaledToFit()
+          .frame(width: 16, height: 16)
+
+        Text(projectName)
+          .font(.caption)
+          .foregroundColor(.primary)
+          .lineLimit(1)
+      }
+      .padding(.horizontal, 8)
+      .padding(.vertical, 4)
+      .cornerRadius(6)
+    }
+  }
+
+  @ViewBuilder
+  private var secondaryActionRow: some View {
+    if viewModel.focusedWorkspacePath != nil, viewModel.selectedTab?.projectInfo?.path != viewModel.focusedWorkspacePath {
+      HStack {
+        focusOnNewProjectCTA
+        Spacer()
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var focusOnNewProjectCTA: some View {
+    if let workspaceName = focusedWorkspaceName {
+      HoveredButton(
+        action: {
+          viewModel.addTab()
+        },
+        onHoverColor: colorScheme.secondarySystemBackground)
+      {
+        HStack(spacing: 6) {
+          Image(systemName: "plus.circle.fill")
+            .font(.caption2)
+          Text("Focus on \(workspaceName) in a new thread")
+            .font(.caption2)
+            .lineLimit(1)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .cornerRadius(4)
+      }
+      .buttonStyle(PlainButtonStyle())
+      .padding(.top, 2)
+      .padding(.horizontal, 8)
     }
   }
 

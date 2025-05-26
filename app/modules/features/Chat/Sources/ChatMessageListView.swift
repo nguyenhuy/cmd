@@ -12,13 +12,24 @@ import SwiftUI
 // MARK: - ChatMessageList
 
 struct ChatMessageList: View {
-  init(events: [ChatEvent], onRestoreTapped: ((Checkpoint) -> Void)? = nil) {
+  #if DEBUG
+  /// Initializer for previews
+  init(
+    events: [ChatEvent],
+    onRestoreTapped: ((Checkpoint) -> Void)? = nil)
+  {
     self.events = events
     self.onRestoreTapped = onRestoreTapped
   }
+  #endif
 
-  let events: [ChatEvent]
-  let onRestoreTapped: ((Checkpoint) -> Void)?
+  init(viewModel: ChatTabViewModel) {
+    self.init(
+      events: viewModel.events,
+      onRestoreTapped: { [weak viewModel] checkpoint in
+        viewModel?.handleRestore(checkpoint: checkpoint)
+      })
+  }
 
   var body: some View {
     ScrollView {
@@ -35,5 +46,8 @@ struct ChatMessageList: View {
       .padding()
     }
   }
+
+  private let events: [ChatEvent]
+  private let onRestoreTapped: ((Checkpoint) -> Void)?
 
 }
