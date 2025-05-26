@@ -78,7 +78,7 @@ public final class TransientLogger: Logger {
     }
   }
 
-  public func record(event: StaticString, value: String, metadata: [StaticString: String]? = nil) {
+  public func record(event: StaticString, value _: String, metadata _: [StaticString: String]? = nil) {
     let formattedMessage = "[Event] \(event)"
     logger.log("\(formattedMessage, privacy: .public)")
     writeToFile("\(subsystem).\(category) \(formattedMessage)")
