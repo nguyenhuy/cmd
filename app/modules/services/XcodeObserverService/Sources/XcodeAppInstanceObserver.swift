@@ -121,7 +121,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
       case .applicationDeactivated:
         onDidReceiveAppActivationNotification?(self, false)
 
-      case .focusedWindowChanged:
+      case .focusedWindowChanged, .mainWindowChanged:
         updateFocusedWindow()
 
       case .focusedUIElementChanged:
