@@ -118,7 +118,7 @@ final class DefaultLLMService: LLMService {
   {
     let params = try Schema.SendMessageRequestParams(
       messages: messageHistory,
-      system: nil,
+      system: Prompt.defaultPrompt(projectRoot: context.projectRoot, mode: context.chatMode),
       projectRoot: context.projectRoot?.path,
       tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: model.id,
@@ -161,6 +161,8 @@ final class DefaultLLMService: LLMService {
                 content.append(.text(MutableCurrentValueStream(newContent)))
                 result.update(with: AssistantMessage(content: content))
               }
+            case .toolUseDelta(let toolInputDelta):
+                break
 
             case .toolUseRequest(let toolInput):
               // Finish the previous text message.
@@ -169,31 +171,31 @@ final class DefaultLLMService: LLMService {
               // Sent a tool call request.
               var content = result.content
               let request = ToolUseRequestMessage(
-                name: toolInput.name,
+                toolName: toolInput.toolName,
                 input: toolInput.input,
-                id: toolInput.id)
+                toolUseId: toolInput.toolUseId)
 
-              if let tool = tools.first(where: { $0.name == request.name }) {
+              if let tool = tools.first(where: { $0.name == request.toolName }) {
                 do {
                   let data = try JSONEncoder().encode(request.input)
                   try content.append(toolUse: tool.use(
-                    toolUseId: request.id,
+                    toolUseId: request.toolUseId,
                     input: data,
                     isInputComplete: true,
                     context: ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)))
                 } catch {
                   // If the above fails, this is because the input could not be parsed by the tool.
                   content.append(toolUse: FailedToolUse(
-                    toolUseId: request.id,
-                    toolName: request.name,
-                    error: Self.failedToParseToolInputError(toolName: request.name, error: error)))
+                    toolUseId: request.toolUseId,
+                    toolName: request.toolName,
+                    error: Self.failedToParseToolInputError(toolName: request.toolName, error: error)))
                 }
               } else {
                 // Tool not found
                 content.append(toolUse: FailedToolUse(
-                  toolUseId: request.id,
-                  toolName: request.name,
-                  error: Self.missingToolError(toolName: request.name)))
+                  toolUseId: request.toolUseId,
+                  toolName: request.toolName,
+                  error: Self.missingToolError(toolName: request.toolName)))
               }
               result.update(with: AssistantMessage(content: content))
 
@@ -255,11 +257,13 @@ final class DefaultLLMService: LLMService {
 
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
+        toolName: toolUse.toolName,
         result: .toolResultSuccessMessage(.init(success: json)))
       return .init(role: .user, content: [.toolResultMessage(toolResult)])
     } catch {
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
+        toolName: toolUse.toolName,
         result: .toolResultFailureMessage(.init(failure: .string(error.localizedDescription))))
       return .init(role: .user, content: [.toolResultMessage(toolResult)])
     }

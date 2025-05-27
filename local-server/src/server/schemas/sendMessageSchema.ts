@@ -17,7 +17,7 @@ export interface APIProvider {
 
 export type APIProviderName = "openai" | "anthropic"
 
-export type StreamedResponseChunk = TextDelta | ToolUseRequest | ResponseError
+export type StreamedResponseChunk = TextDelta | ToolUseRequest | ToolUseDelta | ResponseError
 
 export interface TextDelta {
 	type: "text_delta"
@@ -26,9 +26,16 @@ export interface TextDelta {
 
 export interface ToolUseRequest {
 	type: "tool_call"
-	name: string
+	toolName: string
 	input: Record<string, unknown>
-	id: string
+	toolUseId: string
+}
+
+export interface ToolUseDelta {
+	type: "tool_call_delta"
+	toolName: string
+	inputDelta: string
+	toolUseId: string
 }
 
 export interface ResponseError {
@@ -44,7 +51,7 @@ export type MessageContent = TextMessage | ToolUseRequest | ToolResultMessage | 
 
 export interface Message {
 	// The role of the message's author. Roles can be: system, user, assistant, function or tool.
-	role: "system" | "user" | "assistant"
+	role: "system" | "user" | "assistant" | "tool"
 	content: Array<MessageContent>
 	// | ImageBlockParam
 }
@@ -126,6 +133,7 @@ export interface ToolResultFailureMessage {
 
 export interface ToolResultMessage {
 	tool_use_id: string
+	tool_name: string
 	type: "tool_result"
 	result: ToolResultSuccessMessage | ToolResultFailureMessage
 }

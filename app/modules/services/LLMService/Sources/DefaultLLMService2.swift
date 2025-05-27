@@ -176,7 +176,8 @@ final class DefaultLLMService2: LLMService {
                 content.append(.text(MutableCurrentValueStream(newContent)))
                 result.update(with: AssistantMessage(content: content))
               }
-            } else if let toolUse = event.toolCalls?.first {
+            }
+              for toolUse in event.toolCalls ?? [] {
               // Finish the previous text message.
               result.content.last?.asText?.finish()
 
@@ -302,11 +303,13 @@ final class DefaultLLMService2: LLMService {
 
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
+        toolName: toolUse.toolName,
         result: .toolResultSuccessMessage(.init(success: json)))
       return .init(role: .user, content: [.toolResultMessage(toolResult)])
     } catch {
       let toolResult = Schema.ToolResultMessage(
         toolUseId: toolUse.toolUseId,
+        toolName: toolUse.toolName,
         result: .toolResultFailureMessage(.init(failure: .string(error.localizedDescription))))
       return .init(role: .user, content: [.toolResultMessage(toolResult)])
     }
@@ -337,6 +340,8 @@ extension Schema.Message.Role {
       .user
     case .system:
       .system
+    case .tool:
+    .tool
     }
   }
 }
@@ -411,10 +416,10 @@ extension Schema.Message {
           content: ChatCompletionParameters.Message.ContentType.contentArray([]),
           toolCalls: [
             .init(
-              id: message.id,
+              id: message.toolUseId,
               function: .init(
                 arguments: String(data: try! JSONEncoder().encode(message.input), encoding: .utf8)!,
-                name: message.name)),
+                name: message.toolName)),
           ]))
       }
     }

@@ -73,9 +73,10 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		}
 
 		await fs.mkdir(this.checkpointsDir, { recursive: true })
+		this.log(`[${this.constructor.name}#initShadowGit] checkpointsDir = ${this.checkpointsDir}`)
 		const git = simpleGit(this.checkpointsDir)
 		const gitVersion = await git.version()
-		this.log(`[${this.constructor.name}#create] git = ${gitVersion}`)
+		this.log(`[${this.constructor.name}#create] git = ${gitVersion} ${this.dotGitDir}`)
 
 		let created = false
 		const startTime = Date.now()
@@ -83,6 +84,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		if (await fileExistsAtPath(this.dotGitDir)) {
 			this.log(`[${this.constructor.name}#initShadowGit] shadow git repo already exists at ${this.dotGitDir}`)
 			const worktree = await this.getShadowGitConfigWorktree(git)
+			this.log(`[${this.constructor.name}#initShadowGit] worktree = ${worktree}`)
 
 			if (normalize(worktree) !== normalize(this.workspaceDir)) {
 				throw new Error(
@@ -207,7 +209,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		}
 	}
 
-	private async getShadowGitConfigWorktree(git: SimpleGit) {
+	private async getShadowGitConfigWorktree(git: SimpleGit): Promise<string | undefined> {
 		if (!this.shadowGitConfigWorktree) {
 			try {
 				this.shadowGitConfigWorktree = (await git.getConfig("core.worktree")).value || undefined
@@ -388,7 +390,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		const success = await this.deleteBranch(git, branchName)
 
 		if (success) {
-			console.log(`[${this.name}#deleteTask.${taskId}] deleted branch ${branchName}`)
+			this.log(`[${this.name}#deleteTask.${taskId}] deleted branch ${branchName}`)
 		} else {
 			console.error(`[${this.name}#deleteTask.${taskId}] failed to delete branch ${branchName}`)
 		}

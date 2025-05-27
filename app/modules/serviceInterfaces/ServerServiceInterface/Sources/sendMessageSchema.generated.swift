@@ -92,6 +92,7 @@ extension Schema {
       case system = "system"
       case user = "user"
       case assistant = "assistant"
+      case tool = "tool"
     }
   }
   public struct TextMessage: Codable, Sendable {
@@ -129,41 +130,41 @@ extension Schema {
   }
   public struct ToolUseRequest: Codable, Sendable {
     public let type = "tool_call"
-    public let name: String
+    public let toolName: String
     public let input: JSON
-    public let id: String
+    public let toolUseId: String
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
-      case name = "name"
+      case toolName = "toolName"
       case input = "input"
-      case id = "id"
+      case toolUseId = "toolUseId"
     }
   
     public init(
         type: String = "tool_call",
-        name: String,
+        toolName: String,
         input: JSON,
-        id: String
+        toolUseId: String
     ) {
-      self.name = name
+      self.toolName = toolName
       self.input = input
-      self.id = id
+      self.toolUseId = toolUseId
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      name = try container.decode(String.self, forKey: .name)
+      toolName = try container.decode(String.self, forKey: .toolName)
       input = try container.decode(JSON.self, forKey: .input)
-      id = try container.decode(String.self, forKey: .id)
+      toolUseId = try container.decode(String.self, forKey: .toolUseId)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(type, forKey: .type)
-      try container.encode(name, forKey: .name)
+      try container.encode(toolName, forKey: .toolName)
       try container.encode(input, forKey: .input)
-      try container.encode(id, forKey: .id)
+      try container.encode(toolUseId, forKey: .toolUseId)
     }
   }
   public struct ToolResultSuccessMessage: Codable, Sendable {
@@ -222,33 +223,39 @@ extension Schema {
   }
   public struct ToolResultMessage: Codable, Sendable {
     public let toolUseId: String
+    public let toolName: String
     public let type = "tool_result"
     public let result: Result
   
     private enum CodingKeys: String, CodingKey {
       case toolUseId = "tool_use_id"
+      case toolName = "tool_name"
       case type = "type"
       case result = "result"
     }
   
     public init(
         toolUseId: String,
+        toolName: String,
         type: String = "tool_result",
         result: Result
     ) {
       self.toolUseId = toolUseId
+      self.toolName = toolName
       self.result = result
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       toolUseId = try container.decode(String.self, forKey: .toolUseId)
+      toolName = try container.decode(String.self, forKey: .toolName)
       result = try container.decode(Result.self, forKey: .result)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(toolUseId, forKey: .toolUseId)
+      try container.encode(toolName, forKey: .toolName)
       try container.encode(type, forKey: .type)
       try container.encode(result, forKey: .result)
     }
@@ -672,6 +679,45 @@ extension Schema {
       try container.encode(text, forKey: .text)
     }
   }
+  public struct ToolUseDelta: Codable, Sendable {
+    public let type = "tool_call_delta"
+    public let toolName: String
+    public let inputDelta: String
+    public let toolUseId: String
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case toolName = "toolName"
+      case inputDelta = "inputDelta"
+      case toolUseId = "toolUseId"
+    }
+  
+    public init(
+        type: String = "tool_call_delta",
+        toolName: String,
+        inputDelta: String,
+        toolUseId: String
+    ) {
+      self.toolName = toolName
+      self.inputDelta = inputDelta
+      self.toolUseId = toolUseId
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      toolName = try container.decode(String.self, forKey: .toolName)
+      inputDelta = try container.decode(String.self, forKey: .inputDelta)
+      toolUseId = try container.decode(String.self, forKey: .toolUseId)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(toolName, forKey: .toolName)
+      try container.encode(inputDelta, forKey: .inputDelta)
+      try container.encode(toolUseId, forKey: .toolUseId)
+    }
+  }
   public struct ResponseError: Codable, Sendable {
     public let type = "error"
     public let message: String
@@ -708,6 +754,7 @@ extension Schema {
   public enum StreamedResponseChunk: Codable, Sendable {
     case textDelta(_ value: TextDelta)
     case toolUseRequest(_ value: ToolUseRequest)
+    case toolUseDelta(_ value: ToolUseDelta)
     case responseError(_ value: ResponseError)
   
     private enum CodingKeys: String, CodingKey {
@@ -722,6 +769,8 @@ extension Schema {
           self = .textDelta(try TextDelta(from: decoder))
         case "tool_call":
           self = .toolUseRequest(try ToolUseRequest(from: decoder))
+        case "tool_call_delta":
+          self = .toolUseDelta(try ToolUseDelta(from: decoder))
         case "error":
           self = .responseError(try ResponseError(from: decoder))
         default:
@@ -734,6 +783,8 @@ extension Schema {
         case .textDelta(let value):
           try value.encode(to: encoder)
         case .toolUseRequest(let value):
+          try value.encode(to: encoder)
+        case .toolUseDelta(let value):
           try value.encode(to: encoder)
         case .responseError(let value):
           try value.encode(to: encoder)

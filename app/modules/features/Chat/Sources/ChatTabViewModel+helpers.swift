@@ -106,6 +106,7 @@ extension ChatMessageContent {
             (.assistant, request),
             (.user, .toolResultMessage(.init(
               toolUseId: toolUse.toolUse.toolUseId,
+              toolName: toolUse.toolUse.toolName,
               result: .toolResultFailureMessage(.init(failure: ["error": .string("The tool use has been cancelled.")]))))),
           ]
         }
@@ -115,6 +116,7 @@ extension ChatMessageContent {
           (.assistant, request),
           (.user, .toolResultMessage(.init(
             toolUseId: toolUse.toolUse.toolUseId,
+            toolName: toolUse.toolUse.toolName,
             result: .toolResultSuccessMessage(.init(success: jsonResult))))),
         ]
       } catch {

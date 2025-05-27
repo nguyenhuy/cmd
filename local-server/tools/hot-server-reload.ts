@@ -1,9 +1,16 @@
+// Hot server reload utility for XCompanion development
+// This script kills the currently running XCompanion server so it can be restarted with new code
 import { exec } from "child_process"
 import { ConnectionInfo } from "../src/server/server"
 import fs from "fs"
 import path from "path"
 import os from "os"
 
+/**
+ * Executes a shell command and returns the output as a Promise
+ * @param command - The shell command to execute
+ * @returns Promise that resolves with stdout or rejects with error
+ */
 function execute(command: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		exec(command, (error, stdout) => {
@@ -16,8 +23,13 @@ function execute(command: string): Promise<string> {
 	})
 }
 
+/**
+ * Main function that performs hot reload by killing the current server process
+ * The XCompanion app will automatically restart the server when it detects it has died
+ */
 const hotServerReload = async () => {
-	// Find on which port the server last started at.
+	// Read the last connection info to determine which port the server is running on
+	// This file is created by the server when it starts up
 	const connectionInfoFilePath = path.join(
 		os.homedir(),
 		"Library/Application Support/XCompanion/last-connection-info.json",
@@ -26,12 +38,16 @@ const hotServerReload = async () => {
 	const port = connectionInfo.port
 
 	try {
-		// Find the id of the process running on the port.
+		// Step 1: Find which process is currently using the server port
+		// Using lsof (list open files) to find what's listening on the port
+		// jc converts the output to JSON format for easier parsing
 		let processInfoString = await execute(`lsof -i :${port} | jc --lsof`)
 		let processInfo = JSON.parse(processInfoString) as {
 			pid: number
 			name: string
 		}[]
+
+		// Check if any process was found on the port
 		if (!processInfo || processInfo.length === 0) {
 			console.log(`No process found on port ${port}`)
 			return
@@ -39,12 +55,15 @@ const hotServerReload = async () => {
 
 		const pid = processInfo[0].pid
 
-		// Make sure the process running on that port corresponds to the server to reload.
+		// Step 2: Verify this is actually an XCompanion server process
+		// Get more detailed info about the process to check its path
 		processInfoString = await execute(`lsof -p ${pid} | jc --lsof`)
 		processInfo = JSON.parse(processInfoString) as {
 			pid: number
 			name: string
 		}[]
+
+		// Double-check that we found process info
 		if (!processInfo || processInfo.length === 0) {
 			console.log(`No process found on port ${port}`)
 			return
@@ -52,19 +71,27 @@ const hotServerReload = async () => {
 
 		const processName = processInfo[0].name
 
+		// Safety check: only kill processes that are clearly XCompanion related
+		// This prevents accidentally killing other processes that might be using the same port
 		if (!processName.includes("/Library/Application Support/XCompanion")) {
 			console.log(`Process ${processName} is not a XCompanion process`)
 			return
 		}
 
+		// Step 3: Kill the server process
+		// Using kill -9 for forceful termination
 		console.log(`Killing process ${processName} with pid ${pid}`)
 		await execute(`kill -9 ${pid}`)
 	} catch {
+		// If any step fails (process not found, permission denied, etc.)
+		// Just log and exit gracefully
 		console.log(`No process found on port ${port}`)
 		return
 	}
 
-	// The app will restart the server if it dies. No need to do anything here.
+	// Note: The XCompanion app monitors the server process and will automatically
+	// restart it when it detects the process has died, picking up any new code changes
 }
 
+// Execute the hot reload immediately when this script is run
 void hotServerReload()

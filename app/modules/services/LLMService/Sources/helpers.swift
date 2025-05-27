@@ -44,7 +44,8 @@ extension AssistantMessage {
 extension Schema.ToolResultMessage {
   public init(request: Schema.ToolUseRequest, output: JSON.Value) {
     self.init(
-      toolUseId: request.id,
+      toolUseId: request.toolUseId,
+      toolName: request.toolName,
       result: .toolResultSuccessMessage(.init(success: output)))
   }
 }
