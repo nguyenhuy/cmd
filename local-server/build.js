@@ -2,6 +2,7 @@ import * as esbuild from "esbuild"
 import esbuildPluginTsc from "esbuild-plugin-tsc"
 import crypto from "crypto"
 import fs from "fs/promises"
+import { execSync } from "child_process"
 
 const buildOptions = {
 	entryPoints: ["src/main.ts"],
@@ -42,7 +43,36 @@ export async function computeAndSaveHash() {
 	await fs.writeFile("./build.sha256", hex)
 	return hex
 }
+
+
+
+// Function to compute and save build file size.
+export async function computeAndSaveBuildFileSize() {
+	let fileBuffer = ""
+	try {
+		fileBuffer = await fs.readFile("./dist/main.bundle.js")
+	} catch (error) {
+		// the bundle file doesn't exist yet. This is ok.
+	}
+	
+	// buid file size in MB
+	const stats = await fs.stat("./dist/main.bundle.js").catch(() => ({ size: 0 }))
+	const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2)
+
+	// compressed  file using process
+	// Compressed file size in MB
+	execSync(`gzip -k ./dist/main.bundle.js -f`, { stdio: "inherit" });
+	const compressedStats = await fs.stat("./dist/main.bundle.js.gz").catch(() => ({ size: 0 }))
+	const compressedSizeInMB = (compressedStats.size / (1024 * 1024)).toFixed(2)
+
+	await fs.writeFile("./build.size", JSON.stringify({
+		size: `${sizeInMB}MB`,
+		compressedSize: `${compressedSizeInMB}MB`,
+	}, null, 2));
+}
+
 await computeAndSaveHash()
+await computeAndSaveBuildFileSize()
 
 const plugins = [
 	{
@@ -57,6 +87,7 @@ const plugins = [
 				if (result.errors.length > 0) {
 					console.error("build failed:", result.errors)
 				} else {
+					await computeAndSaveBuildFileSize()
 					let newHash = await computeAndSaveHash()
 					if (count++ === 0) console.log(`build completed in ${Date.now() - t0}ms (${newHash})`)
 					else console.log(`re-build completed in ${Date.now() - t0}ms (${newHash})`)
