@@ -12,6 +12,29 @@ import ToolFoundation
 /// Receives streamed data from the serevr, and processes it to update the `result` stream with the new content.
 /// Parse tool request, handle text and tool streaming.,
 final class RequestStreamingHelper {
+  #if DEBUG
+  /// - Parameters:
+  ///   - stream: The stream of data received from the server.
+  ///   - result: The processed result that should be updated as we receive new data.
+  ///   - tools: The list of tools available to the assistant.
+  ///   - context: The context in which the request is executed.
+  ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
+  init(
+    stream: AsyncThrowingStream<Data, any Error>,
+    result: MutableCurrentValueStream<AssistantMessage>,
+    tools: [any ToolFoundation.Tool],
+    context: any ChatContext,
+    isTaskCancelled: @escaping () -> Bool,
+    repeatDebugHelper: RepeatDebugHelper = .init())
+  {
+    self.stream = stream
+    self.result = result
+    self.tools = tools
+    self.context = context
+    self.isTaskCancelled = isTaskCancelled
+    self.repeatDebugHelper = repeatDebugHelper
+  }
+  #else
   /// - Parameters:
   ///   - stream: The stream of data received from the server.
   ///   - result: The processed result that should be updated as we receive new data.
@@ -30,7 +53,9 @@ final class RequestStreamingHelper {
     self.tools = tools
     self.context = context
     self.isTaskCancelled = isTaskCancelled
+    repeatDebugHelper = repeatDebugHelper
   }
+  #endif
 
   let result: MutableCurrentValueStream<AssistantMessage>
   let stream: AsyncThrowingStream<Data, any Error>
@@ -43,6 +68,9 @@ final class RequestStreamingHelper {
   /// Handle all the streamed data, updating the `result` stream with the new content.
   func processStream() async throws {
     for try await chunk in stream {
+      #if DEBUG
+      repeatDebugHelper.receive(chunk: chunk)
+      #endif
       guard !isTaskCancelled() else {
         // This should not be necessary. Cancelling the task should make the post request fail with an error.
         // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
@@ -77,9 +105,17 @@ final class RequestStreamingHelper {
     endTextContentIfNecesssary()
     result.finish()
     validate()
+
+    #if DEBUG
+    repeatDebugHelper.streamCompleted()
+    #endif
   }
 
   private let isTaskCancelled: () -> Bool
+
+  #if DEBUG
+  private let repeatDebugHelper: RepeatDebugHelper
+  #endif
 
   private static func missingToolError(toolName name: String) -> Error {
     NSError(

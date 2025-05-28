@@ -390,7 +390,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		const success = await this.deleteBranch(git, branchName)
 
 		if (success) {
-			this.log(`[${this.name}#deleteTask.${taskId}] deleted branch ${branchName}`)
+			console.log(`[${this.name}#deleteTask.${taskId}] deleted branch ${branchName}`)
 		} else {
 			console.error(`[${this.name}#deleteTask.${taskId}] failed to delete branch ${branchName}`)
 		}

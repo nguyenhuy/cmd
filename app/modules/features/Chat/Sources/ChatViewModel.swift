@@ -57,7 +57,6 @@ public class ChatViewModel {
 
     xcodeObserver.statePublisher.map(\.focusedWorkspace).map(\.?.url).removeDuplicates()
       .sink { @Sendable [weak self] focusedWorkspacePath in
-        print("got new workspace path \(focusedWorkspacePath?.path ?? "nil")")
         Task { @MainActor in
           self?.focusedWorkspacePath = focusedWorkspacePath
         }

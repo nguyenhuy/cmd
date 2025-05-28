@@ -32,7 +32,6 @@ public protocol LLMService: Sendable {
     tools: [any Tool],
     model: LLMModel,
     context: ChatContext,
-    migrated: Bool,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> [AssistantMessage]
 }
@@ -53,7 +52,6 @@ extension LLMService {
       tools: tools,
       model: model,
       context: context,
-      migrated: false,
       handleUpdateStream: handleUpdateStream)
   }
 }

@@ -41,7 +41,6 @@ public final class MockLLMService: LLMService {
     tools: [any Tool],
     model: LLMModel,
     context: any ChatContext,
-    migrated _: Bool,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> [AssistantMessage]
   {

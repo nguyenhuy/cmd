@@ -140,7 +140,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
             projectRoot: projectInfo?.dirPath,
             prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() },
             chatMode: input.mode),
-          migrated: false,
           handleUpdateStream: { newMessages in
             Task { @MainActor [weak self] in
               guard let self else { return }

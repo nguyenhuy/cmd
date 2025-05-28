@@ -4,7 +4,6 @@
 import AppFoundation
 import Combine
 import Foundation
-@preconcurrency import SwiftOpenAI
 import ThreadSafe
 
 #if DEBUG
@@ -36,9 +35,10 @@ final class RepeatDebugHelper: Sendable {
     self.streams = streams
   }
 
-  func receive(chunk: ChatCompletionChunkObject) {
+  func receive(chunk: Data) {
     if isRepeating { return }
     let streams = inLock { state in
+      let chunk = String(data: chunk, encoding: .utf8)!
       if let streamStartedAt = state.streamStartedAt, var stream = state.streams.last {
         stream.chunks.append(.init(chunk: chunk, receivedAfter: Date().timeIntervalSince(streamStartedAt)))
         state.streams[state.streams.count - 1] = stream
@@ -58,7 +58,7 @@ final class RepeatDebugHelper: Sendable {
     }
   }
 
-  func repeatStream() throws -> AsyncThrowingStream<ChatCompletionChunkObject, any Error>? {
+  func repeatStream() throws -> AsyncThrowingStream<Data, any Error>? {
     guard isRepeating else { return nil }
     let stream: Stream? = inLock { state in
       if state.streams.isEmpty {
@@ -72,7 +72,7 @@ final class RepeatDebugHelper: Sendable {
     return AsyncThrowingStream { continuation in
       Task {
         for chunk in stream.chunks {
-          continuation.yield(chunk.chunk)
+          continuation.yield(chunk.chunk.utf8Data)
         }
         continuation.finish()
       }
@@ -85,72 +85,8 @@ struct Stream: Codable {
   var chunks: [Chunk]
 
   struct Chunk: Codable {
-    var chunk: ChatCompletionChunkObject
+    var chunk: String
     var receivedAfter: TimeInterval
-  }
-}
-
-extension ChatCompletionChunkObject: @retroactive Encodable {
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encodeIfPresent(id, forKey: .id)
-    try container.encodeIfPresent(choices, forKey: .choices)
-    try container.encodeIfPresent(created, forKey: .created)
-    try container.encodeIfPresent(model, forKey: .model)
-    try container.encodeIfPresent(serviceTier, forKey: .serviceTier)
-    try container.encodeIfPresent(systemFingerprint, forKey: .systemFingerprint)
-    try container.encodeIfPresent(object, forKey: .object)
-  }
-
-  enum CodingKeys: String, CodingKey {
-    case id, choices, created, model, object, usage
-    case serviceTier = "service_tier"
-    case systemFingerprint = "system_fingerprint"
-  }
-}
-
-extension ChatCompletionChunkObject.ChatChoice: @retroactive Encodable {
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encodeIfPresent(delta, forKey: .delta)
-    try container.encodeIfPresent(finishReason, forKey: .finishReason)
-    try container.encodeIfPresent(index, forKey: .index)
-  }
-
-  enum CodingKeys: String, CodingKey {
-    case delta, index, logprobs
-    case finishReason = "finish_reason"
-    case finishDetails = "finish_details"
-  }
-}
-
-extension ChatCompletionChunkObject.ChatChoice.Delta: @retroactive Encodable {
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encodeIfPresent(content, forKey: .content)
-    try container.encodeIfPresent(reasoningContent, forKey: .reasoningContent)
-    try container.encodeIfPresent(toolCalls, forKey: .toolCalls)
-    try container.encodeIfPresent(role, forKey: .role)
-    try container.encodeIfPresent(refusal, forKey: .refusal)
-  }
-
-  enum CodingKeys: String, CodingKey {
-    case content, role, refusal
-    case reasoningContent = "reasoning_content"
-    case toolCalls = "tool_calls"
-    case functionCall = "function_call"
-  }
-}
-
-extension IntOrStringValue: @retroactive Encodable {
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    switch self {
-    case .int(let value):
-      try container.encode(value)
-    case .string(let value):
-      try container.encode(value)
-    }
   }
 }
 #endif

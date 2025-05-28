@@ -11,21 +11,15 @@ import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
 import SettingsServiceInterface
-import SwiftOpenAI
 import ToolFoundation
 
 // MARK: - DefaultLLMService
 
-/// NOT USED. TODO: remove once the tests have been ported to the replacement.
 final class DefaultLLMService: LLMService {
 
   init(server: Server, settingsService: SettingsService) {
     self.server = server
     self.settingsService = settingsService
-
-    tmp = DefaultLLMService2(
-      server: server,
-      settingsService: settingsService)
   }
 
   func sendMessage(
@@ -33,20 +27,9 @@ final class DefaultLLMService: LLMService {
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
     context: any ChatContext,
-    migrated: Bool = false,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> [AssistantMessage]
   {
-    if migrated {
-      return try await tmp.sendMessage(
-        messageHistory: messageHistory,
-        tools: tools,
-        model: model,
-        context: context,
-        migrated: migrated,
-        handleUpdateStream: handleUpdateStream)
-    }
-
     let response = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>([])
     handleUpdateStream(response)
 
@@ -131,13 +114,30 @@ final class DefaultLLMService: LLMService {
     let isTaskCancelled = Atomic(false)
 
     return try await withTaskCancellationHandler(operation: {
-      let stream = server.streamPostRequest(path: "sendMessage", data: data)
+      #if DEBUG
+      let stream = try {
+        if let stream = try repeatDebugHelper.repeatStream() { return stream }
+        return server.streamPostRequest(path: "sendMessage", data: data)
+      }()
+
+      let helper = RequestStreamingHelper(
+        stream: stream,
+        result: result,
+        tools: tools,
+        context: context,
+        isTaskCancelled: { isTaskCancelled.value },
+        repeatDebugHelper: repeatDebugHelper)
+      #else
+      let stream = try await server.streamPostRequest(path: "sendMessage", data: data)
+
       let helper = RequestStreamingHelper(
         stream: stream,
         result: result,
         tools: tools,
         context: context,
         isTaskCancelled: { isTaskCancelled.value })
+      #endif
+
       do {
         try await helper.processStream()
       } catch {
@@ -153,8 +153,9 @@ final class DefaultLLMService: LLMService {
     })
   }
 
-  private let tmp: DefaultLLMService2
-
+  #if DEBUG
+  private let repeatDebugHelper = RepeatDebugHelper()
+  #endif
   private let settingsService: SettingsService
   private let server: Server
 

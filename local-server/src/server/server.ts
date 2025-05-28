@@ -10,8 +10,8 @@ import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/get
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
-import { AnthropicClientBuilder } from "./lite-llm/anthropic/client"
-import { OpenAIClientBuilder } from "./lite-llm/openai/client"
+import { AnthropicModelProvider } from "./providers/anthropic"
+import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
 
 const app = express()
@@ -27,7 +27,7 @@ app.get("/launch", (_, res) => {
 	res.json({ ok: true })
 })
 
-registerSendMessageEndpoint(router, [new AnthropicClientBuilder(), new OpenAIClientBuilder()])
+registerSendMessageEndpoint(router, [new AnthropicModelProvider(), new OpenAIModelProvider()])
 registerExtensionBridge(router)
 registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)
