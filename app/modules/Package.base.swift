@@ -92,18 +92,18 @@ let package = Package(
     .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.4"),
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
-    .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    // .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    // Use the pre-built swift-syntax for faster local builds. Doesn't work with tests.
+    .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.51.1"),
     .package(url: "https://github.com/statsig-io/statsig-kit", from: "1.53.5"),
 
-    // Use the pre-built swift-syntax for faster local builds. Doesn't work with tests.
-    // .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/jamesrochabrun/SwiftOpenAI", from: "4.1.1"),
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),
-    .package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.2"),
+    .package(url: "https://github.com/pointfreeco/swift-macro-testing", from: "0.6.3"),
   ],
   targets: targets)

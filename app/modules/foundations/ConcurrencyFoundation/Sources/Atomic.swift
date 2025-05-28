@@ -16,8 +16,8 @@ public final class Atomic<Value: Sendable>: Sendable {
   }
 
   @discardableResult
-  public func mutate<Result: Sendable>(_ mutation: @Sendable (inout Value) -> Result) -> Result {
-    lock.withLock { mutation(&$0) }
+  public func mutate<Result: Sendable>(_ mutation: @Sendable (inout Value) throws -> Result) rethrows -> Result {
+    try lock.withLock { try mutation(&$0) }
   }
 
   /// Set to the new value and return the old value.

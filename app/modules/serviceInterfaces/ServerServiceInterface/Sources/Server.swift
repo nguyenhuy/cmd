@@ -37,6 +37,21 @@ extension Server {
     return try decode(data)
   }
 
+  public func streamPostRequest(path: String, data: Data) -> AsyncThrowingStream<Data, Error> {
+    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+    Task {
+      do {
+        _ = try await postRequest(path: path, data: data) { data in
+          continuation.yield(data)
+        }
+        continuation.finish()
+      } catch {
+        continuation.finish(throwing: error)
+      }
+    }
+    return stream
+  }
+
   private func decode<Response: Decodable>(_ data: Data?) throws -> Response {
     guard let data else {
       throw APIError("API response had no data")

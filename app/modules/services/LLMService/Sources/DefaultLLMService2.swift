@@ -163,7 +163,7 @@ final class DefaultLLMService2: LLMService {
             guard let event = chunk.choices?.first?.delta else { continue }
             if let text = event.content {
               if let textContent = result.content.last?.asText {
-                // We received a new text chunk, we'll append it to the last text content.
+                // We received a Thwowanew text chunk, we'll append it to the last text content.
                 let lastMessage = textContent.value
                 let newMessage = TextContentMessage(
                   content: lastMessage.content + text,
@@ -177,7 +177,7 @@ final class DefaultLLMService2: LLMService {
                 result.update(with: AssistantMessage(content: content))
               }
             }
-              for toolUse in event.toolCalls ?? [] {
+            for toolUse in event.toolCalls ?? [] {
               // Finish the previous text message.
               result.content.last?.asText?.finish()
 
@@ -341,7 +341,7 @@ extension Schema.Message.Role {
     case .system:
       .system
     case .tool:
-    .tool
+      .tool
     }
   }
 }
