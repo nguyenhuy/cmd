@@ -1,11 +1,11 @@
-import { ModelProvider } from "./provider"
+import { ModelProvider, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
-import { LanguageModel } from "ai"
-import { createOpenRouter } from "@openrouter/ai-sdk-provider"
+import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
+import { addCacheControlToMessages } from "./anthropic"
 
 export class OpenRouterModelProvider implements ModelProvider {
 	name: APIProviderName = "openrouter"
-	build(params: { baseUrl?: string; apiKey?: string }, modelName: string): LanguageModel {
+	build(params: { baseUrl?: string; apiKey?: string }, modelName: string): ModelProviderOutput {
 		if (
 			![
 				"anthropic/claude-3.7-sonnet",
@@ -17,13 +17,76 @@ export class OpenRouterModelProvider implements ModelProvider {
 				"openai/o4-mini",
 			].includes(modelName)
 		) {
-			return undefined
+			return {}
 		}
 
 		const provider = createOpenRouter({
 			apiKey: params.apiKey,
 			baseURL: process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? params.baseUrl,
+			fetch: modelName.startsWith("anthropic/") ? fetchAnthropicResponse : defaultFetch,
 		})
-		return provider(modelName)
+		return {
+			model: provider(modelName),
+			generalProviderOptions: {
+				openRouter: {
+					// reasoning: {
+					// 	effort: "high",
+					// },
+				} satisfies OpenRouterProviderOptions,
+			},
+			addProviderOptionsToMessages: modelName.startsWith("anthropic/") ? addCacheControlToMessages : undefined,
+		}
 	}
+}
+
+const defaultFetch: typeof fetch = (input, init) => {
+	if (!init?.body) return fetch(input, init)
+
+	const body = JSON.parse(init.body as string)
+
+	body.stream_options = {
+		include_usage: true,
+	}
+	body.transforms = ["middle-out"]
+	body.usage = { include: true }
+
+	init.body = JSON.stringify(body)
+
+	return fetch(input, init)
+}
+
+// See https://github.com/OpenRouterTeam/ai-sdk-provider/issues/35#issuecomment-2904161662
+const fetchAnthropicResponse: typeof fetch = (input, init) => {
+	if (!init?.body) return fetch(input, init)
+
+	const body = JSON.parse(init.body as string)
+
+	body.stream_options = {
+		include_usage: true,
+	}
+	body.transforms = ["middle-out"]
+	body.usage = { include: true }
+
+	if (body?.messages) {
+		for (const message of body.messages) {
+			if (typeof message.content === "string") {
+				message.content = [
+					{
+						type: "text",
+						text: message.content,
+						cache_control: { type: "ephemeral" },
+					},
+				]
+			} else if (Array.isArray(message.content)) {
+				for (const item of message.content) {
+					if (item && typeof item === "object") {
+						item.cache_control = { type: "ephemeral" }
+					}
+				}
+			}
+		}
+	}
+	init.body = JSON.stringify(body)
+
+	return fetch(input, init)
 }

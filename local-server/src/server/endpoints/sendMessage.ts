@@ -1,19 +1,31 @@
 import { Request, Response, Router } from "express"
 import { logError, logInfo } from "../../logger"
 import { ModelProvider } from "../providers/provider"
-import { Message, SendMessageRequestParams, StreamedResponseChunk, Tool } from "../schemas/sendMessageSchema"
+import {
+	Message,
+	MessageContent,
+	SendMessageRequestParams,
+	StreamedResponseChunk,
+	TextMessage,
+	Tool,
+	ToolResultMessage,
+	ToolUseRequest,
+} from "../schemas/sendMessageSchema"
 import { addUserFacingError, UserFacingError } from "../errors"
 
 import {
 	CoreAssistantMessage,
 	CoreMessage,
-	CoreSystemMessage,
 	CoreToolMessage,
 	CoreUserMessage,
 	streamText,
 	Tool as MappedTool,
 	jsonSchema,
 	TextStreamPart,
+	TextPart,
+	ImagePart,
+	FilePart,
+	CoreSystemMessage,
 } from "ai"
 
 export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]) => {
@@ -28,8 +40,20 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 		try {
 			const body = req.body as SendMessageRequestParams
 			let messages = body.messages
-			messages = messages.filter((message) => message.content.length > 0)
 			const system = body.system
+			messages = [
+				{
+					role: "system",
+					content: [
+						{
+							type: "text",
+							text: system,
+						},
+					],
+				} as Message,
+				...messages.filter((message) => message.content.length > 0),
+			]
+
 			const tools = body.tools
 
 			const modelProvider = modelProviders.find((provider) => provider.name === body.provider.name)
@@ -39,7 +63,10 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				})
 			}
 			const modelName = body.model
-			const model = await modelProvider.build(body.provider.settings, modelName)
+			const { model, generalProviderOptions, addProviderOptionsToMessages } = await modelProvider.build(
+				body.provider.settings,
+				modelName,
+			)
 			if (!model) {
 				throw new UserFacingError({
 					message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
@@ -47,7 +74,6 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			}
 			const { fullStream } = await streamText({
 				model,
-				system,
 				tools: tools?.map(mapTool).reduce(
 					(acc, tool) => {
 						acc[tool.name] = tool
@@ -55,8 +81,9 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					},
 					{} as Record<string, MappedTool>,
 				),
-				messages: messages.flatMap(mapMessage),
+				messages: addProviderOptionsToMessages(messages.map(mapMessage)),
 				toolCallStreaming: true,
+				providerOptions: generalProviderOptions,
 			})
 
 			processResponseStream(fullStream, res)
@@ -69,6 +96,12 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 	})
 }
 
+/**
+ * Processes the response stream received from the provider (and already parsed by Vercel's AI SDK) and convert it to the format expected by the app.
+ * @param stream - The resonse stream.
+ * @param res - The Express response object to write the streamed response chunks to.
+ * @throws {UserFacingError} If an error occurs while processing the stream or sending the response.
+ */
 async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>, res: Response) {
 	try {
 		const chunks: Array<StreamedResponseChunk> = []
@@ -160,6 +193,9 @@ const debugLogReceivedMessage = (chunks: Array<StreamedResponseChunk>) => {
 	logLastObject()
 }
 
+/**
+ * Maps a Tool to the format expected by the AI SDK.
+ */
 const mapTool = (tool: Tool): MappedTool & { name: string } => {
 	return {
 		description: tool.description,
@@ -168,47 +204,40 @@ const mapTool = (tool: Tool): MappedTool & { name: string } => {
 	}
 }
 
-const mapMessage = (message: Message): CoreMessage[] => {
+/**
+ * Maps a Message to the format expected by the AI SDK.
+ */
+const mapMessage = (message: Message): CoreMessage => {
 	if (message.role === "system") {
-		const result: CoreSystemMessage[] = []
-		message.content.forEach((content) => {
-			if (content.type === "text") {
-				result.push({
-					role: "system",
-					content: content.text,
-				})
-			} else {
-				throw new Error(`Unsupported system message content type: ${content.type}`)
-			}
-		})
-		return result
+		if (message.content.map(asTextMessage).length !== 1) {
+			throw new Error(`System message must have exactly one text content part. Got ${message.content.length}`)
+		}
+		return {
+			role: "system",
+			content: message.content.map(asTextMessage)[0].text,
+		} as CoreSystemMessage
 	} else if (message.role === "user") {
-		const result: CoreUserMessage[] = []
-		message.content.forEach((content) => {
-			// TODO: use "tool" as the role for tool results, and don't split into one message each content part.
-			if (content.type === "text") {
+		return {
+			role: "user",
+			content: message.content.map(asTextMessage).flatMap((content) => {
+				const result: Array<TextPart | ImagePart | FilePart> = []
 				result.push({
-					role: "user",
-					content: content.text,
+					type: "text",
+					text: content.text,
 				})
 				content.attachments?.forEach((attachment) => {
 					switch (attachment.type) {
 						case "image_attachment":
 							result.push({
-								role: "user",
-								content: [
-									{
-										type: "image",
-										image: attachment.url,
-										mimeType: attachment.mimeType,
-									},
-								],
+								type: "image",
+								image: attachment.url,
+								mimeType: attachment.mimeType,
 							})
 							break
 						case "file_attachment":
 							result.push({
-								role: "user",
-								content: `\`\`\`${attachment.path}
+								type: "text",
+								text: `\`\`\`${attachment.path}
 							${attachment.content}
 							\`\`\`
 							`,
@@ -216,8 +245,8 @@ const mapMessage = (message: Message): CoreMessage[] => {
 							break
 						case "file_selection_attachment":
 							result.push({
-								role: "user",
-								content: `\`\`\`${attachment.path} Line ${attachment.startLine} - ${attachment.endLine}
+								type: "text",
+								text: `\`\`\`${attachment.path} Line ${attachment.startLine} - ${attachment.endLine}
                       ${attachment.content}
                       \`\`\`
                       `,
@@ -225,59 +254,79 @@ const mapMessage = (message: Message): CoreMessage[] => {
 							break
 						case "build_error_attachment":
 							result.push({
-								role: "user",
-								content: `Build Error ${attachment.filePath}:${attachment.line}:${attachment.column}: ${attachment.message}`,
+								type: "text",
+								text: `Build Error ${attachment.filePath}:${attachment.line}:${attachment.column}: ${attachment.message}`,
 							})
 							break
 					}
 				})
-			} else {
-				throw new Error(`Unsupported content type: ${content.type}`)
-			}
-		})
-		return result
+				return result
+			}),
+		} as CoreUserMessage
 	} else if (message.role === "assistant") {
-		const result: CoreAssistantMessage[] = []
-		message.content.forEach((content) => {
-			if (content.type === "text") {
-				result.push({
-					role: "assistant",
-					content: content.text,
-				})
-			} else if (content.type === "tool_call") {
-				result.push({
-					role: "assistant",
-					content: [
-						{
-							type: "tool-call",
-							toolCallId: content.toolUseId,
-							toolName: content.toolName,
-							args: content.input,
-						},
-					],
-				})
-			}
-		})
-		return result
+		return {
+			role: "assistant",
+			content: message.content.map((content) => {
+				if (isTextMessage(content)) {
+					return {
+						type: "text",
+						text: content.text,
+					} as TextPart
+				}
+				if (isToolUseRequestMessage(content)) {
+					return {
+						type: "tool-call",
+						toolCallId: content.toolUseId,
+						toolName: content.toolName,
+						args: content.input,
+					}
+				}
+				throw new Error(`Unsupported content type: ${content.type}`)
+			}),
+		} as CoreAssistantMessage
 	} else if (message.role === "tool") {
-		const result: CoreToolMessage[] = []
-		message.content.forEach((content) => {
-			if (content.type === "tool_result") {
-				result.push({
-					role: "tool",
-					content: [
-						{
-							type: "tool-result",
-							toolCallId: content.toolUseId,
-							toolName: content.toolName,
-							result: content.result,
-						},
-					],
-				})
-			}
-		})
-		return result
+		return {
+			role: "tool",
+			content: message.content.map(asToolResultMessage).map((content) => ({
+				type: "tool-result",
+				toolCallId: content.toolUseId,
+				toolName: content.toolName,
+				result: content.result,
+			})),
+		} as CoreToolMessage
 	} else {
 		throw new Error(`Unsupported message role: ${message.role}`)
 	}
+}
+
+export const isTextMessage = (message: MessageContent): message is TextMessage => {
+	return message.type === "text"
+}
+
+export const asTextMessage = (message: MessageContent): TextMessage => {
+	if (!isTextMessage(message)) {
+		throw new Error(`Unexpected message type ${message.type}, expected 'text'`)
+	}
+	return message
+}
+
+export const isToolResultMessage = (message: MessageContent): message is ToolResultMessage => {
+	return message.type === "tool_result"
+}
+
+export const asToolResultMessage = (message: MessageContent): ToolResultMessage => {
+	if (!isToolResultMessage(message)) {
+		throw new Error(`Unexpected message type ${message.type}, expected 'tool_result'`)
+	}
+	return message
+}
+export const isToolUseRequestMessage = (message: MessageContent): message is ToolUseRequest => {
+	return message.type === "tool_call"
+}
+
+export const asToolUseRequestMessage = (message: MessageContent): ToolUseRequest => {
+	if (!isToolUseRequestMessage(message)) {
+		throw new Error(`Unexpected message type ${message.type}, expected 'tool_call'`)
+	}
+	return message
 }

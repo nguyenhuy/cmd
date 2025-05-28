@@ -55,7 +55,6 @@ export interface Message {
 	content: Array<MessageContent>
 	// | ImageBlockParam
 }
-
 // export interface ImageBlockParam {
 //   type: 'image';
 //   source: ImageSource;
