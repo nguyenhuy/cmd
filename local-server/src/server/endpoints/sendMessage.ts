@@ -164,7 +164,7 @@ const mapTool = (tool: Tool): MappedTool & { name: string } => {
 	return {
 		description: tool.description,
 		name: tool.name,
-		parameters: jsonSchema(tool.input_schema),
+		parameters: jsonSchema(tool.inputSchema),
 	}
 }
 
@@ -183,7 +183,7 @@ const mapMessage = (message: Message): CoreMessage[] => {
 		})
 		return result
 	} else if (message.role === "user") {
-		const result: (CoreUserMessage | CoreToolMessage)[] = []
+		const result: CoreUserMessage[] = []
 		message.content.forEach((content) => {
 			// TODO: use "tool" as the role for tool results, and don't split into one message each content part.
 			if (content.type === "text") {
@@ -231,18 +231,6 @@ const mapMessage = (message: Message): CoreMessage[] => {
 							break
 					}
 				})
-			} else if (content.type === "tool_result") {
-				result.push({
-					role: "tool",
-					content: [
-						{
-							type: "tool-result",
-							toolCallId: content.tool_use_id,
-							toolName: content.tool_name,
-							result: content.result,
-						},
-					],
-				})
 			} else {
 				throw new Error(`Unsupported content type: ${content.type}`)
 			}
@@ -265,6 +253,24 @@ const mapMessage = (message: Message): CoreMessage[] => {
 							toolCallId: content.toolUseId,
 							toolName: content.toolName,
 							args: content.input,
+						},
+					],
+				})
+			}
+		})
+		return result
+	} else if (message.role === "tool") {
+		const result: CoreToolMessage[] = []
+		message.content.forEach((content) => {
+			if (content.type === "tool_result") {
+				result.push({
+					role: "tool",
+					content: [
+						{
+							type: "tool-result",
+							toolCallId: content.toolUseId,
+							toolName: content.toolName,
+							result: content.result,
 						},
 					],
 				})

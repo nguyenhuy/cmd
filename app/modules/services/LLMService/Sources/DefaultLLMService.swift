@@ -115,8 +115,8 @@ final class DefaultLLMService: LLMService {
 
     return try await withTaskCancellationHandler(operation: {
       #if DEBUG
-      let stream = try {
-        if let stream = try repeatDebugHelper.repeatStream() { return stream }
+      let stream = {
+        if let stream = try? repeatDebugHelper.repeatStream() { return stream }
         return server.streamPostRequest(path: "sendMessage", data: data)
       }()
 
@@ -128,7 +128,7 @@ final class DefaultLLMService: LLMService {
         isTaskCancelled: { isTaskCancelled.value },
         repeatDebugHelper: repeatDebugHelper)
       #else
-      let stream = try await server.streamPostRequest(path: "sendMessage", data: data)
+      let stream = await server.streamPostRequest(path: "sendMessage", data: data)
 
       let helper = RequestStreamingHelper(
         stream: stream,

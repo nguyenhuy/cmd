@@ -39,7 +39,7 @@ extension Server {
 
   public func streamPostRequest(path: String, data: Data) -> AsyncThrowingStream<Data, Error> {
     let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
-    Task {
+    let task = Task {
       do {
         _ = try await postRequest(path: path, data: data) { data in
           continuation.yield(data)
@@ -48,6 +48,9 @@ extension Server {
       } catch {
         continuation.finish(throwing: error)
       }
+    }
+    continuation.onTermination = { _ in
+      task.cancel()
     }
     return stream
   }

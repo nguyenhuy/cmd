@@ -93,6 +93,7 @@ final class RequestStreamingHelper {
         err = err ?? AppError(message: error.message)
       }
     }
+    try Task.checkCancellation()
     if let err {
       throw err
     }

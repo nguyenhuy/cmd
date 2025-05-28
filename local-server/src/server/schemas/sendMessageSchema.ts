@@ -132,8 +132,8 @@ export interface ToolResultFailureMessage {
 }
 
 export interface ToolResultMessage {
-	tool_use_id: string
-	tool_name: string
+	toolUseId: string
+	toolName: string
 	type: "tool_result"
 	result: ToolResultSuccessMessage | ToolResultFailureMessage
 }
@@ -141,7 +141,7 @@ export interface ToolResultMessage {
 export interface Tool {
 	name: string
 	description: string
-	input_schema: Record<string, unknown>
+	inputSchema: Record<string, unknown>
 }
 
 export interface ChatCompletionToolResponseChunk {
