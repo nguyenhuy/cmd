@@ -22,5 +22,6 @@ Target.module(
     "ServerServiceInterface",
     "SettingsServiceInterface",
     "SwiftTesting",
+    "ThreadSafe",
     "ToolFoundation",
   ])

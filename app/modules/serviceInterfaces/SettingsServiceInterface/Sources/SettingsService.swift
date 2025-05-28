@@ -10,8 +10,7 @@ public struct Settings: Sendable, Codable, Equatable {
   #if DEBUG
   public init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
-    enableAnalytics: Bool = false,
-    allowAnonymousAnalytics: Bool = true,
+    allowAnonymousAnalytics: Bool = false,
     anthropicSettings: LLMProviderSettings?,
     openAISettings: LLMProviderSettings?,
     openRouterSettings: LLMProviderSettings? = nil,
@@ -19,7 +18,6 @@ public struct Settings: Sendable, Codable, Equatable {
     cohereSettings _: LLMProviderSettings? = nil)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
-    self.enableAnalytics = enableAnalytics
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.anthropicSettings = anthropicSettings
     self.openAISettings = openAISettings
@@ -33,9 +31,9 @@ public struct Settings: Sendable, Codable, Equatable {
       Bool.self,
       forKey: .pointReleaseXcodeExtensionToDebugApp) ?? false
     #if DEBUG
-    enableAnalytics = try container.decodeIfPresent(Bool.self, forKey: .enableAnalytics) ?? true
+    allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? true
     #else
-    enableAnalytics = try container.decodeIfPresent(Bool.self, forKey: .enableAnalytics) ?? false
+    allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? false
     #endif
     allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? true
     anthropicSettings = try container.decodeIfPresent(Settings.LLMProviderSettings.self, forKey: .anthropicSettings)
@@ -56,9 +54,8 @@ public struct Settings: Sendable, Codable, Equatable {
     }
   }
 
-  public var enableAnalytics: Bool
-  public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var allowAnonymousAnalytics: Bool
+  public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var anthropicSettings: LLMProviderSettings?
   public var openAISettings: LLMProviderSettings?
   public var openRouterSettings: LLMProviderSettings?
@@ -66,7 +63,6 @@ public struct Settings: Sendable, Codable, Equatable {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: .pointReleaseXcodeExtensionToDebugApp)
-    try container.encode(enableAnalytics, forKey: .enableAnalytics)
     try container.encode(allowAnonymousAnalytics, forKey: .allowAnonymousAnalytics)
     try container.encodeIfPresent(anthropicSettings, forKey: .anthropicSettings)
     try container.encodeIfPresent(openAISettings, forKey: .openAISettings)
@@ -75,7 +71,6 @@ public struct Settings: Sendable, Codable, Equatable {
 
   private enum CodingKeys: String, CodingKey {
     case pointReleaseXcodeExtensionToDebugApp
-    case enableAnalytics
     case allowAnonymousAnalytics
     case anthropicSettings
     case openAISettings

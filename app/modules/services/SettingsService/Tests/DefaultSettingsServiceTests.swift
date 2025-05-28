@@ -11,6 +11,8 @@ import SwiftTesting
 import Testing
 @testable import SettingsService
 
+// MARK: - DefaultSettingsServiceTests
+
 struct DefaultSettingsServiceTests {
 
   @Test("Initializes with default values")
@@ -39,7 +41,7 @@ struct DefaultSettingsServiceTests {
     // Test updating values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
 
-    let anthropicSettings = Settings.AnthropicSettings(
+    let anthropicSettings = Settings.LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test")
     service.update(setting: \.anthropicSettings, to: anthropicSettings)
@@ -59,7 +61,7 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    service.update(setting: \.anthropicSettings, to: Settings.AnthropicSettings(
+    service.update(setting: \.anthropicSettings, to: Settings.LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test"))
 
@@ -80,10 +82,10 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    service.update(setting: \.anthropicSettings, to: Settings.AnthropicSettings(
+    service.update(setting: \.anthropicSettings, to: Settings.LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test"))
-    service.update(setting: \.openAISettings, to: Settings.OpenAISettings(
+    service.update(setting: \.openAISettings, to: Settings.LLMProviderSettings(
       apiKey: "openai-key",
       baseUrl: "https://api.openai.com/test"))
 
@@ -206,7 +208,7 @@ struct DefaultSettingsServiceTests {
     let sharedUserDefaults = MockUserDefaults()
     let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
-    let anthropicSettings = Settings.AnthropicSettings(
+    let anthropicSettings = Settings.LLMProviderSettings(
       apiKey: "secret-key",
       baseUrl: nil)
     let exp = expectation(description: "Storage updated")
@@ -228,10 +230,17 @@ struct DefaultSettingsServiceTests {
         "anthropicSettings" : {
           "apiKey" : "ANTHROPIC_API_KEY"
         },
-        "enableAnalytics" : true,
+        "allowAnonymousAnalytics" : true,
         "pointReleaseXcodeExtensionToDebugApp" : false
       }
       """)
     _ = cancellable
   }
+}
+
+extension DefaultSettingsService {
+  convenience init(sharedUserDefaults: UserDefaultsI = MockUserDefaults()) {
+    self.init(sharedUserDefaults: sharedUserDefaults, releaseSharedUserDefaults: nil)
+  }
+
 }

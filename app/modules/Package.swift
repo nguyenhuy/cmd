@@ -852,6 +852,7 @@ targets.append(contentsOf: Target.module(
     "ServerServiceInterface",
     "SettingsServiceInterface",
     "SwiftTesting",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   path: "./services/LLMService"))

@@ -38,8 +38,8 @@ public final class AppExtensionScope: Sendable, BaseProviding {
     /// Override the default global logger. This is not thread safe. By doing it very early in the lifecycle there should be little change of this causing a crash.
     defaultLogger = logger
 
-    settingsService.liveValue(for: \.enableAnalytics).sink { [weak logger] enableAnalytics in
-      if enableAnalytics {
+    settingsService.liveValue(for: \.allowAnonymousAnalytics).sink { [weak logger] allowAnonymousAnalytics in
+      if allowAnonymousAnalytics {
         logger?.startExternalLogging()
       } else {
         logger?.stopExternalLogging()

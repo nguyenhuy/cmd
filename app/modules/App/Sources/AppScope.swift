@@ -47,8 +47,8 @@ final class AppScope: Sendable, BaseProviding {
     /// Override the default global logger. This is not thread safe. By doing it very early in the lifecycle there should be little change of this causing a crash.
     defaultLogger = logger
 
-    AppScope.shared.settingsService.liveValue(for: \.enableAnalytics).sink { [weak logger] enableAnalytics in
-      if enableAnalytics {
+    AppScope.shared.settingsService.liveValue(for: \.allowAnonymousAnalytics).sink { [weak logger] allowAnonymousAnalytics in
+      if allowAnonymousAnalytics {
         logger?.startExternalLogging()
       } else {
         logger?.stopExternalLogging()

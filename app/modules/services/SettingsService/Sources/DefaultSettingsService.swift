@@ -19,8 +19,9 @@ final class DefaultSettingsService: SettingsService {
 
   // MARK: - Initialization
 
-  init(sharedUserDefaults: UserDefaultsI) {
+  init(sharedUserDefaults: UserDefaultsI, releaseSharedUserDefaults: UserDefaultsI?) {
     self.sharedUserDefaults = sharedUserDefaults
+    self.releaseSharedUserDefaults = releaseSharedUserDefaults
     settings = CurrentValueSubject<Settings, Never>(Self.loadSettings(from: sharedUserDefaults))
 
     observeChangesToUserDefaults()
@@ -81,6 +82,7 @@ final class DefaultSettingsService: SettingsService {
   private var notificationObserver: AnyCancellable?
 
   private let sharedUserDefaults: UserDefaultsI
+  private let releaseSharedUserDefaults: UserDefaultsI?
 
   private static func loadSettings(from userDefaults: UserDefaultsI) -> Settings {
     if let data = userDefaults.data(forKey: Keys.appWideSettings) {
@@ -172,15 +174,15 @@ final class DefaultSettingsService: SettingsService {
         defaultLogger.error(error)
       }
       #if DEBUG
-      // Write pointReleaseXcodeExtensionToDebugApp to the release settings.
-      do {
-        let releaseUserDefaults = try UserDefaults.releaseShared(bundle: .main)
-        releaseUserDefaults?.set(
-          settings.pointReleaseXcodeExtensionToDebugApp,
-          forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
-      } catch {
-        defaultLogger.error(error)
-      }
+      /// Write pointReleaseXcodeExtensionToDebugApp to the release settings.
+      ///      do {
+      let releaseUserDefaults = releaseSharedUserDefaults // try UserDefaults.releaseShared(bundle: .main)
+      releaseUserDefaults?.set(
+        settings.pointReleaseXcodeExtensionToDebugApp,
+        forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+//      } catch {
+//        defaultLogger.error(error)
+//      }
       #endif
     }
   }
@@ -192,7 +194,20 @@ final class DefaultSettingsService: SettingsService {
 extension BaseProviding where Self: UserDefaultsProviding {
   public var settingsService: SettingsService {
     shared {
-      DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+      let releaseSharedUserDefaults: UserDefaultsI? = {
+        #if DEBUG
+        do {
+          return try UserDefaults.releaseShared(bundle: .main)
+        } catch {
+          defaultLogger.error(error)
+          return nil
+        }
+        #else
+        return nil
+        #endif
+      }()
+
+      return DefaultSettingsService(sharedUserDefaults: sharedUserDefaults, releaseSharedUserDefaults: releaseSharedUserDefaults)
     }
   }
 }

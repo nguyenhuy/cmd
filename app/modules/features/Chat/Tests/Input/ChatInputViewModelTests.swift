@@ -216,7 +216,7 @@ struct ChatInputViewModelTests {
         availableModels: nil) // Pass nil to read from the settings service
     }
 
-    #expect(viewModel.availableModels.count == 3)
+    #expect(viewModel.availableModels.count == 5)
     #expect(viewModel.selectedModel == .claudeSonnet40)
 
     mockSettingsService.update(setting: \.openAISettings, to: nil)
