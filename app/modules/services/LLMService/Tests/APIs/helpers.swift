@@ -7,6 +7,7 @@ import JSONFoundation
 import LLMServiceInterface
 import ServerServiceInterface
 import SettingsServiceInterface
+import ThreadSafe
 import ToolFoundation
 @testable import LLMService
 
@@ -63,30 +64,6 @@ extension DefaultLLMService {
   }
 }
 
-// MARK: - TestToolUse
-
-struct TestToolUse<Input: Codable & Sendable, Output: Codable & Sendable>: ToolUse {
-
-  init(callingTool: TestTool<Input, Output>, toolUseId: String, input: Input, output: Result<Output, Error>, isReadonly: Bool) {
-    self.toolUseId = toolUseId
-    self.callingTool = callingTool
-    self.input = input
-    self.output = output
-    self.isReadonly = isReadonly
-    status = .Just(.completed(output))
-  }
-
-  var callingTool: TestTool<Input, Output>
-  let toolUseId: String
-  let isReadonly: Bool
-  let input: Input
-  let output: Result<Output, Error>
-
-  let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<Output>>
-
-  func startExecuting() { }
-}
-
 // MARK: - TestTool
 
 struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStreamableTool {
@@ -106,7 +83,29 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
     self.init(name: name, output: .success(output))
   }
 
-  typealias Use = TestToolUse<Input, Output>
+  // MARK: - TestToolUse
+
+  struct Use: ToolUse {
+
+    init(callingTool: TestTool<Input, Output>, toolUseId: String, input: Input, output: Result<Output, Error>, isReadonly: Bool) {
+      self.toolUseId = toolUseId
+      self.callingTool = callingTool
+      self.input = input
+      self.output = output
+      self.isReadonly = isReadonly
+      status = .Just(.completed(output))
+    }
+
+    let callingTool: TestTool<Input, Output>
+    let toolUseId: String
+    let isReadonly: Bool
+    let input: Input
+    let output: Result<Output, Error>
+
+    let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<Output>>
+
+    func startExecuting() { }
+  }
 
   let name: String
   let isReadonly: Bool
@@ -119,8 +118,98 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
     true
   }
 
-  func use(toolUseId: String, input: Input, context _: ToolExecutionContext) -> TestToolUse<Input, Output> {
-    TestToolUse<Input, Output>(callingTool: self, toolUseId: toolUseId, input: input, output: output, isReadonly: isReadonly)
+  func use(toolUseId: String, input: Input, context _: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, output: output, isReadonly: isReadonly)
+  }
+
+  private let output: Result<Output, Error>
+
+}
+
+struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>: Tool {
+  init(
+    name: String = "TestStreamingTool",
+    output: Result<Output, Error>,
+    isReadonly: Bool = true,
+    isAvailableInChatMode: @escaping @Sendable (ChatMode) -> Bool = { _ in true })
+  {
+    self.name = name
+    self.isReadonly = isReadonly
+    self.output = output
+    self.isAvailableInChatMode = isAvailableInChatMode
+  }
+
+  init(name: String = "TestStreamingTool", output: Output) {
+    self.init(name: name, output: .success(output))
+  }
+
+  @ThreadSafe
+  final class Use: ToolUse {
+    init(
+      callingTool: TestStreamingTool<Input, Output>,
+      toolUseId: String,
+      input: Input,
+      output: Result<Output, Error>,
+      isReadonly: Bool)
+    {
+      self.toolUseId = toolUseId
+      self.callingTool = callingTool
+      self.input = input
+      self.output = output
+      self.isReadonly = isReadonly
+      status = .Just(.completed(output))
+      receivedInputs.append(input)
+      onReceiveInput()
+    }
+
+    let callingTool: TestStreamingTool<Input, Output>
+    let toolUseId: String
+    let isReadonly: Bool
+    var hasReceivedAllInput = false
+    var input: Input
+    let output: Result<Output, Error>
+    var onReceiveInput: @Sendable () -> Void = { }
+    var receivedInputs: [Input] = []
+
+    let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<Output>>
+
+    func receive(inputUpdate: Data, isLast: Bool) throws {
+      let newInput = try JSONDecoder().decode(Input.self, from: inputUpdate)
+      receivedInputs.append(newInput)
+      input = newInput
+      hasReceivedAllInput = isLast
+      onReceiveInput()
+    }
+
+    func startExecuting() { }
+  }
+
+  let canInputBeStreamed = true
+
+  let name: String
+  let isReadonly: Bool
+  let isAvailableInChatMode: @Sendable (ChatMode) -> Bool
+
+  var description: String { "tool for testing" }
+  var inputSchema: JSON { .object([:]) }
+
+  func use(
+    toolUseId: String,
+    input: Data,
+    isInputComplete: Bool,
+    context _: ToolFoundation.ToolExecutionContext)
+    throws -> Use
+  {
+    let input = try JSONDecoder().decode(Input.self, from: input)
+    let toolUse = Use(callingTool: self, toolUseId: toolUseId, input: input, output: output, isReadonly: isReadonly)
+    if isInputComplete {
+      toolUse.hasReceivedAllInput = true
+    }
+    return toolUse
+  }
+
+  func isAvailable(in _: ChatFoundation.ChatMode) -> Bool {
+    true
   }
 
   private let output: Result<Output, Error>
@@ -136,6 +225,7 @@ extension [AssistantMessageContent] {
 
 struct TestToolInput: Codable & Sendable {
   let file: String
+  let keywords: [String]?
 }
 
 let okServerResponse = Data()

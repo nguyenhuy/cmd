@@ -138,14 +138,7 @@ final class DefaultLLMService: LLMService {
         isTaskCancelled: { isTaskCancelled.value })
       #endif
 
-      do {
-        try await helper.processStream()
-      } catch {
-        defaultLogger.error("Finished streaming response with error \(error)")
-        helper.finish()
-
-        throw error
-      }
+      try await helper.processStream()
 
       return await result.lastValue
     }, onCancel: {

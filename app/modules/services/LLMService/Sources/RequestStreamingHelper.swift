@@ -6,6 +6,7 @@ import ChatFoundation
 import ConcurrencyFoundation
 import Foundation
 import LLMServiceInterface
+import LoggingServiceInterface
 import ServerServiceInterface
 import ToolFoundation
 
@@ -66,48 +67,45 @@ final class RequestStreamingHelper {
   var streamingToolUseInput = ""
 
   /// Handle all the streamed data, updating the `result` stream with the new content.
+  ///  The `result` stream will always be complete when this method returns, either with a final message or an error.
   func processStream() async throws {
-    for try await chunk in stream {
-      #if DEBUG
-      repeatDebugHelper.receive(chunk: chunk)
-      #endif
-      guard !isTaskCancelled() else {
-        // This should not be necessary. Cancelling the task should make the post request fail with an error.
-        // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
-        assertionFailure("Task was cancelled but we still received a chunk")
-        finish()
-        break
+    do {
+      for try await chunk in stream {
+        #if DEBUG
+        repeatDebugHelper.receive(chunk: chunk)
+        #endif
+        guard !isTaskCancelled() else {
+          // This should not be necessary. Cancelling the task should make the post request fail with an error.
+          // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
+          assertionFailure("Task was cancelled but we still received a chunk")
+          finish()
+          break
+        }
+
+        let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
+
+        switch event {
+        case .textDelta(let textDelta):
+          handle(textDelta: textDelta)
+        case .toolUseDelta(let toolUseDelta):
+          await handle(toolUseDelta: toolUseDelta)
+        case .toolUseRequest(let toolUseRequest):
+          await handle(toolUseRequest: toolUseRequest)
+        case .responseError(let error):
+          // We received an error from the server.
+          err = err ?? AppError(message: error.message)
+        }
       }
-
-      let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
-
-      switch event {
-      case .textDelta(let textDelta):
-        handle(textDelta: textDelta)
-      case .toolUseDelta(let toolUseDelta):
-        await handle(toolUseDelta: toolUseDelta)
-      case .toolUseRequest(let toolUseRequest):
-        await handle(toolUseRequest: toolUseRequest)
-      case .responseError(let error):
-        // We received an error from the server.
-        err = err ?? AppError(message: error.message)
+      try Task.checkCancellation()
+      if let err {
+        throw err
       }
+      finish()
+    } catch {
+      defaultLogger.error("Finished streaming response with error \(error)")
+      finish()
+      throw error
     }
-    try Task.checkCancellation()
-    if let err {
-      throw err
-    }
-    finish()
-  }
-
-  /// Wrap up the stream. When the stream is process without failure this is already called.
-  func finish() {
-    endTextContentIfNecesssary()
-    result.finish()
-
-    #if DEBUG
-    repeatDebugHelper.streamCompleted()
-    #endif
   }
 
   private let isTaskCancelled: () -> Bool
@@ -128,6 +126,16 @@ final class RequestStreamingHelper {
       domain: "ToolUseError",
       code: 1,
       userInfo: [NSLocalizedDescriptionKey: "Could not parse the input for tool \(name): \(error.localizedDescription)"])
+  }
+
+  /// Wrap up the stream. When the stream is process without failure this is already called.
+  private func finish() {
+    endTextContentIfNecesssary()
+    result.finish()
+
+    #if DEBUG
+    repeatDebugHelper.streamCompleted()
+    #endif
   }
 
   private func handle(textDelta: Schema.TextDelta) {
