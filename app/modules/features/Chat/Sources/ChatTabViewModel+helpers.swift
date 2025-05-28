@@ -44,6 +44,8 @@ extension MessageRole {
       .user
     case .system:
       .system
+    case .tool:
+      .tool
     }
   }
 }

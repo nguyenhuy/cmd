@@ -880,9 +880,9 @@ let package = Package(
     .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.4"),
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
-    // .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
+    .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
     // Use the pre-built swift-syntax for faster local builds. Doesn't work with tests.
-    .package(path: "./pre-built/swift-syntax"),
+    // .package(path: "./pre-built/swift-syntax"),
     .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.51.1"),
     .package(url: "https://github.com/statsig-io/statsig-kit", from: "1.53.5"),
 

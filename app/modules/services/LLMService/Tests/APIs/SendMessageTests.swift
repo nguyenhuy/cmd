@@ -137,32 +137,34 @@ final class SendMessageTests {
         sendChunk?("""
           {
             "type": "tool_call",
-            "name": "TestTool",
+            "toolName": "TestTool",
             "input": {},
-            "id": "123"
+            "toolUseId": "123"
           }
           """.utf8Data)
         return okServerResponse
       } else {
-        data.expectToMatch("""
+        data.expectToMatch(
+          """
           {
             "messages":[
               {"role":"user","content":[{"type":"text","text":"hello"}]},
               {"role":"assistant","content":[
                 {"type":"text","text":"hi"},
-                {"type":"tool_call","name":"TestTool","id":"123","input":{}}
+                {"type":"tool_call","toolUseId":"123","toolName":"TestTool","input":{}}
               ]},
-              {"role":"user","content":[{"tool_use_id":"123","type":"tool_result","result":{"type":"tool_result_success","success":"test_result"}}]}
+              {"role":"tool","content":[{"toolUseId":"123","toolName":"TestTool","type":"tool_result","result":{"type":"tool_result_success","success":"test_result"}}]}
             ],
             "model" : "claude-sonnet-4-20250514",
             "provider" : {
               "name" : "anthropic",
               "settings" : { "apiKey" : "anthropic-key" }
             },
-            "tools":[{"input_schema":{},"name":"TestTool","description":"tool for testing"}],
+            "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
             "projectRoot" : "/path/to/root"
           }
-          """)
+          """,
+          ignoring: "system")
         sendChunk?("""
           {
             "type": "text_delta",
@@ -205,31 +207,33 @@ final class SendMessageTests {
         sendChunk?("""
           {
             "type": "tool_call",
-            "name": "UnknownTool",
+            "toolName": "UnknownTool",
             "input": {},
-            "id": "123"
+            "toolUseId": "123"
           }
           """.utf8Data)
         return okServerResponse
       } else {
-        data.expectToMatch("""
+        data.expectToMatch(
+          """
           {
             "messages":[
               {"role":"user","content":[{"type":"text","text":"hello"}]},
               {"role":"assistant","content":[
-                {"type":"tool_call","name":"UnknownTool","id":"123","input":{}}
+                {"type":"tool_call","toolName":"UnknownTool","toolUseId":"123","input":{}}
               ]},
-              {"role":"user","content":[{"tool_use_id":"123","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
+              {"role":"tool","content":[{"toolUseId":"123","toolName":"UnknownTool","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
             ],
             "model" : "claude-sonnet-4-20250514",
             "provider" : {
               "name" : "anthropic",
               "settings" : { "apiKey" : "anthropic-key" }
             },
-            "tools":[{"input_schema":{},"name":"TestTool","description":"tool for testing"}],
+            "tools":[{"inputSchema":{},"name":"TestTool","description":"tool for testing"}],
             "projectRoot" : "/path/to/root"
           }
-          """)
+          """,
+          ignoring: "system")
         sendChunk?("""
           {
             "type": "text_delta",

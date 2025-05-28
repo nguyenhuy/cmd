@@ -75,8 +75,7 @@ final class RequestStreamingHelper {
         // This should not be necessary. Cancelling the task should make the post request fail with an error.
         // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
         assertionFailure("Task was cancelled but we still received a chunk")
-        result.content.last?.asText?.finish()
-        result.finish()
+        finish()
         break
       }
 
@@ -104,7 +103,6 @@ final class RequestStreamingHelper {
   func finish() {
     endTextContentIfNecesssary()
     result.finish()
-    validate()
 
     #if DEBUG
     repeatDebugHelper.streamCompleted()
@@ -129,13 +127,6 @@ final class RequestStreamingHelper {
       domain: "ToolUseError",
       code: 1,
       userInfo: [NSLocalizedDescriptionKey: "Could not parse the input for tool \(name): \(error.localizedDescription)"])
-  }
-
-  private func validate() { let toolUseIds = result.content.compactMap { $0.asToolUseRequest?.toolUse.toolUseId }
-    if toolUseIds.count != Set(toolUseIds).count {
-      // We have duplicate tool use IDs in the result. This is an error.
-      assertionFailure()
-    }
   }
 
   private func handle(textDelta: Schema.TextDelta) {
@@ -198,7 +189,6 @@ final class RequestStreamingHelper {
         streamingToolUse = toolUse
         content.append(toolUse: toolUse)
         result.update(with: AssistantMessage(content: content))
-        validate()
       }
 
       if isInputComplete {
@@ -271,7 +261,6 @@ final class RequestStreamingHelper {
         error: Self.missingToolError(toolName: request.toolName)))
     }
     result.update(with: AssistantMessage(content: content))
-    validate()
   }
 
   private func endStreamedToolUse(withFailure error: Error? = nil) {
@@ -287,7 +276,6 @@ final class RequestStreamingHelper {
         toolName: streamingToolUse.toolName,
         error: error))
       result.update(with: AssistantMessage(content: content))
-      validate()
     }
 
     self.streamingToolUse = nil

@@ -42,7 +42,7 @@ final class SendOneMessageTests {
           "tools" : [],
           "projectRoot" : "/path/to/root"
         }
-        """)
+        """, ignoring: "system")
       requestCompleted.fulfill()
       return okServerResponse
     }
@@ -136,8 +136,8 @@ final class SendOneMessageTests {
       sendChunk?("""
         {
           "type": "tool_call",
-          "name": "read_file",
-          "id": "123",
+          "toolName": "read_file",
+          "toolUseId": "123",
           "input": {
             "file": "file.txt"
           }
@@ -189,8 +189,8 @@ final class SendOneMessageTests {
       sendChunk?("""
         {
           "type": "tool_call",
-          "name": "read_file",
-          "id": "123",
+          "toolName": "read_file",
+          "toolUseId": "123",
           "input": {
             "badInput": "file.txt"
           }

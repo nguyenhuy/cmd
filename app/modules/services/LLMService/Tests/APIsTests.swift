@@ -27,14 +27,15 @@ struct APIParamsEncodingTests {
   func testToolResultSuccessEncoding() throws {
     let toolResult = Schema.ToolResultMessage(
       toolUseId: "123",
+      toolName: "someTool",
       result: .success([
         "result": .string("Result"),
       ]))
-    let message = Schema.Message(role: .user, content: [.toolResultMessage(toolResult)])
+    let message = Schema.Message(role: .tool, content: [.toolResultMessage(toolResult)])
 
     try testEncoding(message, """
       {        
-        "role" : "user",
+        "role" : "tool",
         "content" : [
           {
             "type" : "tool_result",
@@ -44,7 +45,8 @@ struct APIParamsEncodingTests {
                 "result" : "Result"
               }
             },
-            "tool_use_id" : "123"
+            "toolName" : "someTool",
+            "toolUseId" : "123"
           }
         ]
       }
@@ -55,12 +57,13 @@ struct APIParamsEncodingTests {
   func testToolResultErrorEncoding() throws {
     let toolResult = Schema.ToolResultMessage(
       toolUseId: "123",
+      toolName: "someTool",
       result: .failure("Error occurred"))
-    let message = Schema.Message(role: .user, content: [.toolResultMessage(toolResult)])
+    let message = Schema.Message(role: .tool, content: [.toolResultMessage(toolResult)])
 
     try testEncoding(message, """
       {        
-        "role" : "user",
+        "role" : "tool",
         "content" : [
           {
             "type" : "tool_result",
@@ -70,7 +73,8 @@ struct APIParamsEncodingTests {
                 "error" : "Error occurred"
               }
             },
-            "tool_use_id" : "123"
+            "toolName" : "someTool",
+            "toolUseId" : "123"
           }
         ]
       }
@@ -128,30 +132,38 @@ struct APIParamsEncodingTests {
 
   @Test("ToolResultParam encoding")
   func testToolResultParamEncoding() throws {
-    try testEncoding(Schema.ToolResultMessage(toolUseId: "123", result: .success([:])), """
-      {
-        "result" : {
-          "success" : {
+    try testEncoding(Schema.ToolResultMessage(
+      toolUseId: "123",
+      toolName: "someTool",
+      result: .success([:])), """
+        {
+          "result" : {
+            "success" : {
 
+            },
+            "type" : "tool_result_success"
           },
-          "type" : "tool_result_success"
-        },
-        "tool_use_id" : "123",
-        "type" : "tool_result"
-      }
-      """)
+          "toolName" : "someTool",
+          "toolUseId" : "123",
+          "type" : "tool_result"
+        }
+        """)
 
-    try testEncoding(Schema.ToolResultMessage(toolUseId: "123", result: .success(["it": .string("worked!")])), """
-      {
-        "result" : {
-          "success" : {
-            "it" : "worked!"
+    try testEncoding(Schema.ToolResultMessage(
+      toolUseId: "123",
+      toolName: "someTool",
+      result: .success(["it": .string("worked!")])), """
+        {
+          "result" : {
+            "success" : {
+              "it" : "worked!"
+            },
+            "type" : "tool_result_success"
           },
-          "type" : "tool_result_success"
-        },
-        "tool_use_id" : "123",
-        "type" : "tool_result"
-      }
-      """)
+          "toolUseId" : "123",
+          "toolName" : "someTool",
+          "type" : "tool_result"
+        }
+        """)
   }
 }

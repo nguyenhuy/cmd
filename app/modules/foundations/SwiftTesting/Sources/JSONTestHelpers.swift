@@ -6,9 +6,13 @@ import Foundation
 import Testing
 
 extension Data {
-  public func jsonString() -> String {
+  public func jsonString(ignoring ignoredKeys: [String] = []) -> String {
     do {
-      let object = try JSONSerialization.jsonObject(with: self, options: [])
+      var object = try JSONSerialization.jsonObject(with: self, options: [])
+      if !ignoredKeys.isEmpty {
+        object = (object as? [String: Any?])?
+          .filter { !ignoredKeys.contains($0.key) } as Any
+      }
       let data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
       guard let string = String(data: data, encoding: .utf8) else {
         throw TestError("Invalid JSON data")
@@ -20,9 +24,13 @@ extension Data {
     }
   }
 
-  public func expectToMatch(_ expected: String) {
+  public func expectToMatch(_ expected: String, ignoring ignoredKeys: [String] = []) {
     let expectedData = expected.utf8Data
-    #expect(jsonString() == expectedData.jsonString())
+    #expect(jsonString(ignoring: ignoredKeys) == expectedData.jsonString(ignoring: ignoredKeys))
+  }
+
+  public func expectToMatch(_ expected: String, ignoring ignoredKey: String) {
+    expectToMatch(expected, ignoring: [ignoredKey])
   }
 }
 

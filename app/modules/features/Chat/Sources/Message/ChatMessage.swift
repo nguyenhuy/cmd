@@ -146,4 +146,5 @@ enum MessageRole: String, Encodable {
   case user
   case assistant
   case system
+  case tool
 }

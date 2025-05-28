@@ -228,8 +228,8 @@ extension Schema {
     public let result: Result
   
     private enum CodingKeys: String, CodingKey {
-      case toolUseId = "tool_use_id"
-      case toolName = "tool_name"
+      case toolUseId = "toolUseId"
+      case toolName = "toolName"
       case type = "type"
       case result = "result"
     }
@@ -562,7 +562,7 @@ extension Schema {
     private enum CodingKeys: String, CodingKey {
       case name = "name"
       case description = "description"
-      case inputSchema = "input_schema"
+      case inputSchema = "inputSchema"
     }
   
     public init(
