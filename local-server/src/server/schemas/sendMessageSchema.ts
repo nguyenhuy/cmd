@@ -15,7 +15,7 @@ export interface APIProvider {
 	}
 }
 
-export type APIProviderName = "openai" | "anthropic"
+export type APIProviderName = "openai" | "anthropic" | "openrouter"
 
 export type StreamedResponseChunk = TextDelta | ToolUseRequest | ToolUseDelta | ResponseError
 

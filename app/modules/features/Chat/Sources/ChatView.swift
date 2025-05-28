@@ -29,14 +29,14 @@ public struct ChatView: View {
 
   public init(
     viewModel: ChatViewModel,
-    SettingsView: @escaping @MainActor () -> AnyView = { AnyView(EmptyView()) })
+    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
   {
     self.viewModel = viewModel
     self.SettingsView = SettingsView
   }
 
   public var body: some View {
-    NavigationStack(path: $path) {
+    ZStack(alignment: .top) {
       VStack(spacing: 0) {
         quickActionsRow
         secondaryActionRow
@@ -56,9 +56,9 @@ public struct ChatView: View {
             }).id("ChatInputView-\(selectedTab.id)")
         }
       }
-      .navigationDestination(for: SettingsLink.self) { _ in
-        VStack(spacing: 0) {
-          SettingsView()
+      if showSettingsSheet {
+        SettingsView {
+          showSettingsSheet = false
         }
       }
     }
@@ -73,11 +73,11 @@ public struct ChatView: View {
     viewModel.focusedWorkspacePath?.lastPathComponent.split(separator: ".").first.map(String.init)
   }
 
-  @State private var path = NavigationPath()
+  @State private var showSettingsSheet = false
 
   @Environment(\.colorScheme) private var colorScheme
 
-  private let SettingsView: () -> AnyView
+  private let SettingsView: (@escaping @MainActor () -> Void) -> AnyView
 
   @Bindable private var viewModel: ChatViewModel
 
@@ -100,7 +100,7 @@ public struct ChatView: View {
 
       IconButton(
         action: {
-          path.append(SettingsLink())
+          showSettingsSheet = true
         },
         systemName: "gearshape",
         onHoverColor: colorScheme.secondarySystemBackground,

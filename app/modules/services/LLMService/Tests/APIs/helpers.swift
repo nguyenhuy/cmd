@@ -18,8 +18,8 @@ extension DefaultLLMService {
       pointReleaseXcodeExtensionToDebugApp: false,
       anthropicSettings: .init(
         apiKey: "anthropic-key",
-        apiUrl: nil),
-      openAISettings: .init(apiKey: "openai-key", apiUrl: nil))))
+        baseUrl: nil),
+      openAISettings: .init(apiKey: "openai-key", baseUrl: nil))))
   {
     self.init(server: server as Server, settingsService: settingsService as SettingsService)
   }

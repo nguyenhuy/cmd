@@ -12,7 +12,7 @@ export class AnthropicModelProvider implements ModelProvider {
 
 		const provider = createAnthropic({
 			apiKey: params.apiKey,
-			baseURL: process.env["LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.anthropic.com/v1",
+			baseURL: process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl,
 		})
 		return provider(modelName)
 	}

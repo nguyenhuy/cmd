@@ -41,13 +41,13 @@ struct DefaultSettingsServiceTests {
 
     let anthropicSettings = Settings.AnthropicSettings(
       apiKey: "test-key",
-      apiUrl: "https://api.anthropic.com/test")
+      baseUrl: "https://api.anthropic.com/test")
     service.update(setting: \.anthropicSettings, to: anthropicSettings)
 
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == true)
     #expect(service.value(for: \.anthropicSettings?.apiKey) == "test-key")
-    #expect(service.value(for: \.anthropicSettings?.apiUrl) == "https://api.anthropic.com/test")
+    #expect(service.value(for: \.anthropicSettings?.baseUrl) == "https://api.anthropic.com/test")
   }
 
   @Test("Resets individual settings")
@@ -61,7 +61,7 @@ struct DefaultSettingsServiceTests {
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
     service.update(setting: \.anthropicSettings, to: Settings.AnthropicSettings(
       apiKey: "test-key",
-      apiUrl: "https://api.anthropic.com/test"))
+      baseUrl: "https://api.anthropic.com/test"))
 
     // Reset individual setting
     service.resetToDefault(setting: \.pointReleaseXcodeExtensionToDebugApp)
@@ -82,10 +82,10 @@ struct DefaultSettingsServiceTests {
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
     service.update(setting: \.anthropicSettings, to: Settings.AnthropicSettings(
       apiKey: "test-key",
-      apiUrl: "https://api.anthropic.com/test"))
+      baseUrl: "https://api.anthropic.com/test"))
     service.update(setting: \.openAISettings, to: Settings.OpenAISettings(
       apiKey: "openai-key",
-      apiUrl: "https://api.openai.com/test"))
+      baseUrl: "https://api.openai.com/test"))
 
     // Reset all settings
     service.resetAllToDefault()
@@ -208,7 +208,7 @@ struct DefaultSettingsServiceTests {
 
     let anthropicSettings = Settings.AnthropicSettings(
       apiKey: "secret-key",
-      apiUrl: nil)
+      baseUrl: nil)
     let exp = expectation(description: "Storage updated")
     let updateCount = Atomic(0)
     let cancellable = sharedUserDefaults.onChange {

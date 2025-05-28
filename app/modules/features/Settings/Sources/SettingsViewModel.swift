@@ -19,8 +19,9 @@ public final class SettingsViewModel {
     self.settings = settings
 
     providerSettings = [
-      settings.anthropicSettings.map { ProviderSettings.anthropic(.init(apiKey: $0.apiKey, apiUrl: $0.apiUrl)) },
+      settings.anthropicSettings.map { ProviderSettings.anthropic(.init(apiKey: $0.apiKey, baseUrl: $0.baseUrl)) },
       settings.openAISettings.map { ProviderSettings.openAI(.init(apiKey: $0.apiKey)) },
+      settings.openRouterSettings.map { ProviderSettings.openRouter(.init(apiKey: $0.apiKey)) },
     ].compactMap(\.self)
 
     settingsService.liveValues()
@@ -40,15 +41,20 @@ public final class SettingsViewModel {
       var newSettings = settings
       newSettings.anthropicSettings = nil
       newSettings.openAISettings = nil
+      newSettings.openRouterSettings = nil
+
       for providerSetting in providerSettings {
         switch providerSetting {
         case .anthropic(let settings):
-          newSettings.anthropicSettings = .init(apiKey: settings.apiKey, apiUrl: settings.apiUrl)
+          newSettings.anthropicSettings = .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl)
         case .openAI(let settings):
-          newSettings.openAISettings = .init(apiKey: settings.apiKey, apiUrl: nil)
+          newSettings.openAISettings = .init(apiKey: settings.apiKey, baseUrl: nil)
+        case .openRouter(let settings):
+          newSettings.openRouterSettings = .init(apiKey: settings.apiKey, baseUrl: nil)
         }
       }
       settings = newSettings
+      save()
     }
   }
 

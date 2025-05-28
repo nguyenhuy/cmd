@@ -196,13 +196,25 @@ final class DefaultLLMService: LLMService {
       guard let anthropicSettings = settings.anthropicSettings else {
         throw AppError(message: "Anthropic API not configured")
       }
-      return .init(name: .anthropic, settings: .init(apiKey: anthropicSettings.apiKey, baseUrl: anthropicSettings.apiUrl))
+      return .init(name: .anthropic, settings: .init(apiKey: anthropicSettings.apiKey, baseUrl: anthropicSettings.baseUrl))
 
     case .gpt4o, .gpt4o_mini, .o1:
       guard let openAISettings = settings.openAISettings else {
-        throw AppError(message: "Open AI API not configured")
+        throw AppError(message: "OpenAI API not configured")
       }
-      return .init(name: .openai, settings: .init(apiKey: openAISettings.apiKey, baseUrl: openAISettings.apiUrl))
+      return .init(name: .openai, settings: .init(apiKey: openAISettings.apiKey, baseUrl: openAISettings.baseUrl))
+
+    case .openRouterClaudeSonnet37,
+         .openRouterClaudeSonnet40,
+         .openRouterClaudeOpus4,
+         .openRouterClaudeHaiku35,
+         .openRouterGpt41,
+         .openRouterGpt4o,
+         .openRouterO4Mini:
+      guard let openRouterSettings = settings.openRouterSettings else {
+        throw AppError(message: "Open Router API not configured")
+      }
+      return .init(name: .openrouter, settings: .init(apiKey: openRouterSettings.apiKey, baseUrl: openRouterSettings.baseUrl))
 
     default:
       throw AppError(message: "Unsupported model \(model)")

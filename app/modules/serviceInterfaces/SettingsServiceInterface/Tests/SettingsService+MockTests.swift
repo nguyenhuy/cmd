@@ -15,7 +15,7 @@ struct SettingsServiceMockTests {
       pointReleaseXcodeExtensionToDebugApp: false,
       anthropicSettings: Settings.AnthropicSettings(
         apiKey: "default-key",
-        apiUrl: "https://api.anthropic.com"),
+        baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)
 
     let mockService = MockSettingsService(defaultSettings: defaultSettings)
@@ -23,7 +23,7 @@ struct SettingsServiceMockTests {
     // Test initial values
     #expect(mockService.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
     #expect(mockService.value(for: \.anthropicSettings?.apiKey) == "default-key")
-    #expect(mockService.value(for: \.anthropicSettings?.apiUrl) == "https://api.anthropic.com")
+    #expect(mockService.value(for: \.anthropicSettings?.baseUrl) == "https://api.anthropic.com")
     #expect(mockService.value(for: \.openAISettings) == nil)
 
     // Test updating values
@@ -31,12 +31,12 @@ struct SettingsServiceMockTests {
 
     let newAnthropicSettings = Settings.AnthropicSettings(
       apiKey: "new-key",
-      apiUrl: "https://api.anthropic.com/v1")
+      baseUrl: "https://api.anthropic.com/v1")
     mockService.update(setting: \.anthropicSettings, to: newAnthropicSettings)
 
     #expect(mockService.value(for: \.pointReleaseXcodeExtensionToDebugApp) == true)
     #expect(mockService.value(for: \.anthropicSettings?.apiKey) == "new-key")
-    #expect(mockService.value(for: \.anthropicSettings?.apiUrl) == "https://api.anthropic.com/v1")
+    #expect(mockService.value(for: \.anthropicSettings?.baseUrl) == "https://api.anthropic.com/v1")
 
     // Test resetting individual setting
     mockService.resetToDefault(setting: \.pointReleaseXcodeExtensionToDebugApp)
@@ -47,7 +47,7 @@ struct SettingsServiceMockTests {
     mockService.resetAllToDefault()
     #expect(mockService.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
     #expect(mockService.value(for: \.anthropicSettings?.apiKey) == "default-key")
-    #expect(mockService.value(for: \.anthropicSettings?.apiUrl) == "https://api.anthropic.com")
+    #expect(mockService.value(for: \.anthropicSettings?.baseUrl) == "https://api.anthropic.com")
     #expect(mockService.value(for: \.openAISettings) == nil)
   }
 
@@ -58,7 +58,7 @@ struct SettingsServiceMockTests {
       pointReleaseXcodeExtensionToDebugApp: false,
       anthropicSettings: Settings.AnthropicSettings(
         apiKey: "default-key",
-        apiUrl: "https://api.anthropic.com"),
+        baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)
 
     let mockService = MockSettingsService(defaultSettings: defaultSettings)
@@ -67,7 +67,7 @@ struct SettingsServiceMockTests {
     let allSettings = mockService.values()
     #expect(allSettings.pointReleaseXcodeExtensionToDebugApp == false)
     #expect(allSettings.anthropicSettings?.apiKey == "default-key")
-    #expect(allSettings.anthropicSettings?.apiUrl == "https://api.anthropic.com")
+    #expect(allSettings.anthropicSettings?.baseUrl == "https://api.anthropic.com")
     #expect(allSettings.openAISettings == nil)
 
     // Test updating and getting all values
@@ -83,7 +83,7 @@ struct SettingsServiceMockTests {
       pointReleaseXcodeExtensionToDebugApp: false,
       anthropicSettings: Settings.AnthropicSettings(
         apiKey: "default-key",
-        apiUrl: "https://api.anthropic.com"),
+        baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)
 
     let mockService = MockSettingsService(defaultSettings: defaultSettings)
@@ -123,7 +123,7 @@ struct SettingsServiceMockTests {
       pointReleaseXcodeExtensionToDebugApp: false,
       anthropicSettings: Settings.AnthropicSettings(
         apiKey: "default-key",
-        apiUrl: "https://api.anthropic.com"),
+        baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)
 
     let mockService = MockSettingsService(defaultSettings: defaultSettings)

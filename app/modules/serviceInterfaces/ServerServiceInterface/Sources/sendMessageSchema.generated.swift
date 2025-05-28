@@ -651,6 +651,7 @@ extension Schema {
   public enum APIProviderName: String, Codable, Sendable {
     case openai = "openai"
     case anthropic = "anthropic"
+    case openrouter = "openrouter"
   }    
   public struct TextDelta: Codable, Sendable {
     public let type = "text_delta"

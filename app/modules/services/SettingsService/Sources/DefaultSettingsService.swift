@@ -101,6 +101,13 @@ final class DefaultSettingsService: SettingsService {
             settings.openAISettings = nil
           }
         }
+        if let openRouterAPIKey = settings.openRouterSettings?.apiKey {
+          if let key = userDefaults.loadSecuredValue(forKey: openRouterAPIKey) {
+            settings.openRouterSettings?.apiKey = key
+          } else {
+            settings.openRouterSettings = nil
+          }
+        }
 
         // Load pointReleaseXcodeExtensionToDebugApp that is stored separately
         settings.pointReleaseXcodeExtensionToDebugApp = userDefaults.bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
@@ -131,6 +138,7 @@ final class DefaultSettingsService: SettingsService {
         var privateKeys: [String: String?] = [
           "ANTHROPIC_API_KEY": nil,
           "OPENAI_API_KEY": nil,
+          "OPENROUTER_API_KEY": nil,
         ]
 
         if let anthropicSettings = settings.anthropicSettings {
@@ -140,6 +148,10 @@ final class DefaultSettingsService: SettingsService {
         if let openAISettings = settings.openAISettings {
           privateKeys["OPENAI_API_KEY"] = openAISettings.apiKey
           publicSettings.openAISettings?.apiKey = "OPENAI_API_KEY"
+        }
+        if let openRouterSettings = settings.openRouterSettings {
+          privateKeys["OPENROUTER_API_KEY"] = openRouterSettings.apiKey
+          publicSettings.openRouterSettings?.apiKey = "OPENROUTER_API_KEY"
         }
         let value = try JSONEncoder().encode(publicSettings)
         sharedUserDefaults.set(value, forKey: Keys.appWideSettings)

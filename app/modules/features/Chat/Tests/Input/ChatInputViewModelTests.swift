@@ -92,8 +92,8 @@ struct ChatInputViewModelTests {
   func test_updatingAvailableModels_keepsSelectedModelIfStillAvailable() {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(apiKey: "", apiUrl: nil),
-      openAISettings: .init(apiKey: "", apiUrl: nil)))
+      anthropicSettings: .init(apiKey: "", baseUrl: nil),
+      openAISettings: .init(apiKey: "", baseUrl: nil)))
     let mockUserDefaults = MockUserDefaults()
 
     let viewModel = withDependencies {
@@ -113,8 +113,8 @@ struct ChatInputViewModelTests {
   func test_updatingAvailableModels_changesSelectedModelIfNoLongerAvailable() {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(apiKey: "", apiUrl: nil),
-      openAISettings: .init(apiKey: "", apiUrl: nil)))
+      anthropicSettings: .init(apiKey: "", baseUrl: nil),
+      openAISettings: .init(apiKey: "", baseUrl: nil)))
     let mockUserDefaults = MockUserDefaults()
 
     let viewModel = withDependencies {
@@ -137,7 +137,7 @@ struct ChatInputViewModelTests {
   func test_updatingAvailableModels_toEmptyArray() {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(apiKey: "", apiUrl: nil),
+      anthropicSettings: .init(apiKey: "", baseUrl: nil),
       openAISettings: nil))
     let mockUserDefaults = MockUserDefaults()
 
@@ -164,8 +164,8 @@ struct ChatInputViewModelTests {
     ])
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(apiKey: "", apiUrl: nil),
-      openAISettings: .init(apiKey: "", apiUrl: nil)))
+      anthropicSettings: .init(apiKey: "", baseUrl: nil),
+      openAISettings: .init(apiKey: "", baseUrl: nil)))
 
     let viewModel = withDependencies {
       $0.userDefaults = mockUserDefaults
@@ -203,8 +203,8 @@ struct ChatInputViewModelTests {
   func test_initialization_withSettingsServiceAndObservingChanges() async throws {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(apiKey: "test", apiUrl: nil),
-      openAISettings: .init(apiKey: "test", apiUrl: nil)))
+      anthropicSettings: .init(apiKey: "test", baseUrl: nil),
+      openAISettings: .init(apiKey: "test", baseUrl: nil)))
     let mockUserDefaults = MockUserDefaults()
 
     let viewModel = withDependencies {
@@ -237,7 +237,7 @@ extension MockSettingsService {
   static var allConfigured: MockSettingsService {
     MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(apiKey: "test", apiUrl: nil),
-      openAISettings: .init(apiKey: "test", apiUrl: nil)))
+      anthropicSettings: .init(apiKey: "test", baseUrl: nil),
+      openAISettings: .init(apiKey: "test", baseUrl: nil)))
   }
 }

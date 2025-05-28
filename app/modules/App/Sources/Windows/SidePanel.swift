@@ -42,8 +42,10 @@ final class SidePanel: XcodeWindow {
 
     let root = ChatView(
       viewModel: ChatViewModel(),
-      SettingsView: {
-        AnyView(SettingsView(viewModel: SettingsViewModel()))
+      SettingsView: { onDismiss in
+        AnyView(SettingsView(
+          viewModel: SettingsViewModel(),
+          onDismiss: onDismiss))
       })
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

@@ -12,7 +12,7 @@ export class OpenAIModelProvider implements ModelProvider {
 
 		const provider = createOpenAI({
 			apiKey: params.apiKey,
-			baseURL: process.env["LOCAL_SERVER_PROXY"] ?? params.baseUrl,
+			baseURL: process.env["OPENAI_LOCAL_SERVER_PROXY"] ?? params.baseUrl,
 		})
 		return provider(modelName)
 	}

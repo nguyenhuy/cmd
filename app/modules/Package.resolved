@@ -1,5 +1,5 @@
 {
-  "originHash" : "342dc69efa7f270156e44223c5b81297fe24b5a357fae3d3bd0c43693deabbaf",
+  "originHash" : "c619f7a4024e9c1a048dbfa0f5ac12391d29ed7340084a0b45613fe598cdce08",
   "pins" : [
     {
       "identity" : "aexml",
@@ -167,8 +167,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-macro-testing",
       "state" : {
-        "revision" : "cfe474c7e97d429ea31eefed2e9ab8c7c74260f9",
-        "version" : "0.6.2"
+        "revision" : "2de00af725ff4c43c9a90d7893835de312653169",
+        "version" : "0.6.3"
       }
     },
     {
@@ -178,24 +178,6 @@
       "state" : {
         "revision" : "b2d4cb30735f4fbc3a01963a9c658336dd21e9ba",
         "version" : "1.18.1"
-      }
-    },
-    {
-      "identity" : "swift-syntax",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-syntax",
-      "state" : {
-        "revision" : "0687f71944021d616d34d922343dcef086855920",
-        "version" : "600.0.1"
-      }
-    },
-    {
-      "identity" : "swiftopenai",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jamesrochabrun/SwiftOpenAI",
-      "state" : {
-        "revision" : "854539935150cf4efa69a32ae761ee2aa64aa84a",
-        "version" : "4.1.1"
       }
     },
     {

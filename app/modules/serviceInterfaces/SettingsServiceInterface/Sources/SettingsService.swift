@@ -12,14 +12,18 @@ public struct Settings: Sendable, Codable, Equatable {
     pointReleaseXcodeExtensionToDebugApp: Bool,
     enableAnalytics: Bool = false,
     allowAnonymousAnalytics: Bool = true,
-    anthropicSettings: AnthropicSettings?,
-    openAISettings: OpenAISettings?)
+    anthropicSettings: LLMProviderSettings?,
+    openAISettings: LLMProviderSettings?,
+    openRouterSettings: LLMProviderSettings? = nil,
+    googleAISettings _: LLMProviderSettings? = nil,
+    cohereSettings _: LLMProviderSettings? = nil)
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.enableAnalytics = enableAnalytics
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.anthropicSettings = anthropicSettings
     self.openAISettings = openAISettings
+    self.openRouterSettings = openRouterSettings
   }
   #endif
 
@@ -34,41 +38,49 @@ public struct Settings: Sendable, Codable, Equatable {
     enableAnalytics = try container.decodeIfPresent(Bool.self, forKey: .enableAnalytics) ?? false
     #endif
     allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? true
-    anthropicSettings = try container.decodeIfPresent(Settings.AnthropicSettings.self, forKey: .anthropicSettings)
-    openAISettings = try container.decodeIfPresent(Settings.OpenAISettings.self, forKey: .openAISettings)
+    anthropicSettings = try container.decodeIfPresent(Settings.LLMProviderSettings.self, forKey: .anthropicSettings)
+    openAISettings = try container.decodeIfPresent(Settings.LLMProviderSettings.self, forKey: .openAISettings)
+    openRouterSettings = try container.decodeIfPresent(Settings.LLMProviderSettings.self, forKey: .openRouterSettings)
   }
 
-  public struct AnthropicSettings: Sendable, Codable, Equatable {
+  public struct LLMProviderSettings: Sendable, Codable, Equatable {
     public var apiKey: String
-    public var apiUrl: String?
+    public var baseUrl: String?
 
     public init(
       apiKey: String,
-      apiUrl: String?)
+      baseUrl: String?)
     {
       self.apiKey = apiKey
-      self.apiUrl = apiUrl
-    }
-  }
-
-  public struct OpenAISettings: Sendable, Codable, Equatable {
-    public var apiKey: String
-    public var apiUrl: String?
-
-    public init(
-      apiKey: String,
-      apiUrl: String?)
-    {
-      self.apiKey = apiKey
-      self.apiUrl = apiUrl
+      self.baseUrl = baseUrl
     }
   }
 
   public var enableAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var allowAnonymousAnalytics: Bool
-  public var anthropicSettings: AnthropicSettings?
-  public var openAISettings: OpenAISettings?
+  public var anthropicSettings: LLMProviderSettings?
+  public var openAISettings: LLMProviderSettings?
+  public var openRouterSettings: LLMProviderSettings?
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: .pointReleaseXcodeExtensionToDebugApp)
+    try container.encode(enableAnalytics, forKey: .enableAnalytics)
+    try container.encode(allowAnonymousAnalytics, forKey: .allowAnonymousAnalytics)
+    try container.encodeIfPresent(anthropicSettings, forKey: .anthropicSettings)
+    try container.encodeIfPresent(openAISettings, forKey: .openAISettings)
+    try container.encodeIfPresent(openRouterSettings, forKey: .openRouterSettings)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case pointReleaseXcodeExtensionToDebugApp
+    case enableAnalytics
+    case allowAnonymousAnalytics
+    case anthropicSettings
+    case openAISettings
+    case openRouterSettings
+  }
 
 }
 

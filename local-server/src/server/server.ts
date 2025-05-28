@@ -13,6 +13,7 @@ import path from "path"
 import { AnthropicModelProvider } from "./providers/anthropic"
 import { OpenAIModelProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
+import { OpenRouterModelProvider } from "./providers/open-router"
 
 const app = express()
 app.use(express.json())
@@ -27,7 +28,11 @@ app.get("/launch", (_, res) => {
 	res.json({ ok: true })
 })
 
-registerSendMessageEndpoint(router, [new AnthropicModelProvider(), new OpenAIModelProvider()])
+registerSendMessageEndpoint(router, [
+	new AnthropicModelProvider(),
+	new OpenAIModelProvider(),
+	new OpenRouterModelProvider(),
+])
 registerExtensionBridge(router)
 registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)

@@ -18,6 +18,16 @@
     "@ai-sdk/provider" "1.1.3"
     "@ai-sdk/provider-utils" "2.2.8"
 
+"@ai-sdk/provider-utils@2.1.10":
+  version "2.1.10"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-2.1.10.tgz#dfd671ccda12e321b58f347b6cbbdd982d139359"
+  integrity sha512-4GZ8GHjOFxePFzkl3q42AU0DQOtTQ5w09vmaWUf/pKFXJPizlnzKSUkF0f+VkapIUfDugyMqPMT1ge8XQzVI7Q==
+  dependencies:
+    "@ai-sdk/provider" "1.0.9"
+    eventsource-parser "^3.0.0"
+    nanoid "^3.3.8"
+    secure-json-parse "^2.7.0"
+
 "@ai-sdk/provider-utils@2.2.8":
   version "2.2.8"
   resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-2.2.8.tgz#ad11b92d5a1763ab34ba7b5fc42494bfe08b76d1"
@@ -26,6 +36,13 @@
     "@ai-sdk/provider" "1.1.3"
     nanoid "^3.3.8"
     secure-json-parse "^2.7.0"
+
+"@ai-sdk/provider@1.0.9":
+  version "1.0.9"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-1.0.9.tgz#01c2e69df8258aed5b1fe08fba380133a645800f"
+  integrity sha512-jie6ZJT2ZR0uVOVCDc9R2xCX5I/Dum/wEK28lx21PJx6ZnFAN9EzD2WsPhcDWfCgGx3OAZZ0GyM3CEobXpa9LA==
+  dependencies:
+    json-schema "^0.4.0"
 
 "@ai-sdk/provider@1.1.3":
   version "1.1.3"
@@ -60,19 +77,6 @@
   dependencies:
     "@jridgewell/gen-mapping" "^0.3.5"
     "@jridgewell/trace-mapping" "^0.3.24"
-
-"@anthropic-ai/sdk@^0.36.3":
-  version "0.36.3"
-  resolved "https://registry.yarnpkg.com/@anthropic-ai/sdk/-/sdk-0.36.3.tgz#0ca754f047e2847c8b1d064550f05e9a8e7e16b3"
-  integrity sha512-+c0mMLxL/17yFZ4P5+U6bTWiCSFZUKJddrv01ud2aFBWnTPLdRncYV76D3q1tqfnL7aCnhRtykFnoCFzvr4U3Q==
-  dependencies:
-    "@types/node" "^18.11.18"
-    "@types/node-fetch" "^2.6.4"
-    abort-controller "^3.0.0"
-    agentkeepalive "^4.2.1"
-    form-data-encoder "1.7.2"
-    formdata-node "^4.3.2"
-    node-fetch "^2.6.7"
 
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.14.5":
   version "7.14.5"
@@ -1021,6 +1025,14 @@
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/@open-draft/until/-/until-2.1.0.tgz#0acf32f470af2ceaf47f095cdecd40d68666efda"
   integrity sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==
+
+"@openrouter/ai-sdk-provider@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@openrouter/ai-sdk-provider/-/ai-sdk-provider-0.5.0.tgz#8be35049d6932f151ade9d720d68d92058f6ea80"
+  integrity sha512-IQbpWT9okY78tGHQuSgahKavgVTdDnGF4HoDhBB2oFBz7YUMvmRyG4SCYmKqhPx+FMSrN7zKWhSKBLbshadwmQ==
+  dependencies:
+    "@ai-sdk/provider" "1.0.9"
+    "@ai-sdk/provider-utils" "2.1.10"
 
 "@opentelemetry/api@1.9.0":
   version "1.9.0"
@@ -2779,6 +2791,11 @@ event-target-shim@^5.0.0:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/event-target-shim/-/event-target-shim-5.0.1.tgz#5d4d3ebdf9583d63a5333ce2deb7480ab2b05789"
   integrity sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==
+
+eventsource-parser@^3.0.0:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/eventsource-parser/-/eventsource-parser-3.0.2.tgz#0fea1abd26eca8201099ff5212f6c4e7ca2fd5d3"
+  integrity sha512-6RxOBZ/cYgd8usLwsEl+EC09Au/9BcmCKYF2/xbml6DNczf7nv0MQb+7BA2F+li6//I+28VNlQR37XfQtcAJuA==
 
 execa@^5.0.0:
   version "5.1.1"

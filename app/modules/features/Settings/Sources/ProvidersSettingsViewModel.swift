@@ -5,7 +5,8 @@
 
 enum APIProvider: String, CaseIterable {
   case anthropic = "Anthropic"
-  case openAI = "Open AI"
+  case openAI = "OpenAI"
+  case openRouter = "OpenRouter"
 }
 
 // MARK: - ProviderSettings
@@ -13,6 +14,7 @@ enum APIProvider: String, CaseIterable {
 enum ProviderSettings {
   case anthropic(AnthropicProviderSettings)
   case openAI(OpenAIProviderSettings)
+  case openRouter(OpenRouterProviderSettings)
 
   var provider: APIProvider {
     switch self {
@@ -20,6 +22,8 @@ enum ProviderSettings {
       .anthropic
     case .openAI:
       .openAI
+    case .openRouter:
+      .openRouter
     }
   }
 }
@@ -28,11 +32,17 @@ enum ProviderSettings {
 
 struct AnthropicProviderSettings {
   var apiKey: String
-  var apiUrl: String?
+  var baseUrl: String?
 }
 
 // MARK: - OpenAIProviderSettings
 
 struct OpenAIProviderSettings {
+  var apiKey: String
+}
+
+// MARK: - OpenRouterProviderSettings
+
+struct OpenRouterProviderSettings {
   var apiKey: String
 }
