@@ -373,7 +373,7 @@ final class SendMessageTests {
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root"))) { _ in }
       Issue.record("Expected sendMessage to throw error")
     } catch {
-      #expect(error.localizedDescription == "Anthropic API not configured")
+      #expect(error.localizedDescription == "Unsupported model claude-4.0-sonnet")
     }
   }
 }

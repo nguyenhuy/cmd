@@ -29,7 +29,7 @@ class ModelsGenerator {
 		this.originalFile = name
 		this.schema = schema
 		this.models = new Map()
-		Object.entries(schema.definitions).forEach(([qualifiedTypeName, definition]) => {
+		Object.entries(schema.definitions ?? {}).forEach(([qualifiedTypeName, definition]) => {
 			this.models.set(qualifiedTypeName, this.createModel({ qualifiedTypeName, definition }))
 		})
 
@@ -51,7 +51,9 @@ class ModelsGenerator {
 		})
 	}
 
-	getModel(qualifiedTypeName: string): ObjectDefinitionModel | OneOfDefinitionModel | EnumDefinitionModel {
+	getModel(
+		qualifiedTypeName: string,
+	): ObjectDefinitionModel | OneOfDefinitionModel | EnumDefinitionModel | undefined {
 		if (!this.models.has(qualifiedTypeName)) {
 			// Generate the model now.
 			const definition = this.schema.definitions?.[qualifiedTypeName]
@@ -220,7 +222,6 @@ class PropertyModel {
 	typeName: string
 	fixedValue?: string
 	isRequired: boolean
-	definitions: Array<ObjectDefinitionModel | OneOfDefinitionModel>
 
 	constructor({
 		generator,
@@ -370,6 +371,8 @@ const getTypeName = ({
 			throw new Error("Items is boolean")
 		} else if (Array.isArray(type.items)) {
 			throw new Error("Items is an array")
+		} else if (type.items === undefined) {
+			throw new Error("Items is undefined")
 		} else {
 			return `[${getTypeName({ generator, typeNameQualifier, propertyKey, type: type.items, isRequired: true })}]` // TODO: handle non-required arrays element
 		}

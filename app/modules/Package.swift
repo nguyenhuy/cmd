@@ -460,7 +460,9 @@ targets.append(contentsOf: Target.module(
 
 targets.append(contentsOf: Target.module(
   name: "LLMFoundation",
-  dependencies: [],
+  dependencies: [
+    "AppFoundation",
+  ],
   testDependencies: [],
   path: "./foundations/LLMFoundation"))
 
@@ -608,9 +610,11 @@ targets.append(contentsOf: Target.module(
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ConcurrencyFoundation",
+    "JSONFoundation",
     "LLMFoundation",
   ],
   testDependencies: [
+    "LLMFoundation",
     "SwiftTesting",
   ],
   path: "./serviceInterfaces/SettingsServiceInterface"))
@@ -810,6 +814,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
+    "LLMFoundation",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
@@ -818,6 +823,7 @@ targets.append(contentsOf: Target.module(
   testDependencies: [
     "ConcurrencyFoundation",
     "FoundationInterfaces",
+    "LLMFoundation",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "SwiftTesting",
@@ -861,6 +867,7 @@ targets.append(contentsOf: Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
+    "LLMFoundation",
     "LLMServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",

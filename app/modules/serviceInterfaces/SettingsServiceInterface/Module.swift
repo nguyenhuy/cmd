@@ -4,8 +4,10 @@ Target.module(
     .product(name: "Dependencies", package: "swift-dependencies"),
     "AppFoundation",
     "ConcurrencyFoundation",
+    "JSONFoundation",
     "LLMFoundation",
   ],
   testDependencies: [
+    "LLMFoundation",
     "SwiftTesting",
   ])

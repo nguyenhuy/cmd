@@ -31,7 +31,7 @@ export const generateJSONSchema = (params: { path: string } | { content: string 
 		}
 	}
 	const schema = tsj.createGenerator(config).createSchema(config.type)
-	if ("content" in params) {
+	if ("content" in params && config.path) {
 		fs.unlinkSync(config.path)
 	}
 	return schema

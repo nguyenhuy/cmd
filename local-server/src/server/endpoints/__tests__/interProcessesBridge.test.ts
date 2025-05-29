@@ -134,13 +134,13 @@ describe("InterProcessesBridge", () => {
 
 	it("returns the response for the correct request", async () => {
 		let signalFirstCommandReceived: (value: unknown) => void
-		let firstCommandId: string
+		let firstCommandId: string | undefined
 		const firstCommandReceived = new Promise((resolve) => {
 			signalFirstCommandReceived = resolve
 		})
 
 		let signalSecondCommandReceived: (value: unknown) => void
-		let secondCommandId: string
+		let secondCommandId: string | undefined
 		const secondCommandReceived = new Promise((resolve) => {
 			signalSecondCommandReceived = resolve
 		})

@@ -81,7 +81,7 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					},
 					{} as Record<string, MappedTool>,
 				),
-				messages: addProviderOptionsToMessages(messages.map(mapMessage)),
+				messages: addProviderOptionsToMessages && addProviderOptionsToMessages(messages.map(mapMessage)),
 				toolCallStreaming: true,
 				providerOptions: generalProviderOptions,
 			})

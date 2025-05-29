@@ -6,7 +6,7 @@
 		"declaration": true,
 		"strict": true,
 		"noImplicitAny": false /* Raise error on expressions and declarations with an implied 'any' type. */,
-		"strictNullChecks": false /* Enable strict null checks. */,
+		"strictNullChecks": true,
 		"strictFunctionTypes": true /* Enable strict checking of function types. */,
 		"noUnusedLocals": false /* Report errors on unused locals. */,
 		"noUnusedParameters": false /* Report errors on unused parameters. */,

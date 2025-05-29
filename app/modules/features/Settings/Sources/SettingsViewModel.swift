@@ -35,10 +35,7 @@ public final class SettingsViewModel {
 
   var providerSettings: AllLLMProviderSettings {
     didSet {
-      // Update createdAtOrder
-      var settings = providerSettings
-
-      self.settings.llmProviderSettings = providerSettings
+      settings.llmProviderSettings = providerSettings
       save()
     }
   }

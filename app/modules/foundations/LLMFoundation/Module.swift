@@ -1,4 +1,6 @@
 Target.module(
   name: "LLMFoundation",
-  dependencies: [],
+  dependencies: [
+    "AppFoundation",
+  ],
   testDependencies: [])

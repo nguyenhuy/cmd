@@ -84,6 +84,9 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 		if (await fileExistsAtPath(this.dotGitDir)) {
 			this.log(`[${this.constructor.name}#initShadowGit] shadow git repo already exists at ${this.dotGitDir}`)
 			const worktree = await this.getShadowGitConfigWorktree(git)
+			if (!worktree) {
+				throw new Error("Worktree not found")
+			}
 			this.log(`[${this.constructor.name}#initShadowGit] worktree = ${worktree}`)
 
 			if (normalize(worktree) !== normalize(this.workspaceDir)) {
@@ -296,7 +299,7 @@ export abstract class ShadowCheckpointService extends EventEmitter {
 			throw new Error("Shadow git repo not initialized")
 		}
 
-		const result = []
+		const result: CheckpointDiff[] = []
 
 		if (!from) {
 			from = (await this.git.raw(["rev-list", "--max-parents=0", "HEAD"])).trim()

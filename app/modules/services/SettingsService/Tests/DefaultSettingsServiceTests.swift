@@ -5,6 +5,7 @@ import Combine
 import ConcurrencyFoundation
 import Foundation
 import FoundationInterfaces
+import LLMFoundation
 import SettingsServiceInterface
 import SharedValuesFoundation
 import SwiftTesting
@@ -27,8 +28,8 @@ struct DefaultSettingsServiceTests {
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
     #expect(service.value(for: \.allowAnonymousAnalytics) == true)
-    #expect(service.value(for: \.anthropicSettings) == nil)
-    #expect(service.value(for: \.openAISettings) == nil)
+    #expect(service.value(for: \.llmProviderSettings[.anthropic]) == nil)
+    #expect(service.value(for: \.llmProviderSettings[.openAI]) == nil)
   }
 
   @Test("Updates and retrieves values")
@@ -43,13 +44,16 @@ struct DefaultSettingsServiceTests {
 
     let anthropicSettings = LLMProviderSettings(
       apiKey: "test-key",
-      baseUrl: "https://api.anthropic.com/test")
-    service.update(setting: \.anthropicSettings, to: anthropicSettings)
+      baseUrl: "https://api.anthropic.com/test",
+      createdOrder: 1)
+    var newSettings = service.value(for: \.llmProviderSettings)
+    newSettings[.anthropic] = anthropicSettings
+    service.update(setting: \.llmProviderSettings, to: newSettings)
 
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == true)
-    #expect(service.value(for: \.anthropicSettings?.apiKey) == "test-key")
-    #expect(service.value(for: \.anthropicSettings?.baseUrl) == "https://api.anthropic.com/test")
+    #expect(service.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "test-key")
+    #expect(service.value(for: \.llmProviderSettings[.anthropic]?.baseUrl) == "https://api.anthropic.com/test")
   }
 
   @Test("Resets individual settings")
@@ -61,16 +65,21 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    service.update(setting: \.anthropicSettings, to: LLMProviderSettings(
+    let anthropicSettings = LLMProviderSettings(
       apiKey: "test-key",
-      baseUrl: "https://api.anthropic.com/test"))
+      baseUrl: "https://api.anthropic.com/test",
+      createdOrder: 1)
+
+    var newSettings = service.value(for: \.llmProviderSettings)
+    newSettings[.anthropic] = anthropicSettings
+    service.update(setting: \.llmProviderSettings, to: newSettings)
 
     // Reset individual setting
     service.resetToDefault(setting: \.pointReleaseXcodeExtensionToDebugApp)
 
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
-    #expect(service.value(for: \.anthropicSettings?.apiKey) == "test-key")
+    #expect(service.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "test-key")
   }
 
   @Test("Resets all settings")
@@ -82,12 +91,19 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    service.update(setting: \.anthropicSettings, to: LLMProviderSettings(
+    let anthropicSettings = LLMProviderSettings(
       apiKey: "test-key",
-      baseUrl: "https://api.anthropic.com/test"))
-    service.update(setting: \.openAISettings, to: LLMProviderSettings(
+      baseUrl: "https://api.anthropic.com/test",
+      createdOrder: 1)
+    let openAISettings = LLMProviderSettings(
       apiKey: "openai-key",
-      baseUrl: "https://api.openai.com/test"))
+      baseUrl: "https://api.openai.com/test",
+      createdOrder: 2)
+
+    var newSettings = service.value(for: \.llmProviderSettings)
+    newSettings[.anthropic] = anthropicSettings
+    newSettings[.openAI] = openAISettings
+    service.update(setting: \.llmProviderSettings, to: newSettings)
 
     // Reset all settings
     service.resetAllToDefault()
@@ -95,8 +111,8 @@ struct DefaultSettingsServiceTests {
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
     #expect(service.value(for: \.allowAnonymousAnalytics) == true)
-    #expect(service.value(for: \.anthropicSettings) == nil)
-    #expect(service.value(for: \.openAISettings) == nil)
+    #expect(service.value(for: \.llmProviderSettings[.anthropic]) == nil)
+    #expect(service.value(for: \.llmProviderSettings[.openAI]) == nil)
   }
 
   @Test("Live values update when settings change")
@@ -210,7 +226,8 @@ struct DefaultSettingsServiceTests {
 
     let anthropicSettings = LLMProviderSettings(
       apiKey: "secret-key",
-      baseUrl: nil)
+      baseUrl: nil,
+      createdOrder: 1)
     let exp = expectation(description: "Storage updated")
     let updateCount = Atomic(0)
     let cancellable = sharedUserDefaults.onChange {
@@ -218,20 +235,29 @@ struct DefaultSettingsServiceTests {
         exp.fulfill()
       }
     }
-    service.update(setting: \.anthropicSettings, to: anthropicSettings)
+
+    var newSettings = service.value(for: \.llmProviderSettings)
+    newSettings[.anthropic] = anthropicSettings
+    service.update(setting: \.llmProviderSettings, to: newSettings)
 
     // Verify
-    #expect(service.value(for: \.anthropicSettings?.apiKey) == "secret-key")
+    #expect(service.value(for: \.llmProviderSettings[.anthropic]?.apiKey) == "secret-key")
     try await fulfillment(of: exp)
     #expect(sharedUserDefaults.dumpSecureStorage() == ["ANTHROPIC_API_KEY": "secret-key"])
     let data = try #require(sharedUserDefaults.dumpStorage()["appWideSettings"] as? Data)
     data.expectToMatch("""
       {
-        "anthropicSettings" : {
-          "apiKey" : "ANTHROPIC_API_KEY"
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "ANTHROPIC_API_KEY",
+            "createdOrder" : 1
+          }
         },
         "allowAnonymousAnalytics" : true,
-        "pointReleaseXcodeExtensionToDebugApp" : false
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProvider" : {
+
+        }
       }
       """)
     _ = cancellable

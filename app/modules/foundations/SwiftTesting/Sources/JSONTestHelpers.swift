@@ -25,8 +25,9 @@ extension Data {
   }
 
   public func expectToMatch(_ expected: String, ignoring ignoredKeys: [String] = []) {
-    let expectedData = expected.utf8Data
-    #expect(jsonString(ignoring: ignoredKeys) == expectedData.jsonString(ignoring: ignoredKeys))
+    let received = jsonString(ignoring: ignoredKeys)
+    let expected = expected.utf8Data.jsonString(ignoring: ignoredKeys)
+    #expect(expected == received)
   }
 
   public func expectToMatch(_ expected: String, ignoring ignoredKey: String) {

@@ -6,10 +6,6 @@ import { CoreMessage } from "ai"
 export class AnthropicModelProvider implements ModelProvider {
 	name: APIProviderName = "anthropic"
 	build(params: { baseUrl?: string; apiKey?: string }, modelName: string): ModelProviderOutput {
-		if (!["claude-sonnet-4-20250514", "claude-3-7-sonnet-20250219"].includes(modelName)) {
-			return {}
-		}
-
 		const provider = createAnthropic({
 			apiKey: params.apiKey,
 			baseURL: process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl,

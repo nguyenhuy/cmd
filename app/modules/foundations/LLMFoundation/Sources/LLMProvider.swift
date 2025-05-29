@@ -3,7 +3,7 @@
 
 // MARK: - LLMProvider
 
-public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable {
+public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRepresentable {
   public init?(rawValue: String) {
     if let provider = LLMProvider.allCases.first(where: { $0.id == rawValue }) {
       self = provider
@@ -40,6 +40,8 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable {
   public let name: String
   public let keychainKey: String
   public let supportedModels: [LLMModel]
+
+  public var rawValue: String { id }
 
   public static func ==(lhs: LLMProvider, rhs: LLMProvider) -> Bool {
     lhs.id == rhs.id

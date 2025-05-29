@@ -5,12 +5,12 @@ import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
 import Foundation
+import JSONFoundation
 import LLMFoundation
 
 // MARK: - Settings
 
-public struct Settings: Sendable, Codable, Equatable {
-  #if DEBUG
+public struct Settings: Sendable, Equatable {
   public init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
@@ -21,20 +21,6 @@ public struct Settings: Sendable, Codable, Equatable {
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
     self.preferedProvider = preferedProvider
     self.llmProviderSettings = llmProviderSettings
-  }
-  #endif
-
-  public init(from decoder: any Decoder) throws {
-    let container = try decoder.container(keyedBy: String.self)
-    pointReleaseXcodeExtensionToDebugApp = try container.decodeIfPresent(
-      Bool.self,
-      forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false
-    allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? true
-
-    preferedProvider = try container.decodeIfPresent([String: String].self, forKey: "preferedProvider") ?? [:]
-
-    llmProviderSettings = try container
-      .decodeIfPresent([LLMProvider: LLMProviderSettings].self, forKey: "llmProviderSettings") ?? [:]
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {

@@ -4,6 +4,7 @@
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
+import LLMFoundation
 import LLMServiceInterface
 import ServerServiceInterface
 import SettingsServiceInterface
@@ -17,10 +18,16 @@ extension DefaultLLMService {
     server: MockServer = MockServer(),
     settingsService: MockSettingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(
-        apiKey: "anthropic-key",
-        baseUrl: nil),
-      openAISettings: .init(apiKey: "openai-key", baseUrl: nil))))
+      llmProviderSettings: [
+        .anthropic: LLMProviderSettings(
+          apiKey: "anthropic-key",
+          baseUrl: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "openai-key",
+          baseUrl: nil,
+          createdOrder: 2),
+      ])))
   {
     self.init(server: server as Server, settingsService: settingsService as SettingsService)
   }

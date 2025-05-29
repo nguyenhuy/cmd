@@ -10,6 +10,7 @@ import Combine
 import Dependencies
 import Foundation
 import FoundationInterfaces
+import LLMFoundation
 import LLMServiceInterface
 import SettingsServiceInterface
 import SwiftTesting
@@ -38,7 +39,7 @@ struct ChatViewModelTests {
   func test_initialization_withCustomMode() {
     let viewModel = ChatViewModel(defaultMode: .ask)
 
-    #expect(viewModel.defaultMode == .ask)
+    #expect(viewModel.defaultMode == ChatMode.ask)
   }
 
   @MainActor
@@ -51,15 +52,15 @@ struct ChatViewModelTests {
     let viewModel = ChatViewModel(
       defaultMode: .ask,
       tabs: tabs,
-      currentModel: .gpt4o,
+      currentModel: .gpt_4o,
       selectedTab: tab2)
 
     #expect(viewModel.tabs.count == 2)
     #expect(viewModel.tabs[0] == tab1)
     #expect(viewModel.tabs[1] == tab2)
     #expect(viewModel.selectedTab == tab2)
-    #expect(viewModel.defaultMode == .ask)
-    #expect(viewModel.currentModel == .gpt4o)
+    #expect(viewModel.defaultMode == ChatMode.ask)
+    #expect(viewModel.currentModel == .gpt_4o)
   }
 
   @MainActor

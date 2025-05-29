@@ -5,6 +5,7 @@ Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
+    "LLMFoundation",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
@@ -13,6 +14,7 @@ Target.module(
   testDependencies: [
     "ConcurrencyFoundation",
     "FoundationInterfaces",
+    "LLMFoundation",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "SwiftTesting",

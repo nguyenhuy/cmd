@@ -19,6 +19,7 @@ Target.module(
     "AppFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
+    "LLMFoundation",
     "LLMServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",

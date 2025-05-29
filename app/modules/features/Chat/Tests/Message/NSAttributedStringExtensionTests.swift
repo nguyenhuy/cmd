@@ -111,7 +111,6 @@ struct NSAttributedStringExtensionTests {
     #expect(trimmed.string == "Hello World")
 
     // Check attributes of the trimmed string
-    let range = NSRange(location: 0, length: trimmed.length)
     var effectiveRange = NSRange()
     let attrs = trimmed.attributes(at: 0, effectiveRange: &effectiveRange)
 
