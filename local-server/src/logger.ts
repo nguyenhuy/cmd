@@ -16,6 +16,12 @@ try {
 	console.error("Failed to create logs directory:", err)
 }
 
+export const startNewLogSession = ({ lineSpacing }: { lineSpacing: number } = { lineSpacing: 5 }) => {
+	const spacing = "\n".repeat(lineSpacing)
+	appendFileSync(LOG_FILE, spacing)
+	appendFileSync(SHARED_LOG_FILE, spacing)
+}
+
 const writeToLog = (level: LogLevel, message: unknown) => {
 	const timestamp = new Date().toISOString()
 	const logMessage = `[${timestamp}] [${level}] ${message instanceof Error ? message.stack || message.message : (message as string)}\n`

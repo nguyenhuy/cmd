@@ -1,6 +1,8 @@
-import { logError, logInfo } from "./logger"
+import { startNewLogSession, logError, logInfo } from "./logger"
 import { startServer } from "./server/server"
 import { spawn } from "child_process"
+
+startNewLogSession()
 
 // If we should attach to a process, we need to monitor it and exit when it dies.
 const attachToIdx = process.argv.findIndex((arg) => arg.startsWith("--attachTo"))

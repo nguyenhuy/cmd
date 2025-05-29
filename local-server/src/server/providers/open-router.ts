@@ -12,7 +12,12 @@ export class OpenRouterModelProvider implements ModelProvider {
 			fetch: modelName.startsWith("anthropic/") ? fetchAnthropicResponse : defaultFetch,
 		})
 		return {
-			model: provider(modelName),
+			model: provider(modelName, {
+				usage: {
+					include: true,
+				},
+				// reasoning: { effort: "high" }, // Set reasoning effort to high by default
+			}),
 			generalProviderOptions: {
 				openRouter: {
 					// reasoning: {
@@ -20,7 +25,9 @@ export class OpenRouterModelProvider implements ModelProvider {
 					// },
 				} satisfies OpenRouterProviderOptions,
 			},
-			addProviderOptionsToMessages: modelName.startsWith("anthropic/") ? addCacheControlToMessages : undefined,
+			addProviderOptionsToMessages: modelName.startsWith("anthropic/")
+				? (messages) => addCacheControlToMessages(messages, this.name)
+				: undefined,
 		}
 	}
 }
@@ -51,7 +58,6 @@ const fetchAnthropicResponse: typeof fetch = (input, init) => {
 		include_usage: true,
 	}
 	body.transforms = ["middle-out"]
-	body.usage = { include: true }
 
 	// Uncomment this to trigger an errror
 	// if (body?.messages) {

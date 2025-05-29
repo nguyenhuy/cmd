@@ -17,14 +17,14 @@ export class AnthropicModelProvider implements ModelProvider {
 			// 		thinking: { type: "enabled", budgetTokens: 12000 },
 			// 	} satisfies AnthropicProviderOptions,
 			// },
-			addProviderOptionsToMessages: addCacheControlToMessages,
+			addProviderOptionsToMessages: (messages) => addCacheControlToMessages(messages, this.name),
 		}
 	}
 }
 
 // Anthropic supports ephemeral caching for 4 messages.
 // We cache the last content from 'system, the last and penultimate content from 'user'.
-export const addCacheControlToMessages = (messages: Array<CoreMessage>): Array<CoreMessage> => {
+export const addCacheControlToMessages = (messages: Array<CoreMessage>, providerName: string): Array<CoreMessage> => {
 	// Create a deep copy of messages for the objects of interest to avoid mutating the original value.
 	const newMessages = [...messages]
 	let systemContentToCache = 1
@@ -36,7 +36,7 @@ export const addCacheControlToMessages = (messages: Array<CoreMessage>): Array<C
 			newMessages[i] = {
 				...message,
 				providerOptions: {
-					anthropic: { cacheControl: { type: "ephemeral" } },
+					[providerName]: { cacheControl: { type: "ephemeral" } },
 				},
 			}
 			systemContentToCache -= 1
@@ -53,7 +53,7 @@ export const addCacheControlToMessages = (messages: Array<CoreMessage>): Array<C
 						newMessage.content[j] = {
 							...newMessage.content[j],
 							providerOptions: {
-								anthropic: { cacheControl: { type: "ephemeral" } },
+								[providerName]: { cacheControl: { type: "ephemeral" } },
 							},
 						}
 						newMessages[i] = newMessage
