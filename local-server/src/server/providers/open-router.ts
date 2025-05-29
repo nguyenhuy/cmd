@@ -53,21 +53,39 @@ const fetchAnthropicResponse: typeof fetch = (input, init) => {
 	body.transforms = ["middle-out"]
 	body.usage = { include: true }
 
+	// Uncomment this to trigger an errror
+	// if (body?.messages) {
+	// 	for (const message of body.messages) {
+	// 		if (typeof message.content === "string") {
+	// 			message.content = [
+	// 				{
+	// 					type: "text",
+	// 					text: message.content,
+	// 					cache_control: { type: "ephemeral" },
+	// 				},
+	// 			]
+	// 		} else if (Array.isArray(message.content)) {
+	// 			for (const item of message.content) {
+	// 				if (item && typeof item === "object") {
+	// 					item.cache_control = { type: "ephemeral" }
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
 	if (body?.messages) {
 		for (const message of body.messages) {
-			if (typeof message.content === "string") {
-				message.content = [
-					{
-						type: "text",
-						text: message.content,
-						cache_control: { type: "ephemeral" },
-					},
-				]
-			} else if (Array.isArray(message.content)) {
-				for (const item of message.content) {
-					if (item && typeof item === "object") {
-						item.cache_control = { type: "ephemeral" }
-					}
+			if (message.cache_control !== undefined) {
+				if (typeof message.content === "string") {
+					message.content = [
+						{
+							type: "text",
+							text: message.content,
+							cache_control: { type: "ephemeral" },
+						},
+					]
+					delete message.cache_control
 				}
 			}
 		}

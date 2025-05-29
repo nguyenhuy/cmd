@@ -3,7 +3,7 @@
 // npx jest src/services/ripgrep/__tests__/index.test.ts
 
 import { describe, expect, it } from "@jest/globals"
-import { truncateLine } from "../index"
+import { truncateLine } from "../searchFiles"
 
 describe("Ripgrep line truncation", () => {
 	// The default MAX_LINE_LENGTH is 500 in the implementation

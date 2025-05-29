@@ -28,8 +28,8 @@ public final class FileDiffViewModel: Sendable {
     do {
       fileContent = try Self.getCurrentContent(of: URL(fileURLWithPath: filePath))
     } catch {
-      defaultLogger.error("Error reading file \(filePath)", error)
-      return nil
+      // New file
+      fileContent = ""
     }
     do {
       let changes = try FileDiff.parse(searchReplacePattern: llmDiff, for: fileContent)
@@ -60,8 +60,8 @@ public final class FileDiffViewModel: Sendable {
       do {
         fileContent = try Self.getCurrentContent(of: path)
       } catch {
-        defaultLogger.error("Error reading file \(filePath)", error)
-        return nil
+        // New file
+        fileContent = ""
       }
     }
 

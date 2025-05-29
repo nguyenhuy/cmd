@@ -85,7 +85,7 @@ struct ProvidersView: View {
   private func updateProviderSettings(for provider: LLMProvider, with newSettings: LLMProviderSettings?) {
     // Add new settings if provided
     if let newSettings {
-      let createdOrder = newSettings.createdOrder == -1 ? providerSettings.nextCreatedOrder : newSettings.createdOrder
+      let createdOrder = providerSettings[provider]?.createdOrder ?? providerSettings.nextCreatedOrder
       providerSettings[provider] = .init(apiKey: newSettings.apiKey, baseUrl: newSettings.baseUrl, createdOrder: createdOrder)
     } else {
       // Remove existing settings for this provider

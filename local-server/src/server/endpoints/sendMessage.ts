@@ -4,6 +4,7 @@ import { ModelProvider } from "../providers/provider"
 import {
 	Message,
 	MessageContent,
+	Ping,
 	SendMessageRequestParams,
 	StreamedResponseChunk,
 	TextMessage,
@@ -105,34 +106,40 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>, res: Response) {
 	try {
 		const chunks: Array<StreamedResponseChunk> = []
+
+		const interval = setInterval(() => {
+			if (res.getHeader("Content-Type") === undefined) {
+				res.setHeader("Content-Type", "text/event-stream")
+				res.setHeader("Cache-Control", "no-cache")
+				res.setHeader("Connection", "keep-alive")
+			}
+			res.write(JSON.stringify({ type: "ping", timestamp: Date.now() } as Ping)) // send a ping to keep the connection alive
+		}, 1000)
+
 		for await (const chunk of stream) {
 			const transformChunk = (
 				chunk: TextStreamPart<Record<string, MappedTool>>,
-			): Array<StreamedResponseChunk> => {
-				const results: Array<StreamedResponseChunk> = []
+			): StreamedResponseChunk | undefined => {
 				switch (chunk.type) {
 					case "text-delta":
-						results.push({
+						return {
 							type: "text_delta",
 							text: chunk.textDelta,
-						})
-						break
+						}
 					case "tool-call-delta":
-						results.push({
+						return {
 							type: "tool_call_delta",
 							toolName: chunk.toolName,
 							toolUseId: chunk.toolCallId,
 							inputDelta: chunk.argsTextDelta,
-						})
-						break
+						}
 					case "tool-call":
-						results.push({
+						return {
 							type: "tool_call",
 							toolName: chunk.toolName,
 							toolUseId: chunk.toolCallId,
 							input: chunk.args,
-						})
-						break
+						}
 					case "error":
 						throw new UserFacingError({
 							message: chunk.error as string,
@@ -140,22 +147,22 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 						})
 					default:
 						logInfo(`skipping chunk: ${chunk.type}`)
-						break
+						return undefined
 				}
-
-				return results
 			}
-			const newChunks = transformChunk(chunk)
-			chunks.push(...newChunks)
-			newChunks.forEach((chunk) => {
-				if (res.getHeader("Content-Type") === undefined) {
-					res.setHeader("Content-Type", "text/event-stream")
-					res.setHeader("Cache-Control", "no-cache")
-					res.setHeader("Connection", "keep-alive")
-				}
-				res.write(JSON.stringify(chunk))
-			})
+			const newChunk = transformChunk(chunk)
+			if (newChunk === undefined) {
+				continue // skip unsupported chunk types
+			}
+			chunks.push(newChunk)
+			if (res.getHeader("Content-Type") === undefined) {
+				res.setHeader("Content-Type", "text/event-stream")
+				res.setHeader("Cache-Control", "no-cache")
+				res.setHeader("Connection", "keep-alive")
+			}
+			res.write(JSON.stringify(newChunk))
 		}
+		clearInterval(interval)
 		res.end()
 
 		if (process.env.NODE_ENV === "development") {
@@ -167,7 +174,7 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 }
 
 const debugLogReceivedMessage = (chunks: Array<StreamedResponseChunk>) => {
-	let messageType: "error" | "text_delta" | "tool_call" | "tool_call_delta" | undefined
+	let messageType: "error" | "text_delta" | "tool_call" | "tool_call_delta" | "ping" | undefined
 	let text: string | undefined
 
 	const logLastObject = () => {
@@ -221,10 +228,12 @@ const mapMessage = (message: Message): CoreMessage => {
 			role: "user",
 			content: message.content.map(asTextMessage).flatMap((content) => {
 				const result: Array<TextPart | ImagePart | FilePart> = []
-				result.push({
-					type: "text",
-					text: content.text,
-				})
+				if (content.text.length > 0) {
+					result.push({
+						type: "text",
+						text: content.text,
+					})
+				}
 				content.attachments?.forEach((attachment) => {
 					switch (attachment.type) {
 						case "image_attachment":
@@ -266,23 +275,30 @@ const mapMessage = (message: Message): CoreMessage => {
 	} else if (message.role === "assistant") {
 		return {
 			role: "assistant",
-			content: message.content.map((content) => {
-				if (isTextMessage(content)) {
-					return {
-						type: "text",
-						text: content.text,
-					} as TextPart
-				}
-				if (isToolUseRequestMessage(content)) {
-					return {
-						type: "tool-call",
-						toolCallId: content.toolUseId,
-						toolName: content.toolName,
-						args: content.input,
+			content: message.content
+				.map((content) => {
+					if (isTextMessage(content)) {
+						if (content.text.length > 0) {
+							return {
+								type: "text",
+								text: content.text,
+							} as TextPart
+						} else {
+							// skipping messages with empty text
+							return undefined
+						}
 					}
-				}
-				throw new Error(`Unsupported content type: ${content.type}`)
-			}),
+					if (isToolUseRequestMessage(content)) {
+						return {
+							type: "tool-call",
+							toolCallId: content.toolUseId,
+							toolName: content.toolName,
+							args: content.input,
+						}
+					}
+					throw new Error(`Unsupported content type: ${content.type}`)
+				})
+				.filter(isDefined),
 		} as CoreAssistantMessage
 	} else if (message.role === "tool") {
 		return {
@@ -299,34 +315,31 @@ const mapMessage = (message: Message): CoreMessage => {
 	}
 }
 
-export const isTextMessage = (message: MessageContent): message is TextMessage => {
+const isTextMessage = (message: MessageContent): message is TextMessage => {
 	return message.type === "text"
 }
 
-export const asTextMessage = (message: MessageContent): TextMessage => {
+const asTextMessage = (message: MessageContent): TextMessage => {
 	if (!isTextMessage(message)) {
 		throw new Error(`Unexpected message type ${message.type}, expected 'text'`)
 	}
 	return message
 }
 
-export const isToolResultMessage = (message: MessageContent): message is ToolResultMessage => {
+const isToolResultMessage = (message: MessageContent): message is ToolResultMessage => {
 	return message.type === "tool_result"
 }
 
-export const asToolResultMessage = (message: MessageContent): ToolResultMessage => {
+const asToolResultMessage = (message: MessageContent): ToolResultMessage => {
 	if (!isToolResultMessage(message)) {
 		throw new Error(`Unexpected message type ${message.type}, expected 'tool_result'`)
 	}
 	return message
 }
-export const isToolUseRequestMessage = (message: MessageContent): message is ToolUseRequest => {
+const isToolUseRequestMessage = (message: MessageContent): message is ToolUseRequest => {
 	return message.type === "tool_call"
 }
 
-export const asToolUseRequestMessage = (message: MessageContent): ToolUseRequest => {
-	if (!isToolUseRequestMessage(message)) {
-		throw new Error(`Unexpected message type ${message.type}, expected 'tool_call'`)
-	}
-	return message
+const isDefined = <T>(value: T | undefined): value is T => {
+	return value !== undefined
 }

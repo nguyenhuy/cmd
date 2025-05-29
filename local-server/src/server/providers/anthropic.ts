@@ -25,31 +25,43 @@ export class AnthropicModelProvider implements ModelProvider {
 // Anthropic supports ephemeral caching for 4 messages.
 // We cache the last content from 'system, the last and penultimate content from 'user'.
 export const addCacheControlToMessages = (messages: Array<CoreMessage>): Array<CoreMessage> => {
+	// Create a deep copy of messages for the objects of interest to avoid mutating the original value.
+	const newMessages = [...messages]
 	let systemContentToCache = 1
 	let userContentToCache = 2
 
-	for (let i = messages.length - 1; i >= 0; i--) {
-		const message = messages[i]
+	for (let i = newMessages.length - 1; i >= 0; i--) {
+		const message = newMessages[i]
 		if (message.role === "system" && systemContentToCache > 0) {
-			message.providerOptions = {
-				anthropic: { cacheControl: { type: "ephemeral" } },
+			newMessages[i] = {
+				...message,
+				providerOptions: {
+					anthropic: { cacheControl: { type: "ephemeral" } },
+				},
 			}
-			systemContentToCache--
+			systemContentToCache -= 1
 		} else if (message.role === "user" && userContentToCache > 0) {
 			if (typeof message.content === "string") {
 				throw new Error("Unexpected string content in user message. Should use array of structured content.")
 			} else {
 				for (let j = message.content.length - 1; j >= 0; j--) {
-					const content = message.content[j]
 					if (userContentToCache > 0) {
-						content.providerOptions = {
-							anthropic: { cacheControl: { type: "ephemeral" } },
+						const newMessage = {
+							...message,
+							content: [...message.content],
 						}
-						userContentToCache--
+						newMessage.content[j] = {
+							...newMessage.content[j],
+							providerOptions: {
+								anthropic: { cacheControl: { type: "ephemeral" } },
+							},
+						}
+						newMessages[i] = newMessage
+						userContentToCache -= 1
 					}
 				}
 			}
 		}
 	}
-	return messages
+	return newMessages
 }

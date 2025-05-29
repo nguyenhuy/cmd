@@ -4,6 +4,7 @@ import { SearchFilesToolInput, SearchFilesToolOutput } from "../../../schemas/se
 import { regexSearchFiles } from "./searchFiles"
 import { UserFacingError } from "../../../errors"
 import * as path from "path"
+import { existsSync } from "fs"
 
 export const registerEndpoint = (router: Router) => {
 	router.post("/searchFiles", async (req: Request, res: Response) => {
@@ -19,6 +20,12 @@ export const registerEndpoint = (router: Router) => {
 			throw new UserFacingError({
 				message: "Parameter `directoryPath` must be a string",
 				statusCode: 400,
+			})
+		}
+		if (!existsSync(body.directoryPath)) {
+			throw new UserFacingError({
+				message: `Directory path does not exist: ${body.directoryPath}`,
+				statusCode: 404,
 			})
 		}
 		if (typeof body.projectRoot !== "string") {

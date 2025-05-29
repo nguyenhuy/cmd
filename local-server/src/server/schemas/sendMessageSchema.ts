@@ -17,11 +17,16 @@ export interface APIProvider {
 
 export type APIProviderName = "openai" | "anthropic" | "openrouter"
 
-export type StreamedResponseChunk = TextDelta | ToolUseRequest | ToolUseDelta | ResponseError
+export type StreamedResponseChunk = TextDelta | ToolUseRequest | ToolUseDelta | ResponseError | Ping
 
 export interface TextDelta {
 	type: "text_delta"
 	text: string
+}
+
+export interface Ping {
+	type: "ping"
+	timestamp: number
 }
 
 export interface ToolUseRequest {

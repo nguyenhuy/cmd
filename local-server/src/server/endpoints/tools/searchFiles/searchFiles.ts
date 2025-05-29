@@ -160,9 +160,6 @@ export async function regexSearchFiles({
 					results.push(currentFile as SearchFileResult)
 					currentFile = null
 				} else if ((parsed.type === "match" || parsed.type === "context") && currentFile) {
-					if (parsed.type === "match" && currentFile.file.includes(".swift")) {
-						logInfo(`parsed: ${JSON.stringify(parsed)}`)
-					}
 					const line: {
 						line: number
 						text: string

@@ -85,6 +85,8 @@ final class RequestStreamingHelper {
         let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
 
         switch event {
+        case .ping:
+          break
         case .textDelta(let textDelta):
           handle(textDelta: textDelta)
         case .toolUseDelta(let toolUseDelta):

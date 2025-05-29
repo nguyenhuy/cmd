@@ -52,6 +52,6 @@ public final class SettingsViewModel {
 typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]
 extension AllLLMProviderSettings {
   var nextCreatedOrder: Int {
-    values.map(\.createdOrder).max() ?? 0 + 1
+    (values.map(\.createdOrder).max() ?? 0) + 1
   }
 }
