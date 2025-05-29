@@ -2,6 +2,7 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Foundation
+import LLMFoundation
 import ServerServiceInterface
 import ThreadSafe
 import ToolFoundation

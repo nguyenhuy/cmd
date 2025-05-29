@@ -12,12 +12,7 @@ public final class MockSettingsService: SettingsService {
     _ settings: Settings? = nil,
     defaultSettings: Settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      allowAnonymousAnalytics: false,
-      anthropicSettings: nil,
-      openAISettings: nil,
-      openRouterSettings: nil,
-      googleAISettings: nil,
-      cohereSettings: nil))
+      allowAnonymousAnalytics: false))
   {
     self.defaultSettings = defaultSettings
     self.settings = CurrentValueSubject<Settings, Never>(settings ?? defaultSettings)

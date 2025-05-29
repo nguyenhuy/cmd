@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
 import JSONFoundation
+import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
@@ -99,13 +100,14 @@ final class DefaultLLMService: LLMService {
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void)
     async throws -> AssistantMessage
   {
+    let (provider, providerSettings) = try provider(for: model)
     let params = try Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: Prompt.defaultPrompt(projectRoot: context.projectRoot, mode: context.chatMode),
       projectRoot: context.projectRoot?.path,
       tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
-      model: model.id,
-      provider: provider(for: model))
+      model: provider.id(for: model),
+      provider: .init(provider: provider, settings: providerSettings))
     let data = try JSONEncoder().encode(params)
 
     let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))
@@ -182,36 +184,24 @@ final class DefaultLLMService: LLMService {
     }
   }
 
-  private func provider(for model: LLMModel) throws -> Schema.APIProvider {
+  private func provider(for model: LLMModel) throws -> (LLMProvider, LLMProviderSettings) {
     let settings = settingsService.values()
-    switch model {
-    case .claudeSonnet40, .claudeSonnet37:
-      guard let anthropicSettings = settings.anthropicSettings else {
-        throw AppError(message: "Anthropic API not configured")
-      }
-      return .init(name: .anthropic, settings: .init(apiKey: anthropicSettings.apiKey, baseUrl: anthropicSettings.baseUrl))
-
-    case .gpt4o, .gpt4o_mini, .o1:
-      guard let openAISettings = settings.openAISettings else {
-        throw AppError(message: "OpenAI API not configured")
-      }
-      return .init(name: .openai, settings: .init(apiKey: openAISettings.apiKey, baseUrl: openAISettings.baseUrl))
-
-    case .openRouterClaudeSonnet37,
-         .openRouterClaudeSonnet40,
-         .openRouterClaudeOpus4,
-         .openRouterClaudeHaiku35,
-         .openRouterGpt41,
-         .openRouterGpt4o,
-         .openRouterO4Mini:
-      guard let openRouterSettings = settings.openRouterSettings else {
-        throw AppError(message: "Open Router API not configured")
-      }
-      return .init(name: .openrouter, settings: .init(apiKey: openRouterSettings.apiKey, baseUrl: openRouterSettings.baseUrl))
-
-    default:
-      throw AppError(message: "Unsupported model \(model)")
+    let preferedProvider = settings.preferedProvider[model.id]
+    let provider = settings.llmProviderSettings
+      .filter { $0.key.supportedModels.contains(model) }
+      .sorted(by: { a, b in
+        if a.key.id == preferedProvider {
+          return true
+        } else if b.key.id == preferedProvider {
+          return false
+        }
+        return a.value.createdOrder < b.value.createdOrder
+      })
+      .first
+    guard let provider else {
+      throw AppError(message: "Unsupported model \(model.name)")
     }
+    return (provider.key, provider.value)
   }
 
 }
@@ -232,5 +222,23 @@ extension BaseProviding where
 extension [AssistantMessageContent] {
   mutating func append(toolUse: any ToolUse) {
     append(.tool(ToolUseMessage(toolUse: toolUse)))
+  }
+}
+
+extension Schema.APIProvider {
+  init(provider: LLMProvider, settings: LLMProviderSettings) throws {
+    let apiProviderName: Schema.APIProviderName = try {
+      switch provider {
+      case .anthropic:
+        return .anthropic
+      case .openAI:
+        return .openai
+      case .openRouter:
+        return .openrouter
+      default:
+        throw AppError(message: "Unsupported provider \(provider.name)")
+      }
+    }()
+    self = .init(name: apiProviderName, settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl))
   }
 }

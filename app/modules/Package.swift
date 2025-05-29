@@ -307,6 +307,7 @@ targets.append(contentsOf: Target.module(
   name: "SettingsFeature",
   dependencies: [
     "DLS",
+    "LLMFoundation",
     "SettingsServiceInterface",
   ],
   testDependencies: [],
@@ -332,6 +333,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "HighlighterServiceInterface",
     "JSONFoundation",
+    "LLMFoundation",
     "LLMServiceInterface",
     "LoggingServiceInterface",
     "ServerServiceInterface",
@@ -349,6 +351,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "FileSuggestionServiceInterface",
     "FoundationInterfaces",
+    "LLMFoundation",
     "LLMServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",
@@ -454,6 +457,12 @@ targets.append(contentsOf: Target.module(
     "ChatFoundation",
   ],
   path: "./foundations/ChatAppEvents"))
+
+targets.append(contentsOf: Target.module(
+  name: "LLMFoundation",
+  dependencies: [],
+  testDependencies: [],
+  path: "./foundations/LLMFoundation"))
 
 targets.append(contentsOf: Target.module(
   name: "SwiftTesting",
@@ -569,6 +578,7 @@ targets.append(contentsOf: Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
+    "LLMFoundation",
     "ServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
@@ -596,7 +606,9 @@ targets.append(contentsOf: Target.module(
   name: "SettingsServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
+    "AppFoundation",
     "ConcurrencyFoundation",
+    "LLMFoundation",
   ],
   testDependencies: [
     "SwiftTesting",
@@ -837,6 +849,7 @@ targets.append(contentsOf: Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "JSONFoundation",
+    "LLMFoundation",
     "LLMServiceInterface",
     "LoggingServiceInterface",
     "ServerServiceInterface",

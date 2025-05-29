@@ -8,7 +8,7 @@ import Combine
 import ConcurrencyFoundation
 import Dependencies
 import DLS
-import LLMServiceInterface
+import LLMFoundation
 import LoggingServiceInterface
 import SwiftUI
 
@@ -160,7 +160,7 @@ struct ChatInputView: View {
         availableItems: inputViewModel.availableModels,
         emptySelectionText: "No model configured")
       { model in
-        Text(model.displayName)
+        Text(model.name)
       }
       ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
       HStack(spacing: 10) {
@@ -266,9 +266,7 @@ struct ChatInputView: View {
 
 // MARK: - LLMModel + MenuItem
 
-extension LLMModel: MenuItem {
-  public var id: String { displayName }
-}
+extension LLMModel: MenuItem { }
 
 // MARK: - ChatMode + MenuItem
 

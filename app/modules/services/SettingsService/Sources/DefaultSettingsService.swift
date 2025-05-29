@@ -89,25 +89,25 @@ final class DefaultSettingsService: SettingsService {
       do {
         var settings = try JSONDecoder().decode(Settings.self, from: data)
         // Load API keys fromn the keychain.
-        if let anthropicAPIKey = settings.anthropicSettings?.apiKey {
+        if let anthropicAPIKey = settings.llmProviderSettings[.anthropic]?.apiKey {
           if let key = userDefaults.loadSecuredValue(forKey: anthropicAPIKey) {
-            settings.anthropicSettings?.apiKey = key
+            settings.llmProviderSettings[.anthropic]?.apiKey = key
           } else {
-            settings.anthropicSettings = nil
+            settings.llmProviderSettings.removeValue(forKey: .anthropic)
           }
         }
-        if let openAIAPIKey = settings.openAISettings?.apiKey {
+        if let openAIAPIKey = settings.llmProviderSettings[.openAI]?.apiKey {
           if let key = userDefaults.loadSecuredValue(forKey: openAIAPIKey) {
-            settings.openAISettings?.apiKey = key
+            settings.llmProviderSettings[.openAI]?.apiKey = key
           } else {
-            settings.openAISettings = nil
+            settings.llmProviderSettings.removeValue(forKey: .openAI)
           }
         }
-        if let openRouterAPIKey = settings.openRouterSettings?.apiKey {
+        if let openRouterAPIKey = settings.llmProviderSettings[.openRouter]?.apiKey {
           if let key = userDefaults.loadSecuredValue(forKey: openRouterAPIKey) {
-            settings.openRouterSettings?.apiKey = key
+            settings.llmProviderSettings[.openRouter]?.apiKey = key
           } else {
-            settings.openRouterSettings = nil
+            settings.llmProviderSettings.removeValue(forKey: .openRouter)
           }
         }
 
@@ -143,17 +143,17 @@ final class DefaultSettingsService: SettingsService {
           "OPENROUTER_API_KEY": nil,
         ]
 
-        if let anthropicSettings = settings.anthropicSettings {
+        if let anthropicSettings = settings.llmProviderSettings[.anthropic] {
           privateKeys["ANTHROPIC_API_KEY"] = anthropicSettings.apiKey
-          publicSettings.anthropicSettings?.apiKey = "ANTHROPIC_API_KEY"
+          publicSettings.llmProviderSettings[.anthropic]?.apiKey = "ANTHROPIC_API_KEY"
         }
-        if let openAISettings = settings.openAISettings {
+        if let openAISettings = settings.llmProviderSettings[.openAI] {
           privateKeys["OPENAI_API_KEY"] = openAISettings.apiKey
-          publicSettings.openAISettings?.apiKey = "OPENAI_API_KEY"
+          publicSettings.llmProviderSettings[.openAI]?.apiKey = "OPENAI_API_KEY"
         }
-        if let openRouterSettings = settings.openRouterSettings {
+        if let openRouterSettings = settings.llmProviderSettings[.openRouter] {
           privateKeys["OPENROUTER_API_KEY"] = openRouterSettings.apiKey
-          publicSettings.openRouterSettings?.apiKey = "OPENROUTER_API_KEY"
+          publicSettings.llmProviderSettings[.openRouter]?.apiKey = "OPENROUTER_API_KEY"
         }
         let value = try JSONEncoder().encode(publicSettings)
         sharedUserDefaults.set(value, forKey: Keys.appWideSettings)
@@ -175,14 +175,11 @@ final class DefaultSettingsService: SettingsService {
       }
       #if DEBUG
       /// Write pointReleaseXcodeExtensionToDebugApp to the release settings.
-      ///      do {
-      let releaseUserDefaults = releaseSharedUserDefaults // try UserDefaults.releaseShared(bundle: .main)
+
+      let releaseUserDefaults = releaseSharedUserDefaults
       releaseUserDefaults?.set(
         settings.pointReleaseXcodeExtensionToDebugApp,
         forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
-//      } catch {
-//        defaultLogger.error(error)
-//      }
       #endif
     }
   }

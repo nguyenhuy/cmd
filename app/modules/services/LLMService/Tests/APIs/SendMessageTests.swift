@@ -283,7 +283,7 @@ final class SendMessageTests {
       try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet40,
+        model: .claudeSonnet_4_0,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -337,7 +337,7 @@ final class SendMessageTests {
       try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet40,
+        model: .claudeSonnet_4_0,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -369,7 +369,7 @@ final class SendMessageTests {
     do {
       _ = try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-        model: .claudeSonnet40,
+        model: .claudeSonnet_4_0,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root"))) { _ in }
       Issue.record("Expected sendMessage to throw error")
     } catch {

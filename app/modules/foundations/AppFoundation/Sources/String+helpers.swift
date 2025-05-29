@@ -8,3 +8,17 @@ extension String {
     Data(utf8)
   }
 }
+
+extension String: @retroactive CodingKey {
+
+  public init?(stringValue: String) {
+    self = stringValue
+  }
+
+  public init?(intValue: Int) {
+    self = "\(intValue)"
+  }
+
+  public var stringValue: String { self }
+  public var intValue: Int? { Int(self) }
+}

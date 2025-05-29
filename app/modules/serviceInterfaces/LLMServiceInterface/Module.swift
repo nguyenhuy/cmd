@@ -5,6 +5,7 @@ Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "JSONFoundation",
+    "LLMFoundation",
     "ServerServiceInterface",
     "ThreadSafe",
     "ToolFoundation",

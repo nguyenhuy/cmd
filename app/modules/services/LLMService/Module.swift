@@ -7,6 +7,7 @@ Target.module(
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "JSONFoundation",
+    "LLMFoundation",
     "LLMServiceInterface",
     "LoggingServiceInterface",
     "ServerServiceInterface",

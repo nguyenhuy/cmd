@@ -8,7 +8,7 @@ import Combine
 import Dependencies
 import Foundation
 import FoundationInterfaces
-import LLMServiceInterface
+import LLMFoundation
 import LoggingServiceInterface
 import Observation
 import SwiftUI
@@ -23,7 +23,7 @@ public class ChatViewModel {
   convenience init(
     defaultMode: ChatMode? = nil,
     tabs: [ChatTabViewModel],
-    currentModel: LLMModel = .claudeSonnet40,
+    currentModel: LLMModel = .claudeSonnet_4_0,
     selectedTab: ChatTabViewModel? = nil)
   {
     self.init(
@@ -39,7 +39,7 @@ public class ChatViewModel {
     self.init(
       defaultMode: defaultMode ?? .agent,
       tabs: tabs,
-      currentModel: .claudeSonnet40,
+      currentModel: .claudeSonnet_4_0,
       selectedTab: tabs.first)
   }
 

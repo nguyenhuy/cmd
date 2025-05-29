@@ -30,7 +30,7 @@ struct ChatViewModelTests {
     #expect(viewModel.tabs.count == 1)
     #expect(viewModel.selectedTab == viewModel.tabs.first)
     #expect(viewModel.defaultMode == .agent)
-    #expect(viewModel.currentModel == .claudeSonnet40)
+    #expect(viewModel.currentModel == .claudeSonnet_4_0)
   }
 
   @MainActor

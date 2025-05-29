@@ -35,7 +35,7 @@ extension DefaultLLMService {
         _ = try await sendMessage(
           messageHistory: messageHistory,
           tools: tools,
-          model: .claudeSonnet40,
+          model: .claudeSonnet_4_0,
           context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
         { stream in continuation
           .resume(returning: stream)
@@ -54,7 +54,7 @@ extension DefaultLLMService {
         _ = try await sendOneMessage(
           messageHistory: messageHistory,
           tools: tools,
-          model: .claudeSonnet40,
+          model: .claudeSonnet_4_0,
           context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")))
         { stream in continuation
           .resume(returning: stream)

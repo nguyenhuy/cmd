@@ -7,22 +7,26 @@ import SwiftUI
 
 #if DEBUG
 
+extension LLMProviderSettings {
+  init(apiKey: String, baseUrl: String? = nil) {
+    self.init(apiKey: apiKey, baseUrl: baseUrl, createdOrder: 0)
+  }
+}
+
 extension MockSettingsService {
   convenience init(
     pointReleaseXcodeExtensionToDebugApp: Bool = false,
     anthropicAPIKey: String? = nil,
     openAIAPIKey: String? = nil,
-    openRouterAPIKey: String? = nil,
-    googleAIAPIKey: String? = nil,
-    cohereAPIKey: String? = nil)
+    openRouterAPIKey: String? = nil)
   {
     self.init(.init(
       pointReleaseXcodeExtensionToDebugApp: pointReleaseXcodeExtensionToDebugApp,
-      anthropicSettings: anthropicAPIKey.map { .init(apiKey: $0, baseUrl: nil) },
-      openAISettings: openAIAPIKey.map { .init(apiKey: $0, baseUrl: nil) },
-      openRouterSettings: openRouterAPIKey.map { .init(apiKey: $0, baseUrl: nil) },
-      googleAISettings: googleAIAPIKey.map { .init(apiKey: $0, baseUrl: nil) },
-      cohereSettings: cohereAPIKey.map { .init(apiKey: $0, baseUrl: nil) }))
+      llmProviderSettings: [
+        .anthropic: anthropicAPIKey.map { .init(apiKey: $0, baseUrl: nil, createdOrder: 0) },
+        .openAI: openAIAPIKey.map { .init(apiKey: $0, baseUrl: nil, createdOrder: 1) },
+        .openRouter: openRouterAPIKey.map { .init(apiKey: $0, baseUrl: nil, createdOrder: 2) },
+      ].compactMapValues { $0 }))
   }
 }
 
@@ -51,8 +55,7 @@ extension MockSettingsService {
     $0.settingsService = MockSettingsService(
       pointReleaseXcodeExtensionToDebugApp: true,
       anthropicAPIKey: "test-anthropic",
-      openAIAPIKey: "test-openai",
-      googleAIAPIKey: "test-googleai")
+      openAIAPIKey: "test-openai")
   }) {
     SettingsView(viewModel: SettingsViewModel())
       .frame(width: 600, height: 500)

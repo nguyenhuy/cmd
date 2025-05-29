@@ -243,7 +243,7 @@ final class SendOneMessageTests {
       try await sut.sendOneMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet40,
+        model: .claudeSonnet_4_0,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -297,7 +297,7 @@ final class SendOneMessageTests {
       try await sut.sendOneMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet40,
+        model: .claudeSonnet_4_0,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {

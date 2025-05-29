@@ -1,8 +1,11 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import Foundation
+import LLMFoundation
 
 // MARK: - Settings
 
@@ -11,73 +14,59 @@ public struct Settings: Sendable, Codable, Equatable {
   public init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
-    anthropicSettings: LLMProviderSettings?,
-    openAISettings: LLMProviderSettings?,
-    openRouterSettings: LLMProviderSettings? = nil,
-    googleAISettings _: LLMProviderSettings? = nil,
-    cohereSettings _: LLMProviderSettings? = nil)
+    preferedProvider: [String: String] = [:],
+    llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
-    self.anthropicSettings = anthropicSettings
-    self.openAISettings = openAISettings
-    self.openRouterSettings = openRouterSettings
+    self.preferedProvider = preferedProvider
+    self.llmProviderSettings = llmProviderSettings
   }
   #endif
 
   public init(from decoder: any Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let container = try decoder.container(keyedBy: String.self)
     pointReleaseXcodeExtensionToDebugApp = try container.decodeIfPresent(
       Bool.self,
-      forKey: .pointReleaseXcodeExtensionToDebugApp) ?? false
-    #if DEBUG
-    allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? true
-    #else
-    allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? false
-    #endif
-    allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: .allowAnonymousAnalytics) ?? true
-    anthropicSettings = try container.decodeIfPresent(Settings.LLMProviderSettings.self, forKey: .anthropicSettings)
-    openAISettings = try container.decodeIfPresent(Settings.LLMProviderSettings.self, forKey: .openAISettings)
-    openRouterSettings = try container.decodeIfPresent(Settings.LLMProviderSettings.self, forKey: .openRouterSettings)
+      forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false
+    allowAnonymousAnalytics = try container.decodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? true
+
+    preferedProvider = try container.decodeIfPresent([String: String].self, forKey: "preferedProvider") ?? [:]
+
+    llmProviderSettings = try container
+      .decodeIfPresent([LLMProvider: LLMProviderSettings].self, forKey: "llmProviderSettings") ?? [:]
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
+    /// To help keep track of which Provider was setup first, we use an incrementing order.
+    /// This order can be useful for determining which provider to default to when multiple are available.
+    public let createdOrder: Int
     public var apiKey: String
     public var baseUrl: String?
 
     public init(
       apiKey: String,
-      baseUrl: String?)
+      baseUrl: String?,
+      createdOrder: Int)
     {
       self.apiKey = apiKey
       self.baseUrl = baseUrl
+      self.createdOrder = createdOrder
     }
   }
 
   public var allowAnonymousAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
-  public var anthropicSettings: LLMProviderSettings?
-  public var openAISettings: LLMProviderSettings?
-  public var openRouterSettings: LLMProviderSettings?
-
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: .pointReleaseXcodeExtensionToDebugApp)
-    try container.encode(allowAnonymousAnalytics, forKey: .allowAnonymousAnalytics)
-    try container.encodeIfPresent(anthropicSettings, forKey: .anthropicSettings)
-    try container.encodeIfPresent(openAISettings, forKey: .openAISettings)
-    try container.encodeIfPresent(openRouterSettings, forKey: .openRouterSettings)
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case pointReleaseXcodeExtensionToDebugApp
-    case allowAnonymousAnalytics
-    case anthropicSettings
-    case openAISettings
-    case openRouterSettings
-  }
+  // LLM settings
+  public var preferedProvider: [String: String]
+  public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
+//  public var anthropicSettings: LLMProviderSettings?
+//  public var openAISettings: LLMProviderSettings?
+//  public var openRouterSettings: LLMProviderSettings?
 
 }
+
+public typealias LLMProviderSettings = Settings.LLMProviderSettings
 
 // MARK: - SettingsService
 

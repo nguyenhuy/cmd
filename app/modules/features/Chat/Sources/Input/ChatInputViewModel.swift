@@ -10,7 +10,7 @@ import Dependencies
 import FileSuggestionServiceInterface
 import Foundation
 import FoundationInterfaces
-import LLMServiceInterface
+import LLMFoundation
 import LoggingServiceInterface
 import PDFKit
 import SettingsServiceInterface

@@ -41,7 +41,7 @@ struct DefaultSettingsServiceTests {
     // Test updating values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
 
-    let anthropicSettings = Settings.LLMProviderSettings(
+    let anthropicSettings = LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test")
     service.update(setting: \.anthropicSettings, to: anthropicSettings)
@@ -61,7 +61,7 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    service.update(setting: \.anthropicSettings, to: Settings.LLMProviderSettings(
+    service.update(setting: \.anthropicSettings, to: LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test"))
 
@@ -82,10 +82,10 @@ struct DefaultSettingsServiceTests {
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
-    service.update(setting: \.anthropicSettings, to: Settings.LLMProviderSettings(
+    service.update(setting: \.anthropicSettings, to: LLMProviderSettings(
       apiKey: "test-key",
       baseUrl: "https://api.anthropic.com/test"))
-    service.update(setting: \.openAISettings, to: Settings.LLMProviderSettings(
+    service.update(setting: \.openAISettings, to: LLMProviderSettings(
       apiKey: "openai-key",
       baseUrl: "https://api.openai.com/test"))
 
@@ -208,7 +208,7 @@ struct DefaultSettingsServiceTests {
     let sharedUserDefaults = MockUserDefaults()
     let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
-    let anthropicSettings = Settings.LLMProviderSettings(
+    let anthropicSettings = LLMProviderSettings(
       apiKey: "secret-key",
       baseUrl: nil)
     let exp = expectation(description: "Storage updated")

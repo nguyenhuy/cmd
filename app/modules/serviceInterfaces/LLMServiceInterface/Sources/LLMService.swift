@@ -4,6 +4,7 @@
 import ChatFoundation
 import ConcurrencyFoundation
 import Foundation
+import LLMFoundation
 import ServerServiceInterface
 import ToolFoundation
 

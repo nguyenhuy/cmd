@@ -4,6 +4,7 @@
 import Combine
 import Dependencies
 import Foundation
+import LLMFoundation
 import SettingsServiceInterface
 import SwiftUI
 
@@ -18,11 +19,7 @@ public final class SettingsViewModel {
     let settings = settingsService.values()
     self.settings = settings
 
-    providerSettings = [
-      settings.anthropicSettings.map { ProviderSettings.anthropic(.init(apiKey: $0.apiKey, baseUrl: $0.baseUrl)) },
-      settings.openAISettings.map { ProviderSettings.openAI(.init(apiKey: $0.apiKey)) },
-      settings.openRouterSettings.map { ProviderSettings.openRouter(.init(apiKey: $0.apiKey)) },
-    ].compactMap(\.self)
+    providerSettings = settings.llmProviderSettings
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -36,24 +33,12 @@ public final class SettingsViewModel {
 
   // MARK: - Initialization
 
-  var providerSettings: [ProviderSettings] {
+  var providerSettings: AllLLMProviderSettings {
     didSet {
-      var newSettings = settings
-      newSettings.anthropicSettings = nil
-      newSettings.openAISettings = nil
-      newSettings.openRouterSettings = nil
+      // Update createdAtOrder
+      var settings = providerSettings
 
-      for providerSetting in providerSettings {
-        switch providerSetting {
-        case .anthropic(let settings):
-          newSettings.anthropicSettings = .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl)
-        case .openAI(let settings):
-          newSettings.openAISettings = .init(apiKey: settings.apiKey, baseUrl: nil)
-        case .openRouter(let settings):
-          newSettings.openRouterSettings = .init(apiKey: settings.apiKey, baseUrl: nil)
-        }
-      }
-      settings = newSettings
+      self.settings.llmProviderSettings = providerSettings
       save()
     }
   }
@@ -65,4 +50,11 @@ public final class SettingsViewModel {
   private var cancellables = Set<AnyCancellable>()
 
   private let settingsService: SettingsService
+}
+
+typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]
+extension AllLLMProviderSettings {
+  var nextCreatedOrder: Int {
+    values.map(\.createdOrder).max() ?? 0 + 1
+  }
 }

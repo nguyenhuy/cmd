@@ -13,7 +13,7 @@ struct SettingsServiceMockTests {
     // Setup
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: Settings.LLMProviderSettings(
+      anthropicSettings: LLMProviderSettings(
         apiKey: "default-key",
         baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)
@@ -29,7 +29,7 @@ struct SettingsServiceMockTests {
     // Test updating values
     mockService.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
 
-    let newAnthropicSettings = Settings.LLMProviderSettings(
+    let newAnthropicSettings = LLMProviderSettings(
       apiKey: "new-key",
       baseUrl: "https://api.anthropic.com/v1")
     mockService.update(setting: \.anthropicSettings, to: newAnthropicSettings)
@@ -56,7 +56,7 @@ struct SettingsServiceMockTests {
     // Setup
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: Settings.LLMProviderSettings(
+      anthropicSettings: LLMProviderSettings(
         apiKey: "default-key",
         baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)
@@ -81,7 +81,7 @@ struct SettingsServiceMockTests {
     // Setup
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: Settings.LLMProviderSettings(
+      anthropicSettings: LLMProviderSettings(
         apiKey: "default-key",
         baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)
@@ -121,7 +121,7 @@ struct SettingsServiceMockTests {
     // Setup
     let defaultSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: Settings.LLMProviderSettings(
+      anthropicSettings: LLMProviderSettings(
         apiKey: "default-key",
         baseUrl: "https://api.anthropic.com"),
       openAISettings: nil)

@@ -2,12 +2,14 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import DLS
+import LLMFoundation
+import SettingsServiceInterface
 import SwiftUI
 
 // MARK: - ProvidersView
 
 struct ProvidersView: View {
-  @Binding var providerSettings: [ProviderSettings]
+  @Binding var providerSettings: AllLLMProviderSettings
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -46,13 +48,13 @@ struct ProvidersView: View {
     }
   }
 
-  @State private var orderedProviders: [APIProvider] = APIProvider.allCases
+  @State private var orderedProviders: [LLMProvider] = LLMProvider.allCases
 
   @State private var searchText = ""
 
   private var filteredProviders: [ProviderInfo] {
     let allProviders = orderedProviders.map { provider in
-      let existingSettings = providerSettings.first { $0.provider == provider }
+      let existingSettings = providerSettings[provider]
       return ProviderInfo(
         provider: provider,
         settings: existingSettings,
@@ -62,31 +64,32 @@ struct ProvidersView: View {
     return searchText.isEmpty
       ? allProviders
       : allProviders.filter {
-        $0.provider.rawValue.localizedCaseInsensitiveContains(searchText)
+        $0.provider.name.localizedCaseInsensitiveContains(searchText)
       }
   }
 
   private func setInitialOrder() {
-    orderedProviders = APIProvider.allCases.map { provider in
-      let existingSettings = providerSettings.first { $0.provider == provider }
+    orderedProviders = LLMProvider.allCases.map { provider in
+      let existingSettings = providerSettings[provider]
       return (provider, existingSettings?.hasValidAPIKey == true)
     }.sorted { lhs, rhs in
       // Sort: connected first, then alphabetically
       if lhs.1 != rhs.1 {
         return lhs.1 && !rhs.1
       }
-      return lhs.0.rawValue < rhs.0.rawValue
+      return lhs.0.name < rhs.0.name
     }
     .map(\.0)
   }
 
-  private func updateProviderSettings(for provider: APIProvider, with newSettings: ProviderSettings?) {
-    // Remove existing settings for this provider
-    providerSettings.removeAll { $0.provider == provider }
-
+  private func updateProviderSettings(for provider: LLMProvider, with newSettings: LLMProviderSettings?) {
     // Add new settings if provided
     if let newSettings {
-      providerSettings.append(newSettings)
+      let createdOrder = newSettings.createdOrder == -1 ? providerSettings.nextCreatedOrder : newSettings.createdOrder
+      providerSettings[provider] = .init(apiKey: newSettings.apiKey, baseUrl: newSettings.baseUrl, createdOrder: createdOrder)
+    } else {
+      // Remove existing settings for this provider
+      providerSettings.removeValue(forKey: provider)
     }
   }
 }
@@ -94,18 +97,18 @@ struct ProvidersView: View {
 // MARK: - ProviderInfo
 
 private struct ProviderInfo {
-  let provider: APIProvider
-  let settings: ProviderSettings?
+  let provider: LLMProvider
+  let settings: LLMProviderSettings?
   let isConnected: Bool
 }
 
 // MARK: - ProviderCard
 
 private struct ProviderCard: View {
-  let provider: APIProvider
-  let settings: ProviderSettings?
+  let provider: LLMProvider
+  let settings: LLMProviderSettings?
   let isConnected: Bool
-  let onSettingsChanged: (ProviderSettings?) -> Void
+  let onSettingsChanged: (LLMProviderSettings?) -> Void
 
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
@@ -113,7 +116,7 @@ private struct ProviderCard: View {
       HStack(alignment: .top, spacing: 12) {
         VStack(alignment: .leading, spacing: 4) {
           HStack {
-            Text(provider.rawValue)
+            Text(provider.name)
               .font(.title2)
               .fontWeight(.medium)
             Spacer()
@@ -200,23 +203,8 @@ private struct ProviderCard: View {
   @State private var showAPIKey = false
 
   private func loadCurrentSettings() {
-    switch settings {
-    case .anthropic(let anthropicSettings):
-      apiKey = anthropicSettings.apiKey
-      baseURL = anthropicSettings.baseUrl ?? ""
-
-    case .openAI(let openAISettings):
-      apiKey = openAISettings.apiKey
-      baseURL = ""
-
-    case .openRouter(let openRouterSettings):
-      apiKey = openRouterSettings.apiKey
-      baseURL = ""
-
-    case .none:
-      apiKey = ""
-      baseURL = ""
-    }
+    apiKey = settings?.apiKey ?? ""
+    baseURL = settings?.baseUrl ?? ""
   }
 
   private func saveSettings() {
@@ -228,27 +216,17 @@ private struct ProviderCard: View {
     let trimmedAPIKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
     let trimmedBaseURL = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    switch provider {
-    case .anthropic:
-      let settings = AnthropicProviderSettings(
-        apiKey: trimmedAPIKey,
-        baseUrl: trimmedBaseURL.isEmpty ? nil : trimmedBaseURL)
-      onSettingsChanged(.anthropic(settings))
-
-    case .openAI:
-      let settings = OpenAIProviderSettings(apiKey: trimmedAPIKey)
-      onSettingsChanged(.openAI(settings))
-
-    case .openRouter:
-      let settings = OpenRouterProviderSettings(apiKey: trimmedAPIKey)
-      onSettingsChanged(.openRouter(settings))
-    }
+    let settings = LLMProviderSettings(
+      apiKey: trimmedAPIKey,
+      baseUrl: trimmedBaseURL.isEmpty ? nil : trimmedBaseURL,
+      createdOrder: -1)
+    onSettingsChanged(settings)
   }
 }
 
 // MARK: - APIProvider Extensions
 
-extension APIProvider {
+extension LLMProvider {
   var description: String {
     switch self {
     case .anthropic:
@@ -257,6 +235,8 @@ extension APIProvider {
       "GPT models"
     case .openRouter:
       "Multiple model providers"
+    default:
+      "Unknown provider"
     }
   }
 
@@ -266,23 +246,15 @@ extension APIProvider {
       true
     case .openAI, .openRouter:
       false
+    default:
+      false
     }
   }
 }
 
 // MARK: - ProviderSettings Extensions
 
-extension ProviderSettings {
-  var apiKey: String {
-    switch self {
-    case .anthropic(let settings):
-      settings.apiKey
-    case .openAI(let settings):
-      settings.apiKey
-    case .openRouter(let settings):
-      settings.apiKey
-    }
-  }
+extension LLMProviderSettings {
 
   var hasValidAPIKey: Bool {
     !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
