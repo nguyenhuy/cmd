@@ -29,14 +29,34 @@ public final class SettingsViewModel {
       .store(in: &cancellables)
   }
 
-  var settings: SettingsServiceInterface.Settings
+  private(set) var settings: SettingsServiceInterface.Settings
 
   // MARK: - Initialization
 
   var providerSettings: AllLLMProviderSettings {
     didSet {
       settings.llmProviderSettings = providerSettings
-      save()
+      settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
+    }
+  }
+
+  var allowAnonymousAnalytics: Bool {
+    get {
+      settings.allowAnonymousAnalytics
+    }
+    set {
+      settings.allowAnonymousAnalytics = newValue
+      settingsService.update(setting: \.allowAnonymousAnalytics, to: newValue)
+    }
+  }
+
+  var pointReleaseXcodeExtensionToDebugApp: Bool {
+    get {
+      settings.pointReleaseXcodeExtensionToDebugApp
+    }
+    set {
+      settings.pointReleaseXcodeExtensionToDebugApp = newValue
+      settingsService.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: newValue)
     }
   }
 
@@ -60,7 +80,7 @@ public final class SettingsViewModel {
           settings.preferedProviders[model] = provider
         }
       }
-      save()
+      settingsService.update(setting: \.preferedProviders, to: settings.preferedProviders)
     }
   }
 
@@ -70,7 +90,7 @@ public final class SettingsViewModel {
     }
     set {
       settings.inactiveModels = newValue
-      save()
+      settingsService.update(setting: \.inactiveModels, to: newValue)
     }
   }
 
@@ -82,10 +102,6 @@ public final class SettingsViewModel {
   /// The LLM providers that have been configured.
   var availableProviders: [LLMProvider] {
     Array(settings.llmProviderSettings.keys)
-  }
-
-  func save() {
-    settingsService.update(to: settings)
   }
 
   private var cancellables = Set<AnyCancellable>()

@@ -102,11 +102,11 @@ public struct SettingsView: View {
 
       case .internalSettings:
         InternalSettingsView(
-          pointReleaseXcodeExtensionToDebugApp: $viewModel.settings.pointReleaseXcodeExtensionToDebugApp,
-          allowAnonymousAnalytics: $viewModel.settings.allowAnonymousAnalytics)
+          pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
+          allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics)
 
       case .about:
-        AboutSettingsView(allowAnonymousAnalytics: $viewModel.settings.allowAnonymousAnalytics)
+        AboutSettingsView(allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics)
 
       case .landing:
         EmptyView()
