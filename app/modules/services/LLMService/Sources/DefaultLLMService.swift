@@ -163,12 +163,15 @@ final class DefaultLLMService: LLMService {
   /// This returns a message representing the result of the tool use, and broadcast the execution status to the update stream.
   private static func waitForResult(
     of toolUseRequest: ToolUseMessage,
-    context _: ChatContext)
+    context: ChatContext)
     async -> Schema.Message
   {
     let toolUse = toolUseRequest.toolUse
 
     do {
+      // Request approval before executing the tool
+      try await context.requestToolApproval(toolUse)
+      
       let toolOutput = try await toolUse.result
 
       // TODO: try to avoid this.

@@ -56,6 +56,26 @@ struct ChatInputView: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      if let pendingApproval = inputViewModel.pendingApproval {
+        ToolApprovalView(
+          request: pendingApproval,
+          onApprove: {
+            inputViewModel.handleApprovalResponse(.approved)
+          },
+          onDeny: {
+            inputViewModel.handleApprovalResponse(.denied)
+          },
+          onAlwaysApprove: {
+            inputViewModel.handleApprovalResponse(.alwaysApprove(toolName: pendingApproval.toolName))
+          }
+        )
+        .transition(
+          .asymmetric(
+            insertion: .move(edge: .bottom).combined(with: .opacity),
+            removal: .move(edge: .bottom).combined(with: .opacity)
+          )
+        )
+      }
       VStack(alignment: .leading, spacing: 0) {
         HStack(spacing: 8) {
           AttachmentsView(
@@ -102,6 +122,7 @@ struct ChatInputView: View {
           .offset(y: -30)
       }
     }
+    .animation(.easeInOut, value: inputViewModel.pendingApproval != nil)
     .onTapGesture {
       inputViewModel.textInputNeedsFocus = true
     }

@@ -15,8 +15,25 @@ import LoggingServiceInterface
 import PDFKit
 import SettingsServiceInterface
 import SwiftUI
+import ToolFoundation
 import UniformTypeIdentifiers
 import XcodeObserverServiceInterface
+
+// MARK: - ToolApprovalRequest
+
+// TODO: james - should move this `ToolFoundation`?
+struct ToolApprovalRequest: Identifiable {
+  let id = UUID()
+  let toolName: String
+}
+
+// MARK: - ApprovalResult
+
+enum ApprovalResult {
+  case approved
+  case denied
+  case alwaysApprove(toolName: String)
+}
 
 // MARK: - ChatInputViewModel
 
@@ -131,6 +148,9 @@ final class ChatInputViewModel {
       handleTextInputChange(from: oldValue)
     }
   }
+
+  /// The current tool approval request pending user response.
+  private(set) var pendingApproval: ToolApprovalRequest? = nil
 
   /// The results from the current reference search.
   private(set) var searchResults: [FileSuggestion]? = nil {
@@ -277,6 +297,27 @@ final class ChatInputViewModel {
     textInput = TextInput(str)
   }
 
+  /// Request approval for a tool use operation.
+  func requestApproval(for toolUse: any ToolUse) async -> ApprovalResult {
+    return await withCheckedContinuation { continuation in
+      let request = ToolApprovalRequest(
+        toolName: toolUse.toolName
+      )
+      
+      self.pendingApproval = request
+      self.approvalContinuation = continuation
+    }
+  }
+  
+  /// Handle the user's approval response.
+  func handleApprovalResponse(_ result: ApprovalResult) {
+    defer {
+      pendingApproval = nil
+      approvalContinuation = nil
+    }
+    approvalContinuation?.resume(returning: result)
+  }
+
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
   private static let userDefaultsChatModeKey = "chatMode"
 
@@ -297,6 +338,7 @@ final class ChatInputViewModel {
 
   private let searchTasks = ReplaceableTaskQueue<[FileSuggestion]?>()
   private var cancellables = Set<AnyCancellable>()
+  private var approvalContinuation: CheckedContinuation<ApprovalResult, Never>? = nil
 
   private func clearSearchResults() {
     updateSearchResults(searchQuery: nil)
@@ -356,7 +398,6 @@ final class ChatInputViewModel {
     }
     selectedModel = activeModels.first
   }
-
 }
 
 // MARK: - TextInput
