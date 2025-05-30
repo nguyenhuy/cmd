@@ -196,7 +196,7 @@ final class XcodeAppInstanceObserver: AXElementObserver, @unchecked Sendable {
     }
     updateStateWith(
       // move the focused workspace to first.
-      workspaces: internalState.value.workspaces.sorted(by: { $1.url == workspace.workspaceURL }),
+      workspaces: internalState.value.workspaces.sorted(by: { a, b in a.url == workspace.workspaceURL }),
       focusedWorkspaceURL: workspace.workspaceURL)
   }
 

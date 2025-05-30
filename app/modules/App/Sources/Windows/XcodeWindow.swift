@@ -153,7 +153,7 @@ class XcodeWindow: NSWindow {
 
   /// Sets up observers for Xcode state, accessibility notifications, and app activation state
   private func initObservers() {
-    xcodeObserver.statePublisher
+      xcodeObserver.statePublisher
       .sink { @Sendable [weak self] newState in
         Task { @MainActor in
           self?.trackedWindow = newState.focusedWorkspace?.axElement
