@@ -133,23 +133,27 @@ extension Schema {
     public let toolName: String
     public let input: JSON
     public let toolUseId: String
+    public let idx: Int
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case toolName = "toolName"
       case input = "input"
       case toolUseId = "toolUseId"
+      case idx = "idx"
     }
   
     public init(
         type: String = "tool_call",
         toolName: String,
         input: JSON,
-        toolUseId: String
+        toolUseId: String,
+        idx: Int
     ) {
       self.toolName = toolName
       self.input = input
       self.toolUseId = toolUseId
+      self.idx = idx
     }
   
     public init(from decoder: Decoder) throws {
@@ -157,6 +161,7 @@ extension Schema {
       toolName = try container.decode(String.self, forKey: .toolName)
       input = try container.decode(JSON.self, forKey: .input)
       toolUseId = try container.decode(String.self, forKey: .toolUseId)
+      idx = try container.decode(Int.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -165,6 +170,7 @@ extension Schema {
       try container.encode(toolName, forKey: .toolName)
       try container.encode(input, forKey: .input)
       try container.encode(toolUseId, forKey: .toolUseId)
+      try container.encode(idx, forKey: .idx)
     }
   }
   public struct ToolResultSuccessMessage: Codable, Sendable {
@@ -656,28 +662,34 @@ extension Schema {
   public struct TextDelta: Codable, Sendable {
     public let type = "text_delta"
     public let text: String
+    public let idx: Int
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case text = "text"
+      case idx = "idx"
     }
   
     public init(
         type: String = "text_delta",
-        text: String
+        text: String,
+        idx: Int
     ) {
       self.text = text
+      self.idx = idx
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       text = try container.decode(String.self, forKey: .text)
+      idx = try container.decode(Int.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(type, forKey: .type)
       try container.encode(text, forKey: .text)
+      try container.encode(idx, forKey: .idx)
     }
   }
   public struct ToolUseDelta: Codable, Sendable {
@@ -685,23 +697,27 @@ extension Schema {
     public let toolName: String
     public let inputDelta: String
     public let toolUseId: String
+    public let idx: Int
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case toolName = "toolName"
       case inputDelta = "inputDelta"
       case toolUseId = "toolUseId"
+      case idx = "idx"
     }
   
     public init(
         type: String = "tool_call_delta",
         toolName: String,
         inputDelta: String,
-        toolUseId: String
+        toolUseId: String,
+        idx: Int
     ) {
       self.toolName = toolName
       self.inputDelta = inputDelta
       self.toolUseId = toolUseId
+      self.idx = idx
     }
   
     public init(from decoder: Decoder) throws {
@@ -709,6 +725,7 @@ extension Schema {
       toolName = try container.decode(String.self, forKey: .toolName)
       inputDelta = try container.decode(String.self, forKey: .inputDelta)
       toolUseId = try container.decode(String.self, forKey: .toolUseId)
+      idx = try container.decode(Int.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -717,32 +734,38 @@ extension Schema {
       try container.encode(toolName, forKey: .toolName)
       try container.encode(inputDelta, forKey: .inputDelta)
       try container.encode(toolUseId, forKey: .toolUseId)
+      try container.encode(idx, forKey: .idx)
     }
   }
   public struct ResponseError: Codable, Sendable {
     public let type = "error"
     public let message: String
     public let statusCode: Int?
+    public let idx: Int
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case message = "message"
       case statusCode = "statusCode"
+      case idx = "idx"
     }
   
     public init(
         type: String = "error",
         message: String,
-        statusCode: Int? = nil
+        statusCode: Int? = nil,
+        idx: Int
     ) {
       self.message = message
       self.statusCode = statusCode
+      self.idx = idx
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       message = try container.decode(String.self, forKey: .message)
       statusCode = try container.decodeIfPresent(Int?.self, forKey: .statusCode)
+      idx = try container.decode(Int.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -750,33 +773,40 @@ extension Schema {
       try container.encode(type, forKey: .type)
       try container.encode(message, forKey: .message)
       try container.encodeIfPresent(statusCode, forKey: .statusCode)
+      try container.encode(idx, forKey: .idx)
     }
   }
   public struct Ping: Codable, Sendable {
     public let type = "ping"
     public let timestamp: Double
+    public let idx: Int
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case timestamp = "timestamp"
+      case idx = "idx"
     }
   
     public init(
         type: String = "ping",
-        timestamp: Double
+        timestamp: Double,
+        idx: Int
     ) {
       self.timestamp = timestamp
+      self.idx = idx
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       timestamp = try container.decode(Double.self, forKey: .timestamp)
+      idx = try container.decode(Int.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(type, forKey: .type)
       try container.encode(timestamp, forKey: .timestamp)
+      try container.encode(idx, forKey: .idx)
     }
   }
   public enum StreamedResponseChunk: Codable, Sendable {

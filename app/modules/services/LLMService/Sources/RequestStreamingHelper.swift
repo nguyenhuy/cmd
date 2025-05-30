@@ -8,11 +8,15 @@ import Foundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
+import ThreadSafe
 import ToolFoundation
+
+// MARK: - RequestStreamingHelper
 
 /// Receives streamed data from the serevr, and processes it to update the `result` stream with the new content.
 /// Parse tool request, handle text and tool streaming.,
-final class RequestStreamingHelper {
+@ThreadSafe
+final class RequestStreamingHelper: Sendable {
   #if DEBUG
   /// - Parameters:
   ///   - stream: The stream of data received from the server.
@@ -25,8 +29,8 @@ final class RequestStreamingHelper {
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
     context: any ChatContext,
-    isTaskCancelled: @escaping () -> Bool,
-    repeatDebugHelper: RepeatDebugHelper = .init())
+    isTaskCancelled: @escaping @Sendable () -> Bool,
+    repeatDebugHelper: RepeatDebugHelper)
   {
     self.stream = stream
     self.result = result
@@ -84,6 +88,11 @@ final class RequestStreamingHelper {
 
         let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
 
+        let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: event.idx)
+        if event.idx <= previousChunkIdx {
+          defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
+        }
+
         switch event {
         case .ping:
           break
@@ -110,7 +119,8 @@ final class RequestStreamingHelper {
     }
   }
 
-  private let isTaskCancelled: () -> Bool
+  private let isTaskCancelled: @Sendable () -> Bool
+  private var lastChunkIdx = -1
 
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
@@ -203,6 +213,7 @@ final class RequestStreamingHelper {
       }
 
       if isInputComplete {
+        // TODO: move to handle(toolUseReque to help ensure that we execute the tool use with an input that has no change of having missing data.
         streamingToolUse?.startExecuting()
         endStreamedToolUse()
       }
@@ -240,7 +251,8 @@ final class RequestStreamingHelper {
     let request = ToolUseRequestMessage(
       toolName: toolUseRequest.toolName,
       input: toolUseRequest.input,
-      toolUseId: toolUseRequest.toolUseId)
+      toolUseId: toolUseRequest.toolUseId,
+      idx: toolUseRequest.idx)
 
     if let tool = tools.first(where: { $0.name == request.toolName }) {
       do {
@@ -297,4 +309,21 @@ final class RequestStreamingHelper {
     result.content.last?.asText?.finish()
   }
 
+}
+
+extension Schema.StreamedResponseChunk {
+  var idx: Int {
+    switch self {
+    case .ping(let ping):
+      ping.idx
+    case .textDelta(let textDelta):
+      textDelta.idx
+    case .toolUseDelta(let toolUseDelta):
+      toolUseDelta.idx
+    case .toolUseRequest(let toolUseRequest):
+      toolUseRequest.idx
+    case .responseError(let error):
+      error.idx
+    }
+  }
 }

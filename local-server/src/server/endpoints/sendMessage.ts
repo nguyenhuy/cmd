@@ -107,13 +107,14 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 	try {
 		const chunks: Array<StreamedResponseChunk> = []
 
+		let i = 0
 		const interval = setInterval(() => {
 			if (res.getHeader("Content-Type") === undefined) {
 				res.setHeader("Content-Type", "text/event-stream")
 				res.setHeader("Cache-Control", "no-cache")
 				res.setHeader("Connection", "keep-alive")
 			}
-			res.write(JSON.stringify({ type: "ping", timestamp: Date.now() } as Ping)) // send a ping to keep the connection alive
+			res.write(JSON.stringify({ type: "ping", timestamp: Date.now(), idx: i++ } as Ping)) // send a ping to keep the connection alive
 		}, 1000)
 
 		for await (const chunk of stream) {
@@ -125,6 +126,7 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 						return {
 							type: "text_delta",
 							text: chunk.textDelta,
+							idx: i++,
 						}
 					case "tool-call-delta":
 						return {
@@ -132,6 +134,7 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 							toolName: chunk.toolName,
 							toolUseId: chunk.toolCallId,
 							inputDelta: chunk.argsTextDelta,
+							idx: i++,
 						}
 					case "tool-call":
 						return {
@@ -139,6 +142,7 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 							toolName: chunk.toolName,
 							toolUseId: chunk.toolCallId,
 							input: chunk.args,
+							idx: i++,
 						}
 					case "error":
 						throw new UserFacingError({

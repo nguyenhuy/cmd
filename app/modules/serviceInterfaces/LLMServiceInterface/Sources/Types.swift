@@ -72,6 +72,6 @@ extension Schema.ToolUseRequest {
   {
     let data = try JSONEncoder().encode(anyInput)
     let json = try JSONDecoder().decode(JSON.self, from: data)
-    self.init(toolName: name, input: json, toolUseId: id)
+    self.init(toolName: name, input: json, toolUseId: id, idx: 0)
   }
 }

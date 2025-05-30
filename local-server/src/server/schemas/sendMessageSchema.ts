@@ -22,11 +22,19 @@ export type StreamedResponseChunk = TextDelta | ToolUseRequest | ToolUseDelta | 
 export interface TextDelta {
 	type: "text_delta"
 	text: string
+	/**
+	 * @format integer
+	 */
+	idx: number
 }
 
 export interface Ping {
 	type: "ping"
 	timestamp: number
+	/**
+	 * @format integer
+	 */
+	idx: number
 }
 
 export interface ToolUseRequest {
@@ -34,6 +42,10 @@ export interface ToolUseRequest {
 	toolName: string
 	input: Record<string, unknown>
 	toolUseId: string
+	/**
+	 * @format integer
+	 */
+	idx: number
 }
 
 export interface ToolUseDelta {
@@ -41,6 +53,10 @@ export interface ToolUseDelta {
 	toolName: string
 	inputDelta: string
 	toolUseId: string
+	/**
+	 * @format integer
+	 */
+	idx: number
 }
 
 export interface ResponseError {
@@ -50,6 +66,10 @@ export interface ResponseError {
 	 * @format integer
 	 */
 	statusCode?: number
+	/**
+	 * @format integer
+	 */
+	idx: number
 }
 
 export type MessageContent = TextMessage | ToolUseRequest | ToolResultMessage | InternalTextMessage
