@@ -91,6 +91,8 @@ struct FileChangeView: View {
             Text(change.filename)
               .font(.system(size: 12))
               .foregroundColor(colorScheme.primaryForeground)
+              .lineLimit(1)
+              .truncationMode(.head)
           }
           .buttonStyle(PlainButtonStyle())
           .help("Open file")
