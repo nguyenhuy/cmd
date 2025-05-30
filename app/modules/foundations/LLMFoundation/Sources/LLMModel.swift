@@ -1,6 +1,8 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import Foundation
+
 // MARK: - LLMModel
 
 /// An LLM model.
@@ -14,12 +16,13 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     }
   }
 
-  init(name: String, id: String, description: String? = nil, contextSize: Int, defaultPricing: ModelPricing) {
+  init(name: String, id: String, description: String? = nil, contextSize: Int, defaultPricing: ModelPricing, documentationURL: URL? = nil) {
     self.id = id
     self.name = name
     self.description = description
     self.contextSize = contextSize
     self.defaultPricing = defaultPricing
+    self.documentationURL = documentationURL
   }
 
   /// Anthropic
@@ -27,44 +30,52 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     name: "claude-3.5-haiku",
     id: "claude-haiku-35",
     contextSize: 200_000,
-    defaultPricing: .init(input: 0.8, output: 4, cacheWriteMult: 0.25, cachedInputMult: 0.1))
+    defaultPricing: .init(input: 0.8, output: 4, cacheWriteMult: 0.25, cachedInputMult: 0.1),
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
   public static let claudeSonnet_3_7 = LLMModel(
     name: "claude-3.7-sonnet",
     id: "claude-sonnet-37",
     contextSize: 200_000,
-    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8))
+    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
   public static let claudeSonnet_4_0 = LLMModel(
     name: "claude-4.0-sonnet",
     id: "claude-sonnet-4",
     contextSize: 200_000,
-    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8))
+    defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
   public static let claudeOpus_4 = LLMModel(
     name: "claude-opus-4",
     id: "claude-opus-4",
     contextSize: 200_000,
-    defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24))
+    defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
 
   /// OpenAI
   public static let gpt_4_1 = LLMModel(
     name: "gpt-4.1",
     id: "gpt-4.1",
     contextSize: 1_047_576,
-    defaultPricing: .init(input: 2, output: 8, cacheWrite: 0, cachedInput: 0.5, inputImage: 2))
+    defaultPricing: .init(input: 2, output: 8, cacheWrite: 0, cachedInput: 0.5, inputImage: 2),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-4.1"))
   public static let gpt_4o = LLMModel(
     name: "gpt-4o",
     id: "gpt-4o",
     contextSize: 1_047_576,
-    defaultPricing: .init(input: 2.5, output: 10, cacheWrite: 0, cachedInput: 1.25, inputImage: 2.5))
+    defaultPricing: .init(input: 2.5, output: 10, cacheWrite: 0, cachedInput: 1.25, inputImage: 2.5),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/gpt-4o"))
   public static let o3 = LLMModel(
     name: "o3",
     id: "o3",
     contextSize: 200_000,
-    defaultPricing: .init(input: 10, output: 40, cacheWrite: 0, cachedInput: 2.5, inputImage: 10))
+    defaultPricing: .init(input: 10, output: 40, cacheWrite: 0, cachedInput: 2.5, inputImage: 10),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/o3"))
   public static let o4_mini = LLMModel(
     name: "o4-mini",
     id: "o4-mini",
     contextSize: 200_000,
-    defaultPricing: .init(input: 1.1, output: 4.4, cacheWrite: 0, cachedInput: 0.275, inputImage: 1.1))
+    defaultPricing: .init(input: 1.1, output: 4.4, cacheWrite: 0, cachedInput: 0.275, inputImage: 1.1),
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/o4-mini"))
 
   public static var allCases: [LLMModel] {
     [
@@ -84,6 +95,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
   public let description: String?
   public let contextSize: Int
   public let defaultPricing: ModelPricing
+    public let documentationURL: URL?
 
   public var rawValue: String {
     id

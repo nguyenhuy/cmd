@@ -100,14 +100,16 @@ private struct ModelCard: View {
           .font(.title3)
           .fontWeight(.semibold)
 
-        IconButton(
-          action: {
-//              showSettingsSheet = true
-          },
-          systemName: "arrow.up.right",
-          onHoverColor: colorScheme.secondarySystemBackground,
-          padding: 6)
-          .frame(width: 20, height: 20)
+          if let documentationURL = model.documentationURL {
+              IconButton(
+                action: {
+                    NSWorkspace.shared.open(documentationURL)
+                },
+                systemName: "arrow.up.right",
+                onHoverColor: colorScheme.secondarySystemBackground,
+                padding: 6)
+              .frame(width: 20, height: 20)
+          }
 
         Spacer()
 
