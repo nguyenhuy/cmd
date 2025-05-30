@@ -35,7 +35,7 @@ extension AXState<XcodeState> {
 
   public var focusedWorkspace: XcodeWorkspaceState? {
     focusedInstance?.workspaces
-      .first(where: { $0.isFocused })
+      .first
   }
 
   public var focusedTabURL: URL? {
