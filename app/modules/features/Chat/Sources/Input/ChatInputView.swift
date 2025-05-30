@@ -157,7 +157,7 @@ struct ChatInputView: View {
       chatModeSelection
       PopUpSelectionMenu(
         selectedItem: $inputViewModel.selectedModel,
-        availableItems: inputViewModel.availableModels,
+        availableItems: inputViewModel.activeModels,
         emptySelectionText: "No model configured")
       { model in
         Text(model.name)

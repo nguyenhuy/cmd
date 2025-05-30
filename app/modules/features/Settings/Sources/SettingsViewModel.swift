@@ -40,6 +40,50 @@ public final class SettingsViewModel {
     }
   }
 
+  /// For each available model, the associated provider.
+  var providerForModels: [LLMModel: LLMProvider] {
+    get {
+      var providerForModels = [LLMModel: LLMProvider]()
+      for model in availableModels {
+        providerForModels[model] = (try? settings.provider(for: model).0) ?? .anthropic
+      }
+      for (key, value) in settings.preferedProviders {
+        providerForModels[key] = value
+      }
+
+      return providerForModels
+    }
+    set {
+      let oldValue = providerForModels
+      for (model, provider) in newValue {
+        if oldValue[model] != provider {
+          settings.preferedProviders[model] = provider
+        }
+      }
+      save()
+    }
+  }
+
+  var inactiveModels: [LLMModel] {
+    get {
+      settings.inactiveModels
+    }
+    set {
+      settings.inactiveModels = newValue
+      save()
+    }
+  }
+
+  /// All the models that are available, based on the available providers.
+  var availableModels: [LLMModel] {
+    settings.availableModels
+  }
+
+  /// The LLM providers that have been configured.
+  var availableProviders: [LLMProvider] {
+    Array(settings.llmProviderSettings.keys)
+  }
+
   func save() {
     settingsService.update(to: settings)
   }

@@ -255,7 +255,7 @@ struct DefaultSettingsServiceTests {
         },
         "allowAnonymousAnalytics" : true,
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProvider" : {
+        "preferedProviders" : {
 
         }
       }

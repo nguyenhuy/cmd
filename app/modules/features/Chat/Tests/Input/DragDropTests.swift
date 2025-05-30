@@ -54,7 +54,7 @@ struct DragDropTests {
   @Test("handling text drop")
   func test_handleDrop_text() {
     let viewModel = ChatInputViewModel(
-      availableModels: [.claudeSonnet_4_0])
+      activeModels: [.claudeSonnet_4_0])
 
     let result = viewModel.handleDrop(of: .text("Dropped text"))
 

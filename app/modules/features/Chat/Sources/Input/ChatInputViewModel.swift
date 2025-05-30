@@ -26,14 +26,14 @@ final class ChatInputViewModel {
   #if DEBUG
   convenience init(
     selectedModel: LLMModel? = nil,
-    availableModels: [LLMModel]? = nil,
+    activeModels: [LLMModel]? = nil,
     mode: ChatMode = .agent,
     attachments: [Attachment] = [])
   {
     self.init(
       textInput: TextInput(),
       selectedModel: selectedModel,
-      availableModels: availableModels,
+      activeModels: activeModels,
       mode: mode,
       attachments: attachments)
   }
@@ -58,36 +58,36 @@ final class ChatInputViewModel {
     self.init(
       textInput: TextInput(),
       selectedModel: selectedModel,
-      availableModels: nil, // Pass nil here to signal that the value from settings should be observed.
+      activeModels: nil, // Pass nil here to signal that the value from settings should be observed.
       mode: chatMode,
       attachments: [])
   }
 
   /// - Parameters:
-  ///   - availableModels: The available LLM models. When nil, this value is resolved from the settings and changes to the settings will be observed.
+  ///   - activeModels: The available LLM models. When nil, this value is resolved from the settings and changes to the settings will be observed.
   private init(
     textInput: TextInput,
     selectedModel: LLMModel? = nil,
-    availableModels: [LLMModel]?,
+    activeModels: [LLMModel]?,
     mode: ChatMode = .agent,
     attachments: [Attachment])
   {
     self.textInput = textInput
-    self.selectedModel = selectedModel ?? availableModels?.first
+    self.selectedModel = selectedModel ?? activeModels?.first
     self.mode = mode
     self.attachments = attachments
 
-    if let availableModels {
-      self.availableModels = availableModels
+    if let activeModels {
+      self.activeModels = activeModels
       updateSelectedModel()
     } else {
       @Dependency(\.settingsService) var settingsService
       let settings = settingsService.liveValues()
-      self.availableModels = settings.currentValue.availableModels
+      self.activeModels = settings.currentValue.activeModels
       updateSelectedModel()
       settingsService.liveValues().sink { [weak self] settings in
         guard let self else { return }
-        self.availableModels = settings.availableModels
+        self.activeModels = settings.activeModels
         updateSelectedModel()
       }.store(in: &cancellables)
     }
@@ -100,7 +100,7 @@ final class ChatInputViewModel {
   }
 
   /// The list of available LLM models that can be selected.
-  private(set) var availableModels: [LLMModel]
+  private(set) var activeModels: [LLMModel]
   /// Attachments selected by the user as explicit context for the next message.
   var attachments: [Attachment]
   /// Whether the text input needs to be focused on. This will be reset to false once focus has been updated.
@@ -167,7 +167,7 @@ final class ChatInputViewModel {
       selectedModel: selectedModel,
       // Pass nil here to signal that the value from settings should be observed.
       // This method is not expected to be called in Previews where the mock settings might not have the right content.
-      availableModels: nil,
+      activeModels: nil,
       mode: mode,
       attachments: attachments)
   }
@@ -351,10 +351,10 @@ final class ChatInputViewModel {
   }
 
   private func updateSelectedModel() {
-    if let selectedModel, availableModels.contains(selectedModel) {
+    if let selectedModel, activeModels.contains(selectedModel) {
       return
     }
-    selectedModel = availableModels.first
+    selectedModel = activeModels.first
   }
 
 }

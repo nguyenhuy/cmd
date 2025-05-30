@@ -105,7 +105,7 @@ final class DefaultLLMService: LLMService {
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void)
     async throws -> AssistantMessage
   {
-    let (provider, providerSettings) = try provider(for: model)
+    let (provider, providerSettings) = try settingsService.values().provider(for: model)
     let params = try Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: Prompt.defaultPrompt(projectRoot: context.projectRoot, mode: context.chatMode),
@@ -187,26 +187,6 @@ final class DefaultLLMService: LLMService {
         result: .toolResultFailureMessage(.init(failure: .string(error.localizedDescription))))
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     }
-  }
-
-  private func provider(for model: LLMModel) throws -> (LLMProvider, LLMProviderSettings) {
-    let settings = settingsService.values()
-    let preferedProvider = settings.preferedProvider[model.id]
-    let provider = settings.llmProviderSettings
-      .filter { $0.key.supportedModels.contains(model) }
-      .sorted(by: { a, b in
-        if a.key.id == preferedProvider {
-          return true
-        } else if b.key.id == preferedProvider {
-          return false
-        }
-        return a.value.createdOrder < b.value.createdOrder
-      })
-      .first
-    guard let provider else {
-      throw AppError(message: "Unsupported model \(model.name)")
-    }
-    return (provider.key, provider.value)
   }
 
 }

@@ -1,7 +1,9 @@
 Target.module(
   name: "SettingsFeature",
   dependencies: [
+    "ConcurrencyFoundation",
     "DLS",
+    "FoundationInterfaces",
     "LLMFoundation",
     "SettingsServiceInterface",
   ],

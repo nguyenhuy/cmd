@@ -1,0 +1,203 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import ConcurrencyFoundation
+import DLS
+import LLMFoundation
+import SwiftUI
+
+// MARK: - ModelsView
+
+struct ModelsView: View {
+  init(
+    availableModels: [LLMModel],
+    availableProviders: [LLMProvider],
+    providerForModels: Binding<[LLMModel: LLMProvider]>,
+    inactiveModels: Binding<[LLMModel]>)
+  {
+    self.availableModels = availableModels
+    self.availableProviders = availableProviders
+    _providerForModels = providerForModels
+    _inactiveModels = inactiveModels
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      // Search bar
+      HStack {
+        Image(systemName: "magnifyingglass")
+          .foregroundColor(.secondary)
+          .frame(width: 16, height: 16)
+        TextField("Search models...", text: $searchText)
+          .textFieldStyle(.plain)
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 8)
+      .background(Color(NSColor.controlBackgroundColor))
+      .cornerRadius(8)
+      .padding(.bottom, 20)
+
+      // Models list
+      ScrollView {
+        LazyVStack(spacing: 16) {
+          ForEach(filteredModels, id: \.id) { model in
+            ModelCard(
+              model: model,
+              provider: .init(get: {
+                providerForModels[model] ?? LLMProvider.openAI
+              }, set: { provider in
+                providerForModels[model] = provider
+              }),
+              isActive: .init(get: { !inactiveModels.contains(model) }, set: { isActive in
+                if isActive {
+                  inactiveModels.removeAll { $0 == model }
+                } else {
+                  if !inactiveModels.contains(model) {
+                    inactiveModels.append(model)
+                  }
+                }
+              }),
+              availableProviders: availableProviders.filter { $0.supportedModels.contains(model) })
+          }
+        }
+        .padding(.bottom, 20)
+      }
+      .scrollIndicators(.hidden)
+    }
+  }
+
+  @Binding private var providerForModels: [LLMModel: LLMProvider]
+  @Binding private var inactiveModels: [LLMModel]
+  @State private var searchText = ""
+
+  private let availableModels: [LLMModel]
+  private let availableProviders: [LLMProvider]
+
+  private var filteredModels: [LLMModel] {
+    searchText.isEmpty
+      ? availableModels
+      : availableModels.filter {
+        $0.name.localizedCaseInsensitiveContains(searchText)
+      }
+  }
+}
+
+// MARK: - ModelCard
+
+private struct ModelCard: View {
+  init(model: LLMModel, provider: Binding<LLMProvider>, isActive: Binding<Bool>, availableProviders: [LLMProvider]) {
+    self.model = model
+    self.availableProviders = availableProviders
+    _provider = provider
+    _isActive = isActive
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      // Header
+      HStack(alignment: .center) {
+        Text(model.name)
+          .font(.title3)
+          .fontWeight(.semibold)
+
+        IconButton(
+          action: {
+//              showSettingsSheet = true
+          },
+          systemName: "arrow.up.right",
+          onHoverColor: colorScheme.secondarySystemBackground,
+          padding: 6)
+          .frame(width: 20, height: 20)
+
+        Spacer()
+
+        if !otherProviderOptions.isEmpty {
+          HoveredButton(
+            action: {
+              isSelectingProvider.toggle()
+            },
+            onHoverColor: colorScheme.secondarySystemBackground,
+            backgroundColor: isSelectingProvider ? colorScheme.secondarySystemBackground : .clear,
+            padding: 6,
+            cornerRadius: 6)
+          {
+            Text(provider.name)
+              .font(.subheadline)
+              .foregroundColor(.secondary)
+          }
+        } else {
+          Text(provider.name)
+            .font(.subheadline)
+            .foregroundColor(.secondary)
+        }
+      }
+
+      if isSelectingProvider {
+        HStack {
+          Spacer(minLength: 0)
+          WrappingHStack(horizontalSpacing: 4, alignment: .trailing) {
+            ForEach(otherProviderOptions, id: \.id) { otherProvider in
+              HoveredButton(
+                action: {
+                  isSelectingProvider = false
+                  provider = otherProvider
+                },
+                onHoverColor: colorScheme.secondarySystemBackground,
+                padding: 6,
+                cornerRadius: 6)
+              {
+                Text(otherProvider.name)
+                  .font(.subheadline)
+                  .foregroundColor(.secondary)
+              }
+            }
+          }
+        }
+      }
+
+      if let description = model.description {
+        Text(description)
+          .font(.subheadline)
+          .foregroundColor(.secondary)
+          .lineLimit(2)
+      }
+
+      HStack {
+        Text("Pricing:")
+          .font(.headline)
+          .fontWeight(.medium)
+        Text("\(displayPrice(model.defaultPricing.input)) / \(displayPrice(model.defaultPricing.output))")
+          .fontWeight(.medium)
+
+        Spacer()
+
+        Toggle("", isOn: $isActive)
+          .toggleStyle(.switch)
+      }
+      .padding(.top, 8)
+    }
+    .padding(16)
+    .background(Color(NSColor.controlBackgroundColor))
+    .roundedCornerWithBorder(borderColor: Color.gray.opacity(0.2), radius: 6)
+  }
+
+  @Binding private var provider: LLMProvider
+  @Binding private var isActive: Bool
+  @Environment(\.colorScheme) private var colorScheme
+  @State private var isSelectingProvider = false
+
+  private let model: LLMModel
+  private let availableProviders: [LLMProvider]
+
+  private var otherProviderOptions: [LLMProvider] {
+    availableProviders.filter { $0 != provider }
+  }
+
+  private func displayPrice(_ price: Double) -> String {
+    if abs(Double(Int(price)) - price) < 0.00001 {
+      return "$\(Int(price))"
+    }
+    return "$\(String(format: "%.2f", price))"
+  }
+
+}

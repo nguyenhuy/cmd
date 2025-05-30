@@ -17,7 +17,7 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProvider: ["model1": "anthropic", "model2": "openai"],
+      preferedProviders: ["model1": "anthropic", "model2": "openai"],
       llmProviderSettings: [:])
 
     let json = """
@@ -27,7 +27,7 @@ struct SettingsCodableTests {
 
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProvider" : {
+        "preferedProviders" : {
           "model1" : "anthropic",
           "model2" : "openai"
         }
@@ -47,7 +47,7 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
-      preferedProvider: [:],
+      preferedProviders: [:],
       llmProviderSettings: [.anthropic: providerSettings])
 
     let json = """
@@ -61,7 +61,7 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProvider" : {
+        "preferedProviders" : {
 
         }
       }
@@ -85,7 +85,7 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true,
-      preferedProvider: ["default": "anthropic"],
+      preferedProviders: ["default": "anthropic"],
       llmProviderSettings: [
         .anthropic: anthropicSettings,
         .openAI: openAISettings,
@@ -106,7 +106,7 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProvider" : {
+        "preferedProviders" : {
           "default" : "anthropic"
         }
       }
@@ -125,7 +125,7 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
-      preferedProvider: [:],
+      preferedProviders: [:],
       llmProviderSettings: [:])
 
     try testDecoding(expectedSettings, json)
@@ -136,7 +136,7 @@ struct SettingsCodableTests {
     let json = """
       {
         "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProvider" : {
+        "preferedProviders" : {
           "model1" : "openai"
         }
       }
@@ -145,7 +145,7 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true, // default
-      preferedProvider: ["model1": "openai"],
+      preferedProviders: ["model1": "openai"],
       llmProviderSettings: [:] // default
     )
 
@@ -168,7 +168,7 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProvider" : {
+        "preferedProviders" : {
 
         }
       }
@@ -182,7 +182,7 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProvider: [:],
+      preferedProviders: [:],
       llmProviderSettings: [.anthropic: anthropicSettings])
 
     try testDecoding(expectedSettings, json)
@@ -193,7 +193,7 @@ struct SettingsCodableTests {
     let originalSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProvider: ["model1": "anthropic", "model2": "openai"],
+      preferedProviders: ["model1": "anthropic", "model2": "openai"],
       llmProviderSettings: [
         .anthropic: Settings.LLMProviderSettings(
           apiKey: "anthropic-key",
@@ -216,7 +216,7 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
-      preferedProvider: [:],
+      preferedProviders: [:],
       llmProviderSettings: [:])
 
     let json = """
@@ -226,7 +226,7 @@ struct SettingsCodableTests {
 
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProvider" : {
+        "preferedProviders" : {
 
         }
       }
@@ -248,7 +248,7 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProvider" : {
+        "preferedProviders" : {
 
         }
       }
@@ -257,7 +257,7 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
-      preferedProvider: [:],
+      preferedProviders: [:],
       llmProviderSettings: [
         .anthropic: Settings.LLMProviderSettings(
           apiKey: "test-key",
@@ -291,7 +291,7 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProvider" : {
+        "preferedProviders" : {
           "claude-3-5-sonnet-20241022" : "anthropic",
           "gpt-4o" : "openai",
           "gpt-4o-mini" : "openai",
@@ -303,7 +303,7 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProvider: [
+      preferedProviders: [
         "claude-3-5-sonnet-20241022": "anthropic",
         "gpt-4o": "openai",
         "gpt-4o-mini": "openai",

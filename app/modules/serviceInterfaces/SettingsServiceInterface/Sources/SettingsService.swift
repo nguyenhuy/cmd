@@ -14,13 +14,15 @@ public struct Settings: Sendable, Equatable {
   public init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
-    preferedProvider: [String: String] = [:],
-    llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:])
+    preferedProviders: [LLMModel: LLMProvider] = [:],
+    llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
+    inactiveModels: [LLMModel] = [])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
-    self.preferedProvider = preferedProvider
+    self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
+    self.inactiveModels = inactiveModels
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
@@ -44,11 +46,10 @@ public struct Settings: Sendable, Equatable {
   public var allowAnonymousAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   // LLM settings
-  public var preferedProvider: [String: String]
+  public var preferedProviders: [LLMModel: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
-//  public var anthropicSettings: LLMProviderSettings?
-//  public var openAISettings: LLMProviderSettings?
-//  public var openRouterSettings: LLMProviderSettings?
+
+  public var inactiveModels: [LLMModel]
 
 }
 

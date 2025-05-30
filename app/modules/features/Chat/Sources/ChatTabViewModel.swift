@@ -55,9 +55,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
 
     @Dependency(\.settingsService) var settingsService
-    settingsService.liveValues().map(\.availableModels).removeDuplicates().sink { @Sendable [weak self] availableModels in
+    settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
       Task { @MainActor in
-        self?.hasSomeLLMModelsAvailable = !availableModels.isEmpty
+        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
       }
     }.store(in: &cancellables)
   }

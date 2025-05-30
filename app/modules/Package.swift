@@ -306,7 +306,9 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "SettingsFeature",
   dependencies: [
+    "ConcurrencyFoundation",
     "DLS",
+    "FoundationInterfaces",
     "LLMFoundation",
     "SettingsServiceInterface",
   ],
@@ -679,6 +681,7 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     "AppEventServiceInterface",
     "AppFoundation",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
     "ExtensionEventsInterface",
     "FoundationInterfaces",

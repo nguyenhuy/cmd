@@ -5,8 +5,7 @@
 
 /// An LLM model.
 /// Each model might be provided by differetent providers. For instance both Anthropic and OpenRouter can provide Claude models.
-public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
-
+public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepresentable {
   public init?(rawValue: String) {
     if let model = Self.allCases.first(where: { $0.id == rawValue }) {
       self = model
@@ -85,6 +84,10 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable {
   public let description: String?
   public let contextSize: Int
   public let defaultPricing: ModelPricing
+
+  public var rawValue: String {
+    id
+  }
 
   public static func ==(lhs: LLMModel, rhs: LLMModel) -> Bool {
     lhs.id == rhs.id

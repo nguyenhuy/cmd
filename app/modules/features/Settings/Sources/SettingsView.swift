@@ -89,26 +89,27 @@ public struct SettingsView: View {
       .padding(.top, 16)
       .padding(.bottom, 20)
 
-      // Content
-      ScrollView {
-        VStack(alignment: .leading, spacing: 20) {
-          switch currentView {
-          case .providers:
-            ProvidersView(providerSettings: $viewModel.providerSettings)
+      switch currentView {
+      case .providers:
+        ProvidersView(providerSettings: $viewModel.providerSettings)
 
-          case .internalSettings:
-            InternalSettingsView(
-              pointReleaseXcodeExtensionToDebugApp: $viewModel.settings.pointReleaseXcodeExtensionToDebugApp,
-              allowAnonymousAnalytics: $viewModel.settings.allowAnonymousAnalytics)
+      case .models:
+        ModelsView(
+          availableModels: viewModel.availableModels,
+          availableProviders: viewModel.availableProviders,
+          providerForModels: $viewModel.providerForModels,
+          inactiveModels: $viewModel.inactiveModels)
 
-          case .about:
-            AboutSettingsView(allowAnonymousAnalytics: $viewModel.settings.allowAnonymousAnalytics)
+      case .internalSettings:
+        InternalSettingsView(
+          pointReleaseXcodeExtensionToDebugApp: $viewModel.settings.pointReleaseXcodeExtensionToDebugApp,
+          allowAnonymousAnalytics: $viewModel.settings.allowAnonymousAnalytics)
 
-          case .landing:
-            EmptyView()
-          }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+      case .about:
+        AboutSettingsView(allowAnonymousAnalytics: $viewModel.settings.allowAnonymousAnalytics)
+
+      case .landing:
+        EmptyView()
       }
     }
   }
@@ -120,6 +121,7 @@ public struct SettingsView: View {
 private enum SettingsSection: String, Identifiable, CaseIterable {
   case landing
   case providers
+  case models
   case internalSettings
   case about
 
@@ -131,6 +133,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Settings"
     case .providers:
       "Providers"
+    case .models:
+      "Models"
     case .internalSettings:
       "Internal Settings"
     case .about:
@@ -144,6 +148,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "gearshape"
     case .providers:
       "key"
+    case .models:
+      "cpu"
     case .internalSettings:
       "slider.horizontal.3"
     case .about:
@@ -195,6 +201,10 @@ private struct SettingsLandingView: View {
           SettingsCard(
             section: .providers,
             description: "Manage API keys and setup LLM providers",
+            action: onNavigate)
+          SettingsCard(
+            section: .models,
+            description: "Models configuration",
             action: onNavigate)
 
           SettingsCard(

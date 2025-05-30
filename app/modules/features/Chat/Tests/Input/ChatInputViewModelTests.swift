@@ -22,7 +22,7 @@ struct ChatInputViewModelTests {
   @Test("initializing with a selected model that is in available models keeps that model")
   func test_initialization_withSelectedModelInAvailableModels() {
     let selectedModel = LLMModel.gpt_4o
-    let availableModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
+    let activeModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -30,18 +30,18 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: selectedModel,
-        availableModels: availableModels)
+        activeModels: activeModels)
     }
 
     #expect(viewModel.selectedModel == selectedModel)
-    #expect(viewModel.availableModels == availableModels)
+    #expect(viewModel.activeModels == activeModels)
   }
 
   @MainActor
   @Test("initializing with a selected model that is not in available models selects the first available model")
   func test_initialization_withSelectedModelNotInAvailableModels() {
     let selectedModel = LLMModel.o3
-    let availableModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
+    let activeModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -49,17 +49,17 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: selectedModel,
-        availableModels: availableModels)
+        activeModels: activeModels)
     }
 
-    #expect(viewModel.selectedModel == availableModels.first)
-    #expect(viewModel.availableModels == availableModels)
+    #expect(viewModel.selectedModel == activeModels.first)
+    #expect(viewModel.activeModels == activeModels)
   }
 
   @MainActor
   @Test("initializing with nil selected model selects the first available model")
   func test_initialization_withNilSelectedModel() {
-    let availableModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
+    let activeModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -67,11 +67,11 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: nil,
-        availableModels: availableModels)
+        activeModels: activeModels)
     }
 
-    #expect(viewModel.selectedModel == availableModels.first)
-    #expect(viewModel.availableModels == availableModels)
+    #expect(viewModel.selectedModel == activeModels.first)
+    #expect(viewModel.activeModels == activeModels)
   }
 
   @MainActor
@@ -84,7 +84,7 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: nil,
-        availableModels: [])
+        activeModels: [])
     }
 
     #expect(viewModel.selectedModel == nil)
@@ -107,7 +107,7 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: .gpt_4o,
-        availableModels: [.claudeSonnet_4_0, .gpt_4o, .o4_mini])
+        activeModels: [.claudeSonnet_4_0, .gpt_4o, .o4_mini])
     }
 
     #expect(viewModel.selectedModel == .gpt_4o)
@@ -130,7 +130,7 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: .claudeSonnet_4_0,
-        availableModels: nil)
+        activeModels: nil)
     }
 
     #expect(viewModel.selectedModel == .claudeSonnet_4_0)
@@ -159,7 +159,7 @@ struct ChatInputViewModelTests {
     } operation: {
       ChatInputViewModel(
         selectedModel: .claudeSonnet_4_0,
-        availableModels: nil)
+        activeModels: nil)
     }
 
     #expect(viewModel.selectedModel == .claudeSonnet_4_0)
@@ -168,15 +168,15 @@ struct ChatInputViewModelTests {
     newSettings[.openAI] = nil
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
 
-    #expect(viewModel.availableModels.count == 4)
-    #expect(viewModel.availableModels.contains(.claudeSonnet_4_0))
-    #expect(!viewModel.availableModels.contains(.gpt_4o))
+    #expect(viewModel.activeModels.count == 4)
+    #expect(viewModel.activeModels.contains(.claudeSonnet_4_0))
+    #expect(!viewModel.activeModels.contains(.gpt_4o))
     #expect(viewModel.selectedModel == .claudeSonnet_4_0)
 
     newSettings[.anthropic] = nil
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
 
-    #expect(viewModel.availableModels.isEmpty)
+    #expect(viewModel.activeModels.isEmpty)
     #expect(viewModel.selectedModel == nil)
   }
 }
