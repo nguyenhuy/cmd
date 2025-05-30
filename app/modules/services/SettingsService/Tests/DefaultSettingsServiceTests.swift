@@ -255,9 +255,8 @@ struct DefaultSettingsServiceTests {
         },
         "allowAnonymousAnalytics" : true,
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {
-
-        }
+        "preferedProviders" : {},
+        "inactiveModels" : []
       }
       """)
     _ = cancellable

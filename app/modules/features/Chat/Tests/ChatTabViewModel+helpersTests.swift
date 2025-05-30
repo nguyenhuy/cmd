@@ -23,7 +23,7 @@ struct ChatTabViewModelHelpersTests {
   @Test("View model fetches existing files on creation")
   func viewModelFetchesExistingFilesOnCreation() async throws {
     // Setup
-    let workspaceURL = URL(fileURLWithPath: "/test/workspace/project.xcworkspace")
+    let workspaceURL = URL(fileURLWithPath: "/test/workspace")
     let mockXcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL)
     let mockFileManager = MockFileManager()
     let mockServer = MockServer()
@@ -72,9 +72,21 @@ struct ChatTabViewModelHelpersTests {
     let lastMessageContent = try #require(sut.messages.last?.content.first)
     switch lastMessageContent {
     case .nonUserFacingText(let textContent):
-      #expect(textContent.text.contains("file1.swift"))
+      #expect(textContent.text == """
+        ### System Information:
+          * macOS Version: unkonwn
+          * Default Xcode Version: unknown
+          * Swift Version: unknown
+          * xcpretty is installed. Make sure to use it when relevant to improve build outputs
+          * Current Workspace Directory: /test/workspace
+          * Project root (root of all relative path): /test/workspace
+          * Files (first 200):
+        - ./
+          - file1.swift
+        """)
+
     default:
-      XCTFail("Expected nonUserFacingText content")
+      Issue.record("Expected nonUserFacingText content")
     }
     _ = cancellable
   }

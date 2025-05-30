@@ -3,6 +3,7 @@
 
 import ConcurrencyFoundation
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
@@ -29,7 +30,7 @@ extension DefaultLLMService {
           createdOrder: 2),
       ])))
   {
-    self.init(server: server as Server, settingsService: settingsService as SettingsService)
+    self.init(server: server as Server, settingsService: settingsService as SettingsService, userDefaults: MockUserDefaults())
   }
 
   func sendMessage(

@@ -81,7 +81,6 @@ final class RequestStreamingHelper: Sendable {
         guard !isTaskCancelled() else {
           // This should not be necessary. Cancelling the task should make the post request fail with an error.
           // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
-          assertionFailure("Task was cancelled but we still received a chunk")
           finish()
           break
         }

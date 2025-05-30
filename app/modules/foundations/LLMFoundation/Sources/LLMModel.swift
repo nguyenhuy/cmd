@@ -16,7 +16,14 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     }
   }
 
-  init(name: String, id: String, description: String? = nil, contextSize: Int, defaultPricing: ModelPricing, documentationURL: URL? = nil) {
+  init(
+    name: String,
+    id: String,
+    description: String? = nil,
+    contextSize: Int,
+    defaultPricing: ModelPricing,
+    documentationURL: URL? = nil)
+  {
     self.id = id
     self.name = name
     self.description = description
@@ -95,7 +102,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
   public let description: String?
   public let contextSize: Int
   public let defaultPricing: ModelPricing
-    public let documentationURL: URL?
+  public let documentationURL: URL?
 
   public var rawValue: String {
     id

@@ -66,13 +66,15 @@ final class SendOneMessageTests {
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": "hi"
+          "text": "hi",
+          "idx": 0
         }
         """.utf8Data)
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": " what can I do?"
+          "text": " what can I do?",
+          "idx": 1
         }
         """.utf8Data)
       return okServerResponse
@@ -111,6 +113,65 @@ final class SendOneMessageTests {
     #expect(contentUpdateCount == 1)
   }
 
+  @Test("SendOneMessage with bad data receives valid text chunks and completes")
+  func test_sendOneMessage_withBadData() async throws {
+    let initialStreamExpectationValidated = expectation(description: "initial stream expectation validated")
+    let chunksReceived = expectation(description: "All chunk received")
+    let messageUpdatesReceived = expectation(description: "All message update received")
+    let server = MockServer()
+    let sut = DefaultLLMService(server: server)
+    server.onPostRequest = { _, _, sendChunk in
+      // Wait here to avoid concurrency issues that would make the test flaky.
+      try await fulfillment(of: initialStreamExpectationValidated)
+      sendChunk?("""
+        {
+          "type": "text_delta",
+          "text": "hi",
+          "idx": 0
+        }
+        """.utf8Data)
+      sendChunk?("""
+        {
+          "type": "text_delta",
+          "texxxxxt": " what can I do?"
+        }
+        """.utf8Data)
+      return okServerResponse
+    }
+    let updatingMessage = try await sut.sendOneMessage(
+      messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
+      tools: [])
+    #expect(updatingMessage.content.count == 0)
+    initialStreamExpectationValidated.fulfill()
+
+    var messageUpdateCount = 0
+    var contentUpdateCount = 0
+    Task {
+      for await message in updatingMessage.updates {
+        messageUpdateCount += 1
+        if messageUpdateCount == 1 {
+          // First update has one piece of text content
+          #expect(message.content.count == 1)
+          let updatingTextContent = try #require(message.content.first?.asText)
+
+          for await textContent in updatingTextContent.updates {
+            contentUpdateCount += 1
+            if contentUpdateCount == 1 {
+              #expect(textContent.content == "hi")
+              #expect(textContent.deltas == ["hi"])
+            }
+          }
+          chunksReceived.fulfill()
+        }
+      }
+      messageUpdatesReceived.fulfill()
+    }
+
+    try await fulfillment(of: [messageUpdatesReceived, chunksReceived])
+    #expect(messageUpdateCount == 1)
+    #expect(contentUpdateCount == 0)
+  }
+
   @Test("SendOneMessage with text chunks tool use")
   func test_sendOneMessage_withToolCall() async throws {
     let toolCallReceived = expectation(description: "tool Call received")
@@ -124,13 +185,15 @@ final class SendOneMessageTests {
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": "hi"
+          "text": "hi",
+          "idx": 0
         }
         """.utf8Data)
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": " what can I do?"
+          "text": " what can I do?",
+          "idx": 1
         }
         """.utf8Data)
       sendChunk?("""
@@ -140,7 +203,8 @@ final class SendOneMessageTests {
           "toolUseId": "123",
           "input": {
             "file": "file.txt"
-          }
+          },
+          "idx": 2
         }
         """.utf8Data)
       return okServerResponse
@@ -193,7 +257,8 @@ final class SendOneMessageTests {
           "toolUseId": "123",
           "input": {
             "badInput": "file.txt"
-          }
+          },
+          "idx": 0
         }
         """.utf8Data)
       return okServerResponse
@@ -344,7 +409,8 @@ final class SendOneMessageTests {
           "type": "tool_call_delta",
           "toolName": "TestStreamingTool",
           "toolUseId": "123",
-          "inputDelta": "{\\"file\\": \\"file.t"
+          "inputDelta": "{\\"file\\": \\"file.t",
+          "idx": 0
         }
         """.utf8Data)
 
@@ -354,7 +420,8 @@ final class SendOneMessageTests {
           "type": "tool_call_delta",
           "toolName": "TestStreamingTool",
           "toolUseId": "123",
-          "inputDelta": "xt\\""
+          "inputDelta": "xt\\"",
+          "idx": 1
         }
         """.utf8Data)
 
@@ -364,7 +431,8 @@ final class SendOneMessageTests {
           "type": "tool_call_delta",
           "toolName": "TestStreamingTool",
           "toolUseId": "123",
-          "inputDelta": ", \\"keywords\\":[\\"foo\\", \\"ba"
+          "inputDelta": ", \\"keywords\\":[\\"foo\\", \\"ba",
+          "idx": 2
         }
         """.utf8Data)
 
@@ -374,7 +442,8 @@ final class SendOneMessageTests {
           "type": "tool_call_delta",
           "toolName": "TestStreamingTool",
           "toolUseId": "123",
-          "inputDelta": "r\\"]}"
+          "inputDelta": "r\\"]}",
+          "idx": 3
         }
         """.utf8Data)
       return okServerResponse
@@ -457,7 +526,8 @@ final class SendOneMessageTests {
           "type": "tool_call_delta",
           "toolName": "TestStreamingTool",
           "toolUseId": "123",
-          "inputDelta": "{\\"fil"
+          "inputDelta": "{\\"fil",
+          "idx": 0
         }
         """.utf8Data)
 
@@ -466,7 +536,8 @@ final class SendOneMessageTests {
           "type": "tool_call_delta",
           "toolName": "TestStreamingTool",
           "toolUseId": "123",
-          "inputDelta": "e\\": \\"file.txt\\"}"
+          "inputDelta": "e\\": \\"file.txt\\"}",
+          "idx": 1
         }
         """.utf8Data)
       return okServerResponse

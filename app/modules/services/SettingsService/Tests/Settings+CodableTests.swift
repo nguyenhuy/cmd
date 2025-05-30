@@ -17,19 +17,18 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: ["model1": "anthropic", "model2": "openai"],
+      preferedProviders: [.claudeHaiku_3_5: .anthropic, .gpt_4o: .openAI],
       llmProviderSettings: [:])
 
     let json = """
       {
         "allowAnonymousAnalytics" : false,
-        "llmProviderSettings" : {
-
-        },
+        "llmProviderSettings" : {},
+        "inactiveModels" : [],
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "model1" : "anthropic",
-          "model2" : "openai"
+          "claude-haiku-35" : "anthropic",
+          "gpt-4o" : "openai"
         }
       }
       """
@@ -61,9 +60,8 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {
-
-        }
+        "preferedProviders" : {},
+        "inactiveModels" : []
       }
       """
 
@@ -85,7 +83,7 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true,
-      preferedProviders: ["default": "anthropic"],
+      preferedProviders: [.claudeHaiku_3_5: .anthropic],
       llmProviderSettings: [
         .anthropic: anthropicSettings,
         .openAI: openAISettings,
@@ -107,8 +105,9 @@ struct SettingsCodableTests {
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "default" : "anthropic"
-        }
+          "claude-haiku-35" : "anthropic"
+        },
+        "inactiveModels" : []
       }
       """
 
@@ -137,7 +136,7 @@ struct SettingsCodableTests {
       {
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "model1" : "openai"
+          "gpt-4o" : "openai"
         }
       }
       """
@@ -145,8 +144,9 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true, // default
-      preferedProviders: ["model1": "openai"],
-      llmProviderSettings: [:] // default
+      preferedProviders: [.gpt_4o: .openAI],
+      llmProviderSettings: [:], // default,
+      inactiveModels: [] // default
     )
 
     try testDecoding(expectedSettings, json)
@@ -168,9 +168,8 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
-        "preferedProviders" : {
-
-        }
+        "preferedProviders" : {},
+        "inactiveModels" : []
       }
       """
 
@@ -193,7 +192,7 @@ struct SettingsCodableTests {
     let originalSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: ["model1": "anthropic", "model2": "openai"],
+      preferedProviders: [.claudeHaiku_3_5: .anthropic, .gpt_4o: .openAI],
       llmProviderSettings: [
         .anthropic: Settings.LLMProviderSettings(
           apiKey: "anthropic-key",
@@ -222,13 +221,10 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
-        "llmProviderSettings" : {
-
-        },
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {
-
-        }
+        "preferedProviders" : {}
       }
       """
 
@@ -292,10 +288,10 @@ struct SettingsCodableTests {
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-3-5-sonnet-20241022" : "anthropic",
+          "claude-sonnet-37" : "anthropic",
           "gpt-4o" : "openai",
-          "gpt-4o-mini" : "openai",
-          "claude-3-haiku-20240307" : "anthropic"
+          "o4-mini" : "openai",
+          "claude-haiku-35" : "anthropic"
         }
       }
       """
@@ -304,10 +300,10 @@ struct SettingsCodableTests {
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
       preferedProviders: [
-        "claude-3-5-sonnet-20241022": "anthropic",
-        "gpt-4o": "openai",
-        "gpt-4o-mini": "openai",
-        "claude-3-haiku-20240307": "anthropic",
+        .claudeSonnet_3_7: .anthropic,
+        .gpt_4o: .openAI,
+        .o4_mini: .openAI,
+        .claudeHaiku_3_5: .anthropic,
       ],
       llmProviderSettings: [
         .anthropic: Settings.LLMProviderSettings(

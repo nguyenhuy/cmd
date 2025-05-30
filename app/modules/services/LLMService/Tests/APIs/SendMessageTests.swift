@@ -28,13 +28,15 @@ final class SendMessageTests {
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": "hi"
+          "text": "hi",
+          "idx": 0
         }
         """.utf8Data)
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": " what can I do?"
+          "text": " what can I do?",
+          "idx": 1
         }
         """.utf8Data)
       return okServerResponse
@@ -93,7 +95,8 @@ final class SendMessageTests {
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": "sure"
+          "text": "sure",
+          "idx": 0
         }
         """.utf8Data)
       requestResponded.fulfill()
@@ -131,7 +134,8 @@ final class SendMessageTests {
         sendChunk?("""
           {
             "type": "text_delta",
-            "text": "hi"
+            "text": "hi",
+            "idx": 0
           }
           """.utf8Data)
         sendChunk?("""
@@ -139,7 +143,8 @@ final class SendMessageTests {
             "type": "tool_call",
             "toolName": "TestTool",
             "input": {},
-            "toolUseId": "123"
+            "toolUseId": "123",
+            "idx": 1
           }
           """.utf8Data)
         return okServerResponse
@@ -151,7 +156,7 @@ final class SendMessageTests {
               {"role":"user","content":[{"type":"text","text":"hello"}]},
               {"role":"assistant","content":[
                 {"type":"text","text":"hi"},
-                {"type":"tool_call","toolUseId":"123","toolName":"TestTool","input":{}}
+                {"type":"tool_call","toolUseId":"123","toolName":"TestTool","input":{},"idx" : 0}
               ]},
               {"role":"tool","content":[{"toolUseId":"123","toolName":"TestTool","type":"tool_result","result":{"type":"tool_result_success","success":"test_result"}}]}
             ],
@@ -168,7 +173,8 @@ final class SendMessageTests {
         sendChunk?("""
           {
             "type": "text_delta",
-            "text": "got it!"
+            "text": "got it!",
+            "idx": 2
           }
           """.utf8Data)
         requestResponded.fulfill()
@@ -209,7 +215,8 @@ final class SendMessageTests {
             "type": "tool_call",
             "toolName": "UnknownTool",
             "input": {},
-            "toolUseId": "123"
+            "toolUseId": "123",
+            "idx": 0
           }
           """.utf8Data)
         return okServerResponse
@@ -220,7 +227,7 @@ final class SendMessageTests {
             "messages":[
               {"role":"user","content":[{"type":"text","text":"hello"}]},
               {"role":"assistant","content":[
-                {"type":"tool_call","toolName":"UnknownTool","toolUseId":"123","input":{}}
+                {"type":"tool_call","toolName":"UnknownTool","toolUseId":"123","input":{},"idx" : 0}
               ]},
               {"role":"tool","content":[{"toolUseId":"123","toolName":"UnknownTool","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
             ],
@@ -237,7 +244,8 @@ final class SendMessageTests {
         sendChunk?("""
           {
             "type": "text_delta",
-            "text": "Let me fix this"
+            "text": "Let me fix this",
+            "idx": 1
           }
           """.utf8Data)
         requestResponded.fulfill()
@@ -325,7 +333,8 @@ final class SendMessageTests {
       sendChunk?("""
         {
           "type": "text_delta",
-          "text": "hi"
+          "text": "hi",
+          "idx": 0
         }
         """.utf8Data)
 

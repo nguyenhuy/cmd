@@ -31,7 +31,7 @@ struct LSToolTests {
           permissions: "",
           createdAt: "",
           modifiedAt: ""),
-      ], hasMore: false))
+      ]))
     }
 
     let toolUse = withDependencies {
