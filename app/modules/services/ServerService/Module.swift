@@ -3,6 +3,7 @@ Target.module(
   dependencies: [
     "AppEventServiceInterface",
     "AppFoundation",
+    "ConcurrencyFoundation",
     "DependencyFoundation",
     "ExtensionEventsInterface",
     "FoundationInterfaces",

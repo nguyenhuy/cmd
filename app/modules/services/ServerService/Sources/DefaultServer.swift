@@ -4,6 +4,7 @@
 import AppEventServiceInterface
 import AppFoundation
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
 import FoundationInterfaces
@@ -107,23 +108,29 @@ final class DefaultServer: Server {
   }
 
   func handle(dataTask: URLSessionDataTask, didReceive data: Data) {
-    guard var handler = inflightTasks[dataTask] else {
-      return
-    }
-    defer { inflightTasks[dataTask] = handler }
+    // Immediately queue the handling of the data to ensure we are not blocking the URLSession delegate callback.
+    pendingHandleDataTasks.queue {
+      await Task.detached(priority: .userInitiated) { [weak self] in
+        guard let self else { return }
 
-    handler.totalData.append(data)
-
-    if let onReceiveJSONData = handler.onReceiveJSONData {
-      handler.incompletedJSONData.append(data)
-      let (jsonObjects, newImcompleteData) = handler.incompletedJSONData.parseJSONObjects()
-      handler.incompletedJSONData = newImcompleteData ?? Data()
-
-      Task { @MainActor in
-        for jsonObject in jsonObjects {
-          onReceiveJSONData(jsonObject)
+        // TODO: Make this async, and serial.
+        guard var handler = inflightTasks[dataTask] else {
+          return
         }
-      }
+        defer { self.inflightTasks[dataTask] = handler }
+
+        handler.totalData.append(data)
+
+        if let onReceiveJSONData = handler.onReceiveJSONData {
+          handler.incompletedJSONData.append(data)
+          let (jsonObjects, newImcompleteData) = handler.incompletedJSONData.parseJSONObjects()
+          handler.incompletedJSONData = newImcompleteData ?? Data()
+
+          for jsonObject in jsonObjects {
+            onReceiveJSONData(jsonObject)
+          }
+        }
+      }.value
     }
   }
 
@@ -151,6 +158,8 @@ final class DefaultServer: Server {
       }
     }
   }
+
+  private let pendingHandleDataTasks = TaskQueue<Void, Never>()
 
   private let fileManager: FileManagerI
 
