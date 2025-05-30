@@ -7,15 +7,25 @@ import SwiftUI
 
 public struct HoveredButton<Content: View>: View {
 
+    /// Creates a button that changes its appearance when hovered.
+    /// - Parameters:
+    /// - action: The action to perform when the button is tapped.
+    /// - onHoverColor: The color to apply when the button is hovered.
+    /// - backgroundColor: The background color of the button.
+    /// - padding: The amount of padding around the button content.
+    /// - cornerRadius: The corner radius of the button.
+    /// - content: A closure that returns the content of the button.
   public init(
     action: @escaping () -> Void,
     onHoverColor: Color = .clear,
+    backgroundColor: Color = .clear,
     padding: CGFloat = 0,
     cornerRadius: CGFloat = 4,
     @ViewBuilder content: @escaping () -> Content)
   {
     self.action = action
     self.onHoverColor = onHoverColor
+    self.backgroundColor = backgroundColor
     self.padding = padding
     self.cornerRadius = cornerRadius
     self.content = content
@@ -26,24 +36,26 @@ public struct HoveredButton<Content: View>: View {
       content()
         .padding(padding)
         .tappableTransparentBackground()
-        .background(isHovered ? onHoverColor : .clear)
+        .background(isHovered ? onHoverColor : backgroundColor)
         .cornerRadius(cornerRadius)
     })
     .buttonStyle(.plain)
     .scaledToFit()
+    .acceptClickThrough()
     .onHover(perform: { isHovered in
       self.isHovered = isHovered
     })
-    .acceptClickThrough()
   }
 
-  let action: () -> Void
-  let onHoverColor: Color
-  let padding: CGFloat
-  let cornerRadius: CGFloat
-  let content: () -> Content
-
   @State private var isHovered = false
+
+  private let action: () -> Void
+  private let onHoverColor: Color
+  private let backgroundColor: Color
+  private let padding: CGFloat
+  private let cornerRadius: CGFloat
+  private let content: () -> Content
+
 }
 
 #if DEBUG
