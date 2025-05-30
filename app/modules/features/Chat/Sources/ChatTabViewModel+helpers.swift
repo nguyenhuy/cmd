@@ -219,7 +219,7 @@ extension ChatMessageContent {
           // As sending a new message will cancell any in-flight tool use, we represent it as failed due to cancellation.
           return [
             (.assistant, request),
-            (.user, .toolResultMessage(.init(
+            (.tool, .toolResultMessage(.init(
               toolUseId: toolUse.toolUse.toolUseId,
               toolName: toolUse.toolUse.toolName,
               result: .toolResultFailureMessage(.init(failure: ["error": .string("The tool use has been cancelled.")]))))),
@@ -229,7 +229,7 @@ extension ChatMessageContent {
         let jsonResult = try JSONDecoder().decode(JSON.Value.self, from: data)
         return [
           (.assistant, request),
-          (.user, .toolResultMessage(.init(
+          (.tool, .toolResultMessage(.init(
             toolUseId: toolUse.toolUse.toolUseId,
             toolName: toolUse.toolUse.toolName,
             result: .toolResultSuccessMessage(.init(success: jsonResult))))),
