@@ -150,7 +150,6 @@ struct PartialDiffView: View {
         defaultLogger.error("inconsistent diff data")
         continue
       }
-//      let line = changedLines[i].formattedContent
       if i == partialRange.upperBound - 1, line.characters.last == "\n" {
         // Remove the last newline character
         let truncatedLine = line[line.startIndex..<line.index(line.endIndex, offsetByCharacters: -1)]
@@ -231,10 +230,10 @@ struct PartialApplyView: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .allowsHitTesting(false)
-    .overlay(alignment: .bottomTrailing) {
-      applyButtons
-        .alignmentGuide(.bottom) { $0[.top] }
-    }
+//    .overlay(alignment: .bottomTrailing) {
+//      applyButtons
+//        .alignmentGuide(.bottom) { $0[.top] }
+//    }
   }
 
   private enum Constants {
@@ -245,40 +244,40 @@ struct PartialApplyView: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
-  @ViewBuilder
-  private var applyButtons: some View {
-    if isHovered {
-      HStack(spacing: 0) {
-        Button(action: {
-          apply()
-        }) {
-          Text("Apply")
-            .font(.system(size: 11, weight: .medium))
-            .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .frame(maxHeight: .infinity)
-            .background(colorScheme.addedLineDiffBackground)
-        }
-        .buttonStyle(.plain)
-
-        Button(action: {
-          reject()
-        }) {
-          Text("Reject")
-            .font(.system(size: 11, weight: .medium))
-            .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .frame(maxHeight: .infinity)
-            .background(colorScheme.removedLineDiffBackground)
-        }
-        .buttonStyle(.plain)
-      }
-      .frame(height: Constants.buttonHeight)
-      .roundedCorner(radius: 4, corners: [.bottomLeft, .bottomRight])
-      .frame(maxWidth: .infinity, alignment: .trailing)
-      .padding(.trailing, 8)
-    }
-  }
+//  @ViewBuilder
+//  private var applyButtons: some View {
+//    if isHovered {
+//      HStack(spacing: 0) {
+//        Button(action: {
+//          apply()
+//        }) {
+//          Text("Apply")
+//            .font(.system(size: 11, weight: .medium))
+//            .foregroundColor(.white)
+//            .padding(.horizontal, 12)
+//            .frame(maxHeight: .infinity)
+//            .background(colorScheme.addedLineDiffBackground)
+//        }
+//        .buttonStyle(.plain)
+//
+//        Button(action: {
+//          reject()
+//        }) {
+//          Text("Reject")
+//            .font(.system(size: 11, weight: .medium))
+//            .foregroundColor(.white)
+//            .padding(.horizontal, 12)
+//            .frame(maxHeight: .infinity)
+//            .background(colorScheme.removedLineDiffBackground)
+//        }
+//        .buttonStyle(.plain)
+//      }
+//      .frame(height: Constants.buttonHeight)
+//      .roundedCorner(radius: 4, corners: [.bottomLeft, .bottomRight])
+//      .frame(maxWidth: .infinity, alignment: .trailing)
+//      .padding(.trailing, 8)
+//    }
+//  }
 
 }
 
