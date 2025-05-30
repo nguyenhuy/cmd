@@ -37,14 +37,29 @@ const DIRS_TO_IGNORE = [
  * @param dirPath - Directory path to list files from
  * @param recursive - Whether to recursively list files in subdirectories
  * @param limit - Maximum number of files to return
- * @returns Tuple of [file paths array, whether the limit was reached]
+ * @param breadthFirstSearch - Whether to use breadth-first search (if false, depth-first search is used)
+ * @returns Tuple of [file paths array, directory path that has more files than the limit]
  */
-export async function listFiles(dirPath: string, recursive: boolean, limit: number): Promise<[string[], boolean]> {
+export async function listFiles({
+	dirPath,
+	recursive,
+	limit,
+	breadthFirstSearch,
+}: {
+	dirPath: string
+	recursive: boolean
+	limit: number
+	breadthFirstSearch: boolean
+}): Promise<{ path: string; isTruncated: boolean }[]> {
 	// Handle special directories
 	const specialResult = await handleSpecialDirectories(dirPath)
 
 	if (specialResult) {
 		return specialResult
+	}
+
+	if (breadthFirstSearch && recursive) {
+		return await recursiveBreadthFirstSearch(dirPath, limit)
 	}
 
 	// Get files using ripgrep
@@ -55,27 +70,78 @@ export async function listFiles(dirPath: string, recursive: boolean, limit: numb
 	const directories = await listFilteredDirectories(dirPath, recursive, gitignorePatterns)
 
 	// Combine and format the results
-	return formatAndCombineResults(files, directories, limit)
+	const [combinedResults, hasMore] = formatAndCombineResults(files, directories, limit)
+	return combinedResults.map((path) => ({
+		path,
+		isTruncated: hasMore && path === combinedResults[0],
+	}))
+}
+
+async function recursiveBreadthFirstSearch(
+	dirPath: string,
+	limit: number,
+): Promise<{ path: string; isTruncated: boolean }[]> {
+	const results: string[] = []
+	const nonExploredDirectories: string[] = [dirPath]
+
+	const add = (path: string): boolean => {
+		if (results.length >= limit) {
+			return false
+		}
+		if (!path.endsWith("/")) {
+			// This is a file
+			results.push(path)
+			return true
+		}
+		results.push(path)
+		nonExploredDirectories.push(path)
+		return true
+	}
+
+	while (results.length < limit) {
+		const currentDir = nonExploredDirectories.shift()
+		if (currentDir === undefined) {
+			break
+		}
+
+		const files = await listFiles({
+			dirPath: currentDir,
+			recursive: false,
+			limit,
+			breadthFirstSearch: false,
+		})
+
+		if (files.map((f) => add(f.path)).includes(false)) {
+			// We reached the limit and could not add all the files from this directory.
+			nonExploredDirectories.push(currentDir) // Re-add the current directory as this list will now be used to flag truncated results.
+			break
+		}
+	}
+	const truncatedDirectories = new Set(nonExploredDirectories)
+	return results.map((path) => ({
+		path,
+		isTruncated: truncatedDirectories.has(path),
+	}))
 }
 
 /**
  * Handle special directories (root, home) that should not be fully listed
  */
-async function handleSpecialDirectories(dirPath: string): Promise<[string[], boolean] | null> {
+async function handleSpecialDirectories(dirPath: string): Promise<{ path: string; isTruncated: boolean }[] | null> {
 	const absolutePath = path.resolve(dirPath)
 
 	// Do not allow listing files in root directory
 	const root = process.platform === "win32" ? path.parse(absolutePath).root : "/"
 	const isRoot = arePathsEqual(absolutePath, root)
 	if (isRoot) {
-		return [[root], false]
+		return [{ path: root, isTruncated: false }]
 	}
 
 	// Do not allow listing files in home directory
 	const homeDir = os.homedir()
 	const isHomeDir = arePathsEqual(absolutePath, homeDir)
 	if (isHomeDir) {
-		return [[homeDir], false]
+		return [{ path: homeDir, isTruncated: false }]
 	}
 
 	return null

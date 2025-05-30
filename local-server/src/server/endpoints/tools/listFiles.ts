@@ -27,14 +27,20 @@ export const registerEndpoint = (router: Router) => {
 			})
 		}
 		const { path, recursive, projectRoot, limit } = body
-		const [filePaths, hasMore] = await listFiles(resolve(projectRoot, path), recursive ?? false, limit || 100)
+		const filePaths = await listFiles({
+			dirPath: resolve(projectRoot, path),
+			recursive: recursive ?? false,
+			limit: limit || 100,
+			breadthFirstSearch: body.breadthFirstSearch ?? false,
+		})
 
-		const filesWithMedatata = filePaths.map((filePath) => {
-			const metadata = fs.statSync(filePath)
+		const filesWithMedatata = filePaths.map(({ path, isTruncated }) => {
+			const metadata = fs.statSync(path)
 			return {
-				path: filePath,
+				path: path,
 				isFile: metadata.isFile(),
 				isDirectory: metadata.isDirectory(),
+				hasMoreContent: isTruncated,
 				isSymlink: metadata.isSymbolicLink(),
 				byteSize: metadata.size,
 				permissions: fileModeToString(metadata.mode),
@@ -43,7 +49,7 @@ export const registerEndpoint = (router: Router) => {
 			}
 		})
 
-		const result: ListFilesToolOutput = { files: filesWithMedatata, hasMore }
+		const result: ListFilesToolOutput = { files: filesWithMedatata }
 		res.json(result)
 	})
 }

@@ -152,6 +152,6 @@ extension Schema.ListFilesToolOutput {
           path: file.path.resolvePath(from: context.projectRoot).path(),
           attr: file.permissions,
           size: ByteCountFormatter.string(fromByteCount: Int64(file.byteSize), countStyle: .file))
-      }, hasMore: hasMore)
+      }, hasMore: files.contains(where: { $0.hasMoreContent == true }))
   }
 }

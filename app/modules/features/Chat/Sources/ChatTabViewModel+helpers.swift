@@ -8,29 +8,142 @@ import JSONFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
+import ShellServiceInterface
 import XcodeObserverServiceInterface
 
 extension ChatTabViewModel {
 
-  func createContextMessage(for workspace: XcodeWorkspaceState, projectRoot: URL) async throws -> ChatMessageTextContent {
-    // from workspace.url, do a BDS file search
-    @Dependency(\.server) var server
+  /// Converts a flat list of file information into a hierarchical string representation.
+  ///
+  /// This function takes an array of file paths and organizes them into a tree-like structure
+  /// with proper indentation to show directory hierarchy. Files are sorted alphabetically
+  /// and directories are created as needed to maintain the hierarchy.
+  ///
+  /// - Parameters:
+  ///   - filesInfo: Array of file information containing paths and file/directory flags
+  ///   - projectRoot: The root URL of the project used as the base for relative paths
+  /// - Returns: A formatted string with hierarchical file structure using dashes and indentation
+  /// Example:
+  ///
+  /// "/project/src/"
+  /// "/project/src/utils/"
+  /// "/project/tests/"
+  ///
+  /// with root project /project becomes:
+  ///
+  /// - ./
+  ///   - src/
+  ///     - utils/
+  ///   - tests/
+  nonisolated static func formatFileListAsHierarchy(filesInfo: [Schema.ListedFileInfo], projectRoot: URL) -> String {
+    let filesInfo = filesInfo
+      .sorted { $0.path < $1.path }
+    var result: [String] = []
+    var indentation: [String] = []
+    var processedPaths = Set<String>()
 
-    let fullInput = Schema.ListFilesToolInput(
+    let dirInfoMap = Dictionary(uniqueKeysWithValues: filesInfo.filter { !$0.isFile }.map { ($0.path, $0) })
+
+    var processDir: (URL, URL) -> Void = { _, _ in }
+    processDir = { dir, projectRoot in
+      if !dir.path.hasPrefix(projectRoot.path) {
+        // Bad data.
+        return
+      }
+      // Handle intermediate directories, in case they are missing from the input.
+      if let lastDirPath = indentation.last, dir.path != lastDirPath, dir.path.starts(with: lastDirPath) {
+        let parentDir = dir.deletingLastPathComponent()
+        if parentDir.path != projectRoot.path {
+          processDir(parentDir, projectRoot)
+        }
+      }
+
+      // pop indentation until we find the containing directory
+      while let previous = indentation.last, !dir.path.hasPrefix(previous) {
+        indentation.removeLast()
+      }
+
+      guard !processedPaths.contains(dir.path) else { return }
+
+      // Add the directory to the result.
+      let containingDir = indentation.last ?? projectRoot.path
+      var relativeDirPath = dir.path.replacingOccurrences(of: containingDir, with: "")
+      if relativeDirPath.starts(with: "/") { relativeDirPath.removeFirst() }
+      if relativeDirPath.isEmpty { relativeDirPath = "." }
+      relativeDirPath += "/"
+
+      let hasMoreContent = (dirInfoMap[dir.path] ?? dirInfoMap[dir.path + "/"])?.hasMoreContent == true
+      result
+        .append(String(repeating: "  ", count: indentation.count) + "- " + relativeDirPath +
+          (hasMoreContent ? " (truncated)" : ""))
+      indentation.append(dir.path)
+      processedPaths.insert(dir.path)
+    }
+
+    let processFile: (URL, URL) -> Void = { file, projectRoot in
+      if !file.path.hasPrefix(projectRoot.path) {
+        // Bad data.
+        return
+      }
+      let dir = file.deletingLastPathComponent()
+      processDir(dir, projectRoot)
+
+      let fileName = file.lastPathComponent
+      result.append(String(repeating: "  ", count: indentation.count) + "- " + fileName)
+    }
+    processDir(projectRoot, projectRoot)
+
+    for fileInfo in filesInfo {
+      let path = URL(filePath: fileInfo.path)
+      if fileInfo.isFile {
+        processFile(path, projectRoot)
+      } else {
+        processDir(path, projectRoot)
+      }
+    }
+
+    return result.joined(separator: "\n")
+  }
+
+  func createContextMessage(for workspace: XcodeWorkspaceState, projectRoot: URL) async throws -> ChatMessageTextContent {
+    @Dependency(\.server) var server
+    @Dependency(\.shellService) var _shellService
+    let shellService: ShellService = _shellService // Necessary to deal with Swift concurrency errors.
+
+    // Get a few of the files in the project (BFS).
+    let fileLimit = 200
+    let data = try JSONEncoder().encode(Schema.ListFilesToolInput(
       projectRoot: projectRoot.path,
       path: "",
       recursive: true,
-      limit: 200)
+      breadthFirstSearch: true,
+      limit: fileLimit))
 
-    let data = try JSONEncoder().encode(fullInput)
-    let response: Schema.ListFilesToolOutput = try await server.postRequest(path: "listFiles", data: data)
-    let text = """
-      # Current Workspace Directory (\(workspace.url.path) Files:
-      \(response.files.filter(\.isFile).map { URL(filePath: $0.path).pathRelative(to: projectRoot) }.joined(separator: "\n"))
-      \(response.hasMore ? "(File list truncated. Use list_files on specific subdirectories if you need to explore further)" : "")
+    async let response: Schema.ListFilesToolOutput = server.postRequest(path: "listFiles", data: data)
+
+    // System info
+    async let macOSVersion = shellService.run("sw_vers -productVersion")
+    async let defaultXcodeVersion = shellService.run("xcodebuild -version")
+    async let whichXcpretty = shellService.run("which xcpretty", useInteractiveShell: true)
+    async let swiftVersion = shellService.run("swift --version")
+    let structuredOutput = try await Self.formatFileListAsHierarchy(filesInfo: response.files, projectRoot: projectRoot)
+    let hasXcPretty = await (try? whichXcpretty.exitCode) == 0
+
+    let text = await """
+      ### System Information:
+        * macOS Version: \((try? macOSVersion)?.stdout ?? "unkonwn")
+        * Default Xcode Version: \((try? defaultXcodeVersion.stdout)?.split(separator: "\n").first ?? "unknown")
+        * Swift Version: \((try? swiftVersion.stdout)?.split(separator: "\n")
+      .first ?? "unknown")\(hasXcPretty ?
+      "\n  * xcpretty is installed. Make sure to use it when relevant to improve build outputs" : "")
+        * Current Workspace Directory: \(workspace.url.path)
+        * Project root (root of all relative path): \(projectRoot.path)
+        * Files (first \(fileLimit)):
+      \(structuredOutput)
       """
     return .init(projectRoot: projectRoot, text: text)
   }
+
 }
 
 // MARK: - State domain to API domain

@@ -79,8 +79,10 @@ final class DefaultShellService: ShellService {
           stdout: String(data: stdoutData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
           stderr: String(data: stderrData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
 
-        if result.stderr?.isEmpty == false {
-          defaultLogger.error("Error running \(command): \(result.stderr ?? "")")
+        if terminationStatus != 0 {
+          defaultLogger
+            .error(
+              "Error running `\(command)`: exit code: \(terminationStatus).\nstderr: \(result.stderr ?? "")\nstdout: \(result.stdout ?? "")")
         }
         continuation.resume(returning: result)
       }
@@ -88,7 +90,7 @@ final class DefaultShellService: ShellService {
       do {
         try process.run()
       } catch {
-        defaultLogger.error("Error running \(command): \(error)")
+        defaultLogger.error("Error running `\(command)`: \(error)")
         continuation.resume(throwing: error)
         return
       }

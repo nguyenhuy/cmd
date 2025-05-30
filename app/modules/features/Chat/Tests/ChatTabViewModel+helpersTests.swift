@@ -1,0 +1,346 @@
+// Copyright Xcompanion. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import CheckpointServiceInterface
+import Combine
+import Dependencies
+import Foundation
+import FoundationInterfaces
+import LLMServiceInterface
+import ServerServiceInterface
+import SwiftTesting
+import Testing
+import XcodeObserverServiceInterface
+@testable import Chat
+
+// MARK: - ChatTabViewModelHelpersTests
+
+struct ChatTabViewModelHelpersTests {
+
+  // MARK: - Tests
+
+  @MainActor
+  @Test("View model fetches existing files on creation")
+  func viewModelFetchesExistingFilesOnCreation() async throws {
+    // Setup
+    let workspaceURL = URL(fileURLWithPath: "/test/workspace/project.xcworkspace")
+    let mockXcodeObserver = MockXcodeObserver(workspaceURL: workspaceURL)
+    let mockFileManager = MockFileManager()
+    let mockServer = MockServer()
+    mockServer.onPostRequest = { path, _, _ in
+      if path == "listFiles" {
+        // Create a mock response for the listFiles endpoint
+        let fileInfo = Schema.ListedFileInfo(
+          path: "/test/workspace/file1.swift",
+          isFile: true,
+          isDirectory: false,
+          isSymlink: false,
+          byteSize: 100,
+          permissions: "rw-r--r--",
+          createdAt: "2025-01-01T00:00:00Z",
+          modifiedAt: "2025-01-01T00:00:00Z")
+
+        let response = Schema.ListFilesToolOutput(
+          files: [fileInfo])
+        return try JSONEncoder().encode(response)
+      }
+
+      throw URLError(.badServerResponse)
+    }
+    let mockLLMService = MockLLMService()
+    let mockCheckpointService = MockCheckpointService()
+
+    // Test
+    let sut = withDependencies {
+      $0.xcodeObserver = mockXcodeObserver
+      $0.fileManager = mockFileManager
+      $0.server = mockServer
+      $0.llmService = mockLLMService
+      $0.checkpointService = mockCheckpointService
+    } operation: {
+      ChatTabViewModel()
+    }
+
+    let exp = expectation(description: "Messages updated")
+    let cancellable = sut.didSet(\.messages) { _ in
+      exp.fulfillAtMostOnce()
+    }
+
+    try await fulfillment(of: exp)
+
+    // Assert
+    let lastMessageContent = try #require(sut.messages.last?.content.first)
+    switch lastMessageContent {
+    case .nonUserFacingText(let textContent):
+      #expect(textContent.text.contains("file1.swift"))
+    default:
+      XCTFail("Expected nonUserFacingText content")
+    }
+    _ = cancellable
+  }
+
+  @Test("formatFileListAsHierarchy creates proper hierarchy")
+  func formatFileListAsHierarchy() {
+    // Setup
+    let files = [
+      "/project/file1.swift",
+      "/project/src/",
+      "/project/src/main.swift",
+      "/project/src/utils/test/helper.swift",
+      "/project/src/view.swift",
+    ].map { Schema.ListedFileInfo(path: $0) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - file1.swift
+        - src/
+          - main.swift
+          - utils/
+            - test/
+              - helper.swift
+          - view.swift
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy handles empty file list")
+  func formatFileListAsHierarchyWithEmptyList() {
+    // Setup
+    let files: [Schema.ListedFileInfo] = []
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy handles single file")
+  func formatFileListAsHierarchyWithSingleFile() {
+    // Setup
+    let files = [Schema.ListedFileInfo(path: "/project/main.swift")]
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - main.swift
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy handles nested directories only")
+  func formatFileListAsHierarchyWithDirectoriesOnly() {
+    // Setup
+    let files = [
+      "/project/src/",
+      "/project/src/utils/",
+      "/project/tests/",
+    ].map { Schema.ListedFileInfo(path: $0) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - src/
+          - utils/
+        - tests/
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy sorts files alphabetically")
+  func formatFileListAsHierarchySortsAlphabetically() {
+    // Setup
+    let files = [
+      "/project/zebra.swift",
+      "/project/alpha.swift",
+      "/project/beta.swift",
+    ].map { Schema.ListedFileInfo(path: $0) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - alpha.swift
+        - beta.swift
+        - zebra.swift
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy handles complex nested structure")
+  func formatFileListAsHierarchyWithComplexStructure() {
+    // Setup
+    let files = [
+      "/project/Package.swift",
+      "/project/Sources/MyLibrary/MyLibrary.swift",
+      "/project/Sources/MyLibrary/Internal/Helper.swift",
+      "/project/Tests/MyLibraryTests/MyLibraryTests.swift",
+      "/project/Tests/",
+      "/project/Sources/",
+      "/project/README.md",
+    ].map { Schema.ListedFileInfo(path: $0) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - Package.swift
+        - README.md
+        - Sources/
+          - MyLibrary/
+            - Internal/
+              - Helper.swift
+            - MyLibrary.swift
+        - Tests/
+          - MyLibraryTests/
+            - MyLibraryTests.swift
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy handles files at root level only")
+  func formatFileListAsHierarchyWithRootFilesOnly() {
+    // Setup
+    let files = [
+      "/project/file1.txt",
+      "/project/file2.swift",
+      "/project/config.json",
+    ].map { Schema.ListedFileInfo(path: $0) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - config.json
+        - file1.txt
+        - file2.swift
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy handles special characters in filenames")
+  func formatFileListAsHierarchyWithSpecialCharacters() {
+    // Setup
+    let files = [
+      "/project/file with spaces.swift",
+      "/project/file-with-dashes.md",
+      "/project/file_with_underscores.txt",
+      "/project/special/file.test.swift",
+    ].map { Schema.ListedFileInfo(path: $0) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - file with spaces.swift
+        - file-with-dashes.md
+        - file_with_underscores.txt
+        - special/
+          - file.test.swift
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy handles files out of the project root")
+  func formatFileListAsHierarchyWithFilesOutOfProjectRoot() {
+    // Setup
+    let files = [
+      "/project/src/",
+      "/src/utils/outside-root-repo.md",
+      "/project/tests/",
+      "/project/tests/file.txt",
+    ].map { Schema.ListedFileInfo(path: $0) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - src/
+        - tests/
+          - file.txt
+      """
+
+    #expect(result == expected)
+  }
+
+  @Test("formatFileListAsHierarchy adds message for truncated content")
+  func formatFileListAsHierarchyAddsMessageForTruncatedContent() {
+    // Setup
+    let files = [
+      ("/project/Package.swift", false),
+      ("/project/Sources/MyLibrary/MyLibrary.swift", false),
+      ("/project/Sources/MyLibrary/Internal/Helper.swift", false),
+      ("/project/Sources/MyLibrary/Internal/", true),
+      ("/project/Tests/MyLibraryTests/MyLibraryTests.swift", false),
+      ("/project/Tests/", true),
+      ("/project/Sources/", false),
+      ("/project/README.md", false),
+    ].map { Schema.ListedFileInfo(path: $0.0, hasMoreContent: $0.1) }
+
+    // Test
+    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+
+    // Assert
+    let expected = """
+      - ./
+        - Package.swift
+        - README.md
+        - Sources/
+          - MyLibrary/
+            - Internal/ (truncated)
+              - Helper.swift
+            - MyLibrary.swift
+        - Tests/ (truncated)
+          - MyLibraryTests/
+            - MyLibraryTests.swift
+      """
+
+    #expect(result == expected)
+  }
+}
+
+extension Schema.ListedFileInfo {
+  init(path: String, hasMoreContent: Bool = false) {
+    self.init(
+      path: path,
+      isFile: !path.hasSuffix("/"),
+      isDirectory: false,
+      hasMoreContent: hasMoreContent,
+      isSymlink: false,
+      byteSize: 200,
+      permissions: "rw-r--r--",
+      createdAt: "2025-01-01T00:00:00Z",
+      modifiedAt: "2025-01-01T00:00:00Z")
+  }
+}

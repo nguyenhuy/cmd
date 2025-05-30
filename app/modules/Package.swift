@@ -338,6 +338,7 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "ServerServiceInterface",
     "SettingsServiceInterface",
+    "ShellServiceInterface",
     "ToolFoundation",
     "XcodeObserverServiceInterface",
   ],
