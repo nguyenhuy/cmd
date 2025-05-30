@@ -214,7 +214,7 @@ final class DefaultServer: Server {
             process.waitUntilExit()
             if let self {
               // The server crashed or was killed, restart it.
-              defaultLogger.log("Restarting server")
+              defaultLogger.error("Restarting server. This should not happen.")
               try await connect()
             }
           }
