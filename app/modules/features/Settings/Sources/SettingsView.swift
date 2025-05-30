@@ -20,9 +20,6 @@ public struct SettingsView: View {
           onNavigate: { section in
             currentView = section
           },
-          onSave: {
-            viewModel.save()
-          },
           onDismiss: onDismiss)
       }
 
@@ -162,7 +159,6 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
 
 private struct SettingsLandingView: View {
   let onNavigate: (SettingsSection) -> Void
-  let onSave: () -> Void
   let onDismiss: () -> Void
 
   var body: some View {
