@@ -118,6 +118,7 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 		}, 1000)
 
 		for await (const chunk of stream) {
+			logInfo(`Received chunk #${i}: ${JSON.stringify(chunk)}`)
 			const transformChunk = (
 				chunk: TextStreamPart<Record<string, MappedTool>>,
 			): StreamedResponseChunk | undefined => {
@@ -250,19 +251,27 @@ const mapMessage = (message: Message): CoreMessage => {
 						case "file_attachment":
 							result.push({
 								type: "text",
-								text: `\`\`\`${attachment.path}
-							${attachment.content}
-							\`\`\`
+								text: `<full_file>
+								<path>${attachment.path}</path>
+								<content>
+								${attachment.content}
+								</content>
+							</full_file>
 							`,
 							})
 							break
 						case "file_selection_attachment":
 							result.push({
 								type: "text",
-								text: `\`\`\`${attachment.path} Line ${attachment.startLine} - ${attachment.endLine}
-                      ${attachment.content}
-                      \`\`\`
-                      `,
+								text: `<file_selection>
+								<path>${attachment.path}</path>
+								<start_line>${attachment.startLine}</start_line>
+								<end_line>${attachment.endLine}</end_line>
+								<content>
+								${attachment.content}
+								</content>
+							</file_selection>
+							`,
 							})
 							break
 						case "build_error_attachment":
