@@ -1,6 +1,8 @@
 // Copyright Xcompanion. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import Dependencies
+import FoundationInterfaces
 import SwiftUI
 
 struct InternalSettingsView: View {
@@ -32,10 +34,10 @@ struct InternalSettingsView: View {
           Spacer()
           Toggle("", isOn: Binding<Bool>(
             get: {
-              UserDefaults.standard.bool(forKey: "llmService.isRepeating")
+              userDefaults.bool(forKey: "llmService.isRepeating")
             },
             set: { value in
-              UserDefaults.standard.set(value, forKey: "llmService.isRepeating")
+              userDefaults.set(value, forKey: "llmService.isRepeating")
             }
           ))
           .toggleStyle(.switch)
@@ -49,4 +51,7 @@ struct InternalSettingsView: View {
           .stroke(Color.gray.opacity(0.2), lineWidth: 1))
     }
   }
+
+  @Dependency(\.userDefaults) private var userDefaults
+
 }

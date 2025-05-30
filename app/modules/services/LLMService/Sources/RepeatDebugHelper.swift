@@ -4,6 +4,7 @@
 import AppFoundation
 import Combine
 import Foundation
+import FoundationInterfaces
 import ThreadSafe
 
 #if DEBUG
@@ -15,12 +16,13 @@ import ThreadSafe
 /// Not the best code, but it does the job. DEBUG only.
 @ThreadSafe
 final class RepeatDebugHelper: Sendable {
-  init() {
-    isRepeating = storage.bool(forKey: "llmService.isRepeating")
+  init(userDefaults: UserDefaultsI) {
+    self.userDefaults = userDefaults
+    isRepeating = userDefaults.bool(forKey: "llmService.isRepeating")
     startSession()
   }
 
-  let storage = UserDefaults.standard
+  let userDefaults: UserDefaultsI
   let isRepeating: Bool
 
   var streams: [Stream] = []
@@ -29,7 +31,7 @@ final class RepeatDebugHelper: Sendable {
   func startSession() {
     if !isRepeating { return }
     guard
-      let streamsData = storage.data(forKey: "llmService.savedStreams"),
+      let streamsData = userDefaults.data(forKey: "llmService.savedStreams"),
       let streams = try? JSONDecoder().decode([Stream].self, from: streamsData)
     else { return }
     self.streams = streams
@@ -48,7 +50,7 @@ final class RepeatDebugHelper: Sendable {
       }
       return state.streams
     }
-    storage.set(try? JSONEncoder().encode(streams), forKey: "llmService.savedStreams")
+    userDefaults.set(try? JSONEncoder().encode(streams), forKey: "llmService.savedStreams")
   }
 
   func streamCompleted() {

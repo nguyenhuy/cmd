@@ -6,6 +6,7 @@ import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
@@ -18,9 +19,13 @@ import ToolFoundation
 
 final class DefaultLLMService: LLMService {
 
-  init(server: Server, settingsService: SettingsService) {
+  init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI) {
     self.server = server
     self.settingsService = settingsService
+
+    #if DEBUG
+    repeatDebugHelper = RepeatDebugHelper(userDefaults: userDefaults)
+    #endif
   }
 
   func sendMessage(
@@ -149,7 +154,7 @@ final class DefaultLLMService: LLMService {
   }
 
   #if DEBUG
-  private let repeatDebugHelper = RepeatDebugHelper()
+  private let repeatDebugHelper: RepeatDebugHelper
   #endif
   private let settingsService: SettingsService
   private let server: Server
@@ -208,13 +213,15 @@ final class DefaultLLMService: LLMService {
 
 extension BaseProviding where
   Self: ServerProviding,
-  Self: SettingsServiceProviding
+  Self: SettingsServiceProviding,
+  Self: UserDefaultsProviding
 {
   public var llmService: LLMService {
     shared {
       DefaultLLMService(
         server: server,
-        settingsService: settingsService)
+        settingsService: settingsService,
+        userDefaults: sharedUserDefaults)
     }
   }
 }
