@@ -50,6 +50,8 @@ struct InternalSettingsView: View {
         RoundedRectangle(cornerRadius: 8)
           .stroke(Color.gray.opacity(0.2), lineWidth: 1))
     }
+
+    Spacer()
   }
 
   @Dependency(\.userDefaults) private var userDefaults
