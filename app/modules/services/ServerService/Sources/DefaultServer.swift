@@ -256,7 +256,7 @@ final class DefaultServer: Server {
     let filePaths = files.compactMap { resourceBundle.path(forResource: $0, ofType: nil) }
 
     guard filePaths.count == files.count else {
-      throw AppError(message: "Failed to locate all files to copy. Could not start the local server.")
+      throw AppError(message: "Failed to locate all files to copy. Could not start the local server.\nYou likely need to do File>Packages>Reset Package Cache and rebuild to resolve the issue.")
     }
 
     // Create application support directory if it doesn't exist
@@ -366,10 +366,4 @@ extension BaseProviding where
 
 extension URLResponse: @unchecked @retroactive Sendable { }
 
-#if SWIFT_PACKAGE
-// TODO: look if the later also works
 private let resourceBundle = Bundle.module
-#else
-private class ResourceBundle { }
-private let resourceBundle = Bundle(for: ResourceBundle.self)
-#endif
