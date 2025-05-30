@@ -82,7 +82,7 @@ class CodeBlockElement {
     let language: HighlightLanguage = (language.map { HighlightLanguage(rawValue: $0) } ?? nil) ?? .swift
     let content = content
     highlightingTasks.queue {
-      try await highlighter.attributedText(content, language: language, colors: .dark(.xcode))
+      try await highlighter.attributedText(content, language: language, colors: .codeHighlight)
     }
 
     handleIsCompletedChanged()

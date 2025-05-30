@@ -8,6 +8,7 @@ Target.module(
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
     "FoundationInterfaces",
+    "HighlighterServiceInterface",
     "LoggingServiceInterface",
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",

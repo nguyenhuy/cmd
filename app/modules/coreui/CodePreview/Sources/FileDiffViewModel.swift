@@ -9,6 +9,7 @@ import FileDiffFoundation
 import FileDiffTypesFoundation
 import Foundation
 import FoundationInterfaces
+import HighlighterServiceInterface
 import LoggingServiceInterface
 import Observation
 import XcodeControllerServiceInterface
@@ -85,7 +86,7 @@ public final class FileDiffViewModel: Sendable {
           oldContent: fileContent,
           newContent: newContent,
           gitDiff: gitDiff,
-          highlightColors: .dark(.xcode))
+          highlightColors: .codeHighlight)
         return .init(canBeApplied: true, formattedDiff: formattedDiff, baseLineContent: fileContent, targetContent: newContent)
       }
     } catch {
@@ -229,7 +230,7 @@ public final class FileDiffViewModel: Sendable {
       let formatterDiff = try await FileDiff.getColoredDiff(
         oldContent: oldContent,
         newContent: newContent,
-        highlightColors: .dark(.xcode))
+        highlightColors: .codeHighlight)
 
       return SuggestionUpdate(
         canBeApplied: true,

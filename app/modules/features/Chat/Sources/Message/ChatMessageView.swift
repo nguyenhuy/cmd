@@ -15,6 +15,16 @@ import ToolFoundation
 
 struct ChatMessageView: View {
 
+  // MARK: Private Constants
+
+  enum Constants {
+    static let cornerRadius: CGFloat = 5
+    static let userTextHorizontalPadding: CGFloat = 8
+    static let textVerticalPadding: CGFloat = 8
+    static let toolPadding: CGFloat = 8
+    static let checkpointPadding: CGFloat = 8
+  }
+
   let message: ChatMessageContentWithRole
 
   var body: some View {
@@ -22,7 +32,7 @@ struct ChatMessageView: View {
       ReshareGeometry(geometry, geometryReader: $size) {
         Color.clear
       }
-    }
+    }.frame(height: 0)
 
     HStack {
       VStack(alignment: .leading, spacing: 0) {
@@ -39,6 +49,7 @@ struct ChatMessageView: View {
 
         case .toolUse(let toolUse):
           ToolUseView(toolUse: toolUse.toolUse)
+            .padding(Constants.toolPadding)
 
         case .nonUserFacingText:
           EmptyView()
@@ -50,23 +61,22 @@ struct ChatMessageView: View {
     .roundedCorner(radius: Constants.cornerRadius)
   }
 
-  // MARK: Private Constants
-
-  private enum Constants {
-    static let cornerRadius: CGFloat = 5
-  }
-
   @State private var size = CGSize.zero
 
   @Environment(\.colorScheme) private var colorScheme
+
+  private var textHorizontalPadding: CGFloat {
+    message.role == .user ? Constants.userTextHorizontalPadding : 0
+  }
 
   @ViewBuilder
   private func textElementView(_ element: TextFormatter.Element) -> some View {
     switch element {
     case .text(let text):
-      LongText(markdown(for: text), maxWidth: size.width)
+      LongText(markdown(for: text), maxWidth: size.width - 2 * textHorizontalPadding)
         .textSelection(.enabled)
-        .padding(8)
+        .padding(.horizontal, textHorizontalPadding)
+        .padding(.vertical, Constants.textVerticalPadding)
         .cornerRadius(8)
 
     case .codeBlock(let code):

@@ -53,7 +53,7 @@ public struct SettingsView: View {
           action: {
             currentView = .landing
           },
-          onHoverColor: colorScheme.tertiarySystemBackground,
+          onHoverColor: colorScheme.secondarySystemBackground,
           padding: 6,
           cornerRadius: 8)
         {
@@ -168,7 +168,7 @@ private struct SettingsLandingView: View {
         action: {
           onDismiss()
         },
-        onHoverColor: colorScheme.tertiarySystemBackground,
+        onHoverColor: colorScheme.secondarySystemBackground,
         padding: 6,
         cornerRadius: 8)
       {

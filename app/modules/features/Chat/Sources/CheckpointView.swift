@@ -38,6 +38,7 @@ struct CheckpointView: View {
       }
       .buttonStyle(PlainButtonStyle())
     }
+    .padding(ChatMessageView.Constants.checkpointPadding)
   }
 }
 

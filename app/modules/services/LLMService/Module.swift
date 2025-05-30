@@ -6,6 +6,7 @@ Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
+    "FoundationInterfaces",
     "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",
@@ -18,6 +19,7 @@ Target.module(
   testDependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "FoundationInterfaces",
     "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",

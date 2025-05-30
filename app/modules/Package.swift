@@ -143,6 +143,7 @@ targets.append(contentsOf: Target.module(
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
     "FoundationInterfaces",
+    "HighlighterServiceInterface",
     "LoggingServiceInterface",
     "XcodeControllerServiceInterface",
     "XcodeObserverServiceInterface",
@@ -858,6 +859,7 @@ targets.append(contentsOf: Target.module(
     "ChatFoundation",
     "ConcurrencyFoundation",
     "DependencyFoundation",
+    "FoundationInterfaces",
     "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",
@@ -870,6 +872,7 @@ targets.append(contentsOf: Target.module(
   testDependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "FoundationInterfaces",
     "JSONFoundation",
     "LLMFoundation",
     "LLMServiceInterface",

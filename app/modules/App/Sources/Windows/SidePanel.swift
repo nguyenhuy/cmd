@@ -22,6 +22,22 @@ final class SidePanel: XcodeWindow {
     styleMask = [.closable, .miniaturizable, .resizable, .titled]
     hasShadow = false
 
+    // Configure title bar with solid background and fixed height
+    titlebarAppearsTransparent = false
+    titleVisibility = .hidden
+
+    // Create and configure toolbar for fixed height
+    let toolbar = NSToolbar(identifier: "SidePanelToolbar")
+    toolbar.displayMode = .iconOnly
+    toolbar.allowsUserCustomization = false
+    toolbar.autosavesConfiguration = false
+    self.toolbar = toolbar
+
+    // Set fixed title bar height, same as Xcode's.
+    if let titlebarContainer = standardWindowButton(.closeButton)?.superview?.superview {
+      titlebarContainer.heightAnchor.constraint(equalToConstant: 20).isActive = true
+    }
+
     collectionBehavior = [
       .fullScreenAuxiliary,
       .fullScreenPrimary,

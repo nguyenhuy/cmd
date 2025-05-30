@@ -124,12 +124,20 @@ extension ColorScheme {
 
   public var tertiarySystemBackground: Color {
     let background = systemBackground
-    return background.mixed(with: background.inverted, proportion: 0.02)
+    if self == .dark {
+      return background.mixed(with: background.inverted, proportion: 0.02)
+    } else {
+      return background.mixed(with: background.inverted, proportion: 0.1)
+    }
   }
 
   public var secondarySystemBackground: Color {
     let background = systemBackground
-    return background.mixed(with: background.inverted, proportion: 0.004)
+    if self == .dark {
+      return background.mixed(with: background.inverted, proportion: 0.008)
+    } else {
+      return background.mixed(with: background.inverted, proportion: 0.05)
+    }
   }
 
   public var systemBackground: Color {
