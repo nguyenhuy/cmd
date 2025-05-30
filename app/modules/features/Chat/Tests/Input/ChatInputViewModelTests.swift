@@ -177,62 +177,6 @@ struct ChatInputViewModelTests {
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
 
     #expect(viewModel.activeModels.isEmpty)
-    #expect(viewModel.selectedModel == .gpt4o)
-  }
-
-  @MainActor
-  @Test("changing selected model updates user defaults")
-  func test_changingSelectedModel_updatesUserDefaults() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService.allConfigured
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-    } operation: {
-      ChatInputViewModel(
-        selectedModel: .claudeSonnet40,
-        availableModels: [.claudeSonnet40, .gpt4o])
-    }
-
-    #expect(mockUserDefaults.string(forKey: "selectedLLMModel") == nil)
-    viewModel.selectedModel = .gpt4o
-
-    #expect(mockUserDefaults.string(forKey: "selectedLLMModel") == "gpt-4o")
-  }
-
-  @MainActor
-  @Test("initializing with settings service and observing changes")
-  func test_initialization_withSettingsServiceAndObservingChanges() async throws {
-    let mockSettingsService = MockSettingsService(Settings(
-      pointReleaseXcodeExtensionToDebugApp: false,
-      anthropicSettings: .init(apiKey: "test", baseUrl: nil),
-      openAISettings: .init(apiKey: "test", baseUrl: nil)))
-    let mockUserDefaults = MockUserDefaults()
-
-    let viewModel = withDependencies {
-      $0.settingsService = mockSettingsService
-      $0.userDefaults = mockUserDefaults
-    } operation: {
-      ChatInputViewModel(
-        selectedModel: .claudeSonnet40,
-        availableModels: nil) // Pass nil to read from the settings service
-    }
-
-    #expect(viewModel.availableModels.count == 5)
-    #expect(viewModel.selectedModel == .claudeSonnet40)
-
-    mockSettingsService.update(setting: \.openAISettings, to: nil)
-
-    #expect(viewModel.availableModels.count == 2)
-    #expect(viewModel.availableModels.contains(.claudeSonnet40))
-    #expect(!viewModel.availableModels.contains(.gpt4o))
-    #expect(viewModel.selectedModel == .claudeSonnet40)
-
-    mockSettingsService.update(setting: \.anthropicSettings, to: nil)
-
-    #expect(viewModel.availableModels.isEmpty)
->>>>>>> 9cca109 (fix remaining tests)
     #expect(viewModel.selectedModel == nil)
   }
 }
