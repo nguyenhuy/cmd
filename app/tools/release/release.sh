@@ -45,20 +45,20 @@ cd "$repo_root/app"
 ./tools/release/configure_xcodeproj_for_release_build.sh
 
 if [ "$ARCHIVE" = true ]; then
-	xcodebuild archive -project Xcompanion.xcodeproj -scheme Xcompanion -configuration Release -archivePath ./.build/Xcompanion.xcarchive | xcpretty
-	echo "Xcode archive created at ./.build/Xcompanion.xcarchive"
-	APPLICATION_PATH="/Applications/Xcompanion.app"
+	xcodebuild archive -project command.xcodeproj -scheme command -configuration Release -archivePath ./.build/command.xcarchive | xcpretty
+	echo "Xcode archive created at ./.build/command.xcarchive"
+	APPLICATION_PATH="/Applications/command.app"
 
 	# Kill running app, and replace it
-	ps aux | grep -i /Applications/Xcompanion.app | grep -v grep | awk '{print $2}' | xargs kill || echo "Xcompanion is not running"
+	ps aux | grep -i /Applications/command.app | grep -v grep | awk '{print $2}' | xargs kill || echo "command is not running"
 
 	rm -rf "$APPLICATION_PATH"
-	mv ./.build/Xcompanion.xcarchive/Products/Applications/Xcompanion.app "$APPLICATION_PATH"
+	mv ./.build/command.xcarchive/Products/Applications/command.app "$APPLICATION_PATH"
 	echo "App moved to $APPLICATION_PATH"
 
 	open "$APPLICATION_PATH" || echo "Failed to open $APPLICATION_PATH"
 else
-	xcodebuild build -project Xcompanion.xcodeproj -scheme Xcompanion -configuration Release
+	xcodebuild build -project command.xcodeproj -scheme command -configuration Release
 	echo "Release build completed"
 fi
 

@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Dependencies
@@ -15,7 +15,7 @@ public struct SetupView: View {
   public var body: some View {
     // Example usage
     VStack {
-      Text("Xcompanion needs accessibility permissions to interact with Xcode.").padding()
+      Text("command needs accessibility permissions to interact with Xcode.").padding()
       PlainButton(title: "Give permissions") {
         permissionsService.request(permission: .accessibility)
       }

@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Foundation
@@ -19,7 +19,7 @@ extension XcodeExtensionError {
 
 extension XcodeExtensionError: CustomNSError {
   public var errorUserInfo: [String: Any] {
-    let xcodeExtensionPrefix = "Xcompanion error: "
+    let xcodeExtensionPrefix = "command error: "
     let localizedDescription = message.hasPrefix(xcodeExtensionPrefix) ? message : "\(xcodeExtensionPrefix)\(message)"
 
     return [

@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F6DA466E2D6EDBA100408790"
-               BuildableName = "&#x61c;Xcompanion.appex"
-               BlueprintName = "Xcompanion Extension"
-               ReferencedContainer = "container:Xcompanion.xcodeproj">
+               BuildableName = "&#x61c;command.appex"
+               BlueprintName = "command Extension"
+               ReferencedContainer = "container:command.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -30,9 +30,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-               BuildableName = "Xcompanion.app"
-               BlueprintName = "Xcompanion"
-               ReferencedContainer = "container:Xcompanion.xcodeproj">
+               BuildableName = "command.app"
+               BlueprintName = "command"
+               ReferencedContainer = "container:command.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -63,9 +63,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-            BuildableName = "Xcompanion.app"
-            BlueprintName = "Xcompanion"
-            ReferencedContainer = "container:Xcompanion.xcodeproj">
+            BuildableName = "command.app"
+            BlueprintName = "command"
+            ReferencedContainer = "container:command.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </LaunchAction>
@@ -82,9 +82,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6DA466E2D6EDBA100408790"
-            BuildableName = "&#x61c;Xcompanion.appex"
-            BlueprintName = "Xcompanion Extension"
-            ReferencedContainer = "container:Xcompanion.xcodeproj">
+            BuildableName = "&#x61c;command.appex"
+            BlueprintName = "command Extension"
+            ReferencedContainer = "container:command.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

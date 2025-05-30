@@ -4,10 +4,10 @@ platform :mac do
   desc "Build the app in Debug configuration"
   lane :build_debug do
     build_mac_app(
-      project: "./Xcompanion.xcodeproj",
+      project: "./command.xcodeproj",
       configuration: "Debug",
       skip_archive: true,
-      scheme: "Xcompanion",
+      scheme: "command",
       silent: true,
     )
   end
@@ -25,12 +25,12 @@ platform :mac do
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
     build_mac_app(
-      project: "./Xcompanion.xcodeproj",
+      project: "./command.xcodeproj",
       configuration: "Release",
       export_method: "mac-application",
       output_directory: "builds/release",
-      output_name: "Xcompanion.app",
-      scheme: "Xcompanion",
+      output_name: "command.app",
+      scheme: "command",
       silent: true,
       skip_archive: true
     )

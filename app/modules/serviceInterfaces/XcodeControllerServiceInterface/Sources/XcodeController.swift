@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 @_exported import FileDiffTypesFoundation
@@ -117,15 +117,6 @@ public struct BuildMessage: Codable, Sendable {
       self.endingColumnNumber = endingColumnNumber
     }
 
-//        location = 0x00006000001e51a0 {
-//          XCLogParser.DVTDocumentLocation = {
-//            documentURLString = "file:///Users/guigui/dev/Xcompanion/app/modules/services/XcodeControllerService/Sources/DefaultXcodeController+build.swift"
-//            timestamp = 769646409.20149696
-//          }
-//          startingLineNumber = 77
-//          startingColumnNumber = 10
-//          endingLineNumber = 77
-//          endingColumnNumber = 10
     public let file: URL
     public let startingLineNumber: Int?
     public let startingColumnNumber: Int?

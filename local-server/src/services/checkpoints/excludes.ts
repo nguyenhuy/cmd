@@ -35,7 +35,7 @@ const getBuildArtifactPatterns = () => [
 	"temp/",
 	"vendor/",
 	"venv/",
-	// XCompanion added
+	// added
 	".build",
 	".index-build",
 	"DerivedData",

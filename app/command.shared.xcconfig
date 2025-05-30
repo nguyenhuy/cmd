@@ -1,11 +1,11 @@
-//  Copyright Xcompanion. All rights reserved.
+//  Copyright command. All rights reserved.
 //  Licensed under the XXX License. See License.txt in the project root for license information.
 
-DEBUG_SHARED_USER_DEFAULTS_SUITE = $(TeamIdentifierPrefix)com.xcompanion.debug.shared
-RELEASE_SHARED_USER_DEFAULTS_SUITE = $(TeamIdentifierPrefix)com.xcompanion.shared
+DEBUG_SHARED_USER_DEFAULTS_SUITE = $(TeamIdentifierPrefix)dev.getcmd.debug.shared
+RELEASE_SHARED_USER_DEFAULTS_SUITE = $(TeamIdentifierPrefix)dev.getcmd.shared
 
 INFOPLIST_KEY_ReleaseUserDefaultsSharedSuiteName = $(RELEASE_SHARED_USER_DEFAULTS_SUITE)
 INFOPLIST_KEY_DebugUserDefaultsSharedSuiteName = $(DEBUG_SHARED_USER_DEFAULTS_SUITE)
 
 
-RELEASE_APP_BUNDLE_IDENTIFIER = com.xcompanion.Xcompanion
+RELEASE_APP_BUNDLE_IDENTIFIER = dev.getcmd.command

@@ -1,1 +1,1 @@
-Copyright 2025 Xcompanion, all rights reserved.
+Copyright 2025 command, all rights reserved.

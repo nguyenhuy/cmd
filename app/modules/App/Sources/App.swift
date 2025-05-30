@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Combine
@@ -14,9 +14,9 @@ var machTaskSelf: mach_port_t {
   mach_task_self_
 }
 
-// MARK: - XcompanionApp
+// MARK: - commandApp
 
-public struct XcompanionApp: App {
+public struct commandApp: App {
 
   public init() {
     let isAppActive = _appDelegate.wrappedValue.isAppActive.removeDuplicates().eraseToAnyPublisher()

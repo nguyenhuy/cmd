@@ -1,10 +1,10 @@
-//  Copyright Xcompanion. All rights reserved.
+//  Copyright command. All rights reserved.
 //  Licensed under the XXX License. See License.txt in the project root for license information.
 
-#include "../Xcompanion.debug.xcconfig"
+#include "../command.debug.xcconfig"
 
-PRODUCT_NAME = Xcompanion $(DEBUG_SUFFIX)
-INFOPLIST_KEY_CFBundleDisplayName = Xcompanion $(DEBUG_SUFFIX)
+PRODUCT_NAME = command $(DEBUG_SUFFIX)
+INFOPLIST_KEY_CFBundleDisplayName = command $(DEBUG_SUFFIX)
 PRODUCT_BUNDLE_IDENTIFIER = $(HOST_APP_BUNDLE_IDENTIFIER)
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon.debug
 INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.developer-tools

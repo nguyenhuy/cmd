@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import AppKit
@@ -15,11 +15,11 @@ enum OpenHostApp {
 
     let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
     guard let appURL else {
-      let errorMessage = "Xcompanion could not be located in the Applications folder."
+      let errorMessage = "command could not be located in the Applications folder."
       defaultLogger.error(errorMessage)
       throw XcodeExtensionError(message: errorMessage)
     }
-    defaultLogger.info("Opening Xcompanion from the extension")
+    defaultLogger.info("Opening command from the extension")
 
     let url = URL(fileURLWithPath: appURL.path, isDirectory: true)
     let configuration = NSWorkspace.OpenConfiguration()

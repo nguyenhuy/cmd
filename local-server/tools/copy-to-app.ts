@@ -6,7 +6,7 @@ import { fileURLToPath } from "url"
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const destinations = [
-	path.join(os.homedir(), "Library/Application Support/XCompanion"),
+	path.join(os.homedir(), "Library/Application Support/command"),
 	path.join(__dirname, "../../app/modules/services/ServerService/Sources/Resources"),
 ]
 const sources = ["./dist/main.bundle.js", "./dist/main.bundle.js.map", "./build.sha256"]

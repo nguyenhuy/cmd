@@ -4,7 +4,7 @@
 --exclude Carthage,Pods,.build,**/Module.swift,**/Package.swift
 
 # options
---header Copyright Xcompanion. All rights reserved.\nLicensed under the XXX License. See License.txt in the project root for license information.
+--header Copyright command. All rights reserved.\nLicensed under the XXX License. See License.txt in the project root for license information.
 
 
 # rules

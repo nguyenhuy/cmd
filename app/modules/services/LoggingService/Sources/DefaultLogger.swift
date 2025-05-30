@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import ConcurrencyFoundation
@@ -199,7 +199,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   private var writeToFile: (@Sendable (_ message: String) -> Void) = { _ in }
 
   /// Sets up local file logging with automatic file creation and timestamped naming.
-  /// Creates log files in the application support directory under XCompanion/logs/.
+  /// Creates log files in the application support directory under command/logs/.
   /// - Parameters:
   ///   - writeToFile: Optional custom file writing function
   ///   - fileManager: File manager for handling file operations
@@ -213,7 +213,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
       let timestamp = dateFormatter.string(from: Date())
 
       let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-      let logDir = applicationSupport.appendingPathComponent("XCompanion").appendingPathComponent("logs")
+      let logDir = applicationSupport.appendingPathComponent("command").appendingPathComponent("logs")
       try? fileManager.createDirectory(at: logDir, withIntermediateDirectories: true)
 
       let logFilePath = logDir.appendingPathComponent("\(timestamp).txt")

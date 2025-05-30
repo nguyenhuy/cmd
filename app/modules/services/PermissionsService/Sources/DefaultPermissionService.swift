@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import AppFoundation
@@ -117,9 +117,9 @@ final class DefaultPermissionsService: PermissionsService {
       return false
     }
     #if DEBUG
-    let isGranted = output.contains("Xcompanion (Debug).appex")
+    let isGranted = output.contains("command (Debug).appex")
     #else
-    let isGranted = output.contains("Xcompanion.appex")
+    let isGranted = output.contains("command.appex")
     #endif
     return isGranted
   }

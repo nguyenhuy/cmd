@@ -1,15 +1,15 @@
-//  Copyright Xcompanion. All rights reserved.
+//  Copyright command. All rights reserved.
 //  Licensed under the XXX License. See License.txt in the project root for license information.
 
-#include "./Xcompanion.shared.xcconfig"
+#include "./command.shared.xcconfig"
 
 // Shared debug configuration for all targets
 DEBUG_SUFFIX = (Debug)
 SHARED_USER_DEFAULTS_SUITE = $(DEBUG_SHARED_USER_DEFAULTS_SUITE)
 
 // Bundle identifiers
-HOST_APP_BUNDLE_IDENTIFIER = com.xcompanion.debug.Xcompanion
-XCODE_EXTENSION_BUNDLE_IDENTIFIER = com.xcompanion.debug.Xcompanion.Extension
+HOST_APP_BUNDLE_IDENTIFIER = dev.getcmd.debug.command
+XCODE_EXTENSION_BUNDLE_IDENTIFIER = dev.getcmd.debug.command.Extension
 
 // This cannot be identical to the App's product name. So we add an invisible utf8 character (not visible in Xcode).
-XCODE_EXTENSION_PRODUCT_NAME = ؜Xcompanion $(DEBUG_SUFFIX)
+XCODE_EXTENSION_PRODUCT_NAME = ؜command $(DEBUG_SUFFIX)

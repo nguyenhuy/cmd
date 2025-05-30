@@ -26,7 +26,7 @@ const getCheckpointService = async ({
 	const service = RepoPerTaskCheckpointService.create({
 		taskId,
 		workspaceDir,
-		shadowDir: "/tmp/xcompanion/checkpoints/",
+		shadowDir: "/tmp/command/checkpoints/",
 		log: (message) => {
 			logInfo(message)
 		},

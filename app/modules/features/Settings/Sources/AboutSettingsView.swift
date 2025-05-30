@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import SwiftUI
@@ -38,7 +38,7 @@ struct AboutSettingsView: View {
             VStack(alignment: .leading, spacing: 4) {
               Text("Allow anonymous error and usage reporting")
               Text(
-                "Help improve Xcompanion by sending anonymous usage data and error reports. No code, prompts, or personal information is ever sent.")
+                "Help improve command by sending anonymous usage data and error reports. No code, prompts, or personal information is ever sent.")
                 .font(.caption)
                 .foregroundColor(.secondary)
             }

@@ -77,7 +77,7 @@ describe("Checkpoint Endpoints", () => {
 			expect(RepoPerTaskCheckpointService.create).toHaveBeenCalledWith({
 				taskId: "test-task-id",
 				workspaceDir: "/test/workspace",
-				shadowDir: "/tmp/xcompanion/checkpoints/",
+				shadowDir: "/tmp/command/checkpoints/",
 				log: expect.any(Function),
 			})
 			expect(mockCheckpointService.initShadowGit).toHaveBeenCalled()
@@ -161,7 +161,7 @@ describe("Checkpoint Endpoints", () => {
 			expect(RepoPerTaskCheckpointService.create).toHaveBeenCalledWith({
 				taskId: "test-task-id-123",
 				workspaceDir: "/test/workspace",
-				shadowDir: "/tmp/xcompanion/checkpoints/",
+				shadowDir: "/tmp/command/checkpoints/",
 				log: expect.any(Function),
 			})
 			expect(mockCheckpointService.initShadowGit).toHaveBeenCalled()
@@ -191,7 +191,7 @@ describe("Checkpoint Endpoints", () => {
 			expect(RepoPerTaskCheckpointService.create).toHaveBeenCalledWith({
 				taskId: "test-task-id-456",
 				workspaceDir: "/test/workspace",
-				shadowDir: "/tmp/xcompanion/checkpoints/",
+				shadowDir: "/tmp/command/checkpoints/",
 				log: expect.any(Function),
 			})
 			expect(mockCheckpointService.initShadowGit).toHaveBeenCalled()

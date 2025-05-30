@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import AppEventServiceInterface
@@ -33,7 +33,7 @@ final class DefaultServer: Server {
     hasCopiedFiles = false
     applicationSupportPath = {
       let paths = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
-      return paths[0].appendingPathComponent("XCompanion").path
+      return paths[0].appendingPathComponent("command").path
     }()
 
     let delegate = ServerDelegate()

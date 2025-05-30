@@ -48,7 +48,7 @@ build_and_copy() {
 	)
 	destination_dir=(
 		"$repo_root/app/modules/services/ServerService/Sources/Resources"
-		"$HOME/Library/Application\ Support/XCompanion"
+		"$HOME/Library/Application\ Support/command"
 	)
 	for file in "${files_to_copy[@]}"; do
 		for destination in "${destination_dir[@]}"; do

@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Combine
@@ -14,14 +14,14 @@ import Testing
 struct DefaultPermissionsServiceTests {
 
   static let xcodeExtensionNotRunningStdout = """
-    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/Xcompanion.app/Contents/MacOS/Xcompanion
-    me           35742   0.0  0.0 410724160   1520 s003  S+    3:08PM   0:00.00 grep --color=auto Xcompanion
+    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/command.app/Contents/MacOS/command
+    me           35742   0.0  0.0 410724160   1520 s003  S+    3:08PM   0:00.00 grep --color=auto command
     """
 
   static let xcodeExtensionRunningStdout = """
-    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/Xcompanion.app/Contents/MacOS/Xcompanion
-    me           29834   0.0  0.0 410463600   9984   ??  Ss    2:52PM   0:00.01 /Applications/Xcompanion.app/Contents/PlugIns/Xcompanion (Debug).appex/Contents/MacOS/Xcompanion -AppleLanguages ("en-US")
-    me           35742   0.0  0.0 410724160   1520 s003  S+    3:08PM   0:00.00 grep --color=auto Xcompanion
+    me           36684   1.4  0.2 412383248  91008   ??  S     3:11PM   0:00.27 /Applications/command.app/Contents/MacOS/command
+    me           29834   0.0  0.0 410463600   9984   ??  Ss    2:52PM   0:00.01 /Applications/command.app/Contents/PlugIns/command (Debug).appex/Contents/MacOS/command -AppleLanguages ("en-US")
+    me           35742   0.0  0.0 410724160   1520 s003  S+    3:08PM   0:00.00 grep --color=auto command
     """
 
   @Test
@@ -67,7 +67,7 @@ struct DefaultPermissionsServiceTests {
 
     let shellService = MockShellService()
     shellService.onRun = { command, _, _, _, _ in
-      #expect(command == "ps aux | grep 'Xcompanion'")
+      #expect(command == "ps aux | grep 'command'")
       let count = pollCount.increment()
       return CommandExecutionResult(
         exitCode: 0,

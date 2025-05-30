@@ -1,4 +1,4 @@
-git_url("git@github.com:gsabran/xcompanion-provisioning-profiles.git")
+git_url("git@github.com:gsabran/command-provisioning-profiles.git")
 
 storage_mode("git")
 

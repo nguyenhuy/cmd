@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Foundation
@@ -38,7 +38,7 @@ public protocol Logger: Sendable {
 /// Changing this value is not thread safe and should be done cautiously.
 nonisolated(unsafe) public var defaultLogger: Logger = TransientLogger(
   subsystem: Bundle.main.bundleIdentifier ?? "UnknownApp",
-  category: "Xcompanion")
+  category: "command")
 
 // MARK: - StaticString + @retroactive Hashable
 

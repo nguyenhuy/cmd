@@ -11,7 +11,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Run Script"
-               scriptText = "# WORKSPACE_PATH is like /Users/me/Xcompanion/app/Xcompanion.xcodeproj/project.xcworkspace&#10;&#10;path=$(dirname $WORKSPACE_PATH)&#10;path=$(dirname $path)&#10;&quot;$path/tools/sync-js-bundle-to-app.sh&quot; --pre-build&#10;&#10;">
+               scriptText = "# WORKSPACE_PATH is like /Users/me/command/app/command.xcodeproj/project.xcworkspace&#10;&#10;path=$(dirname $WORKSPACE_PATH)&#10;path=$(dirname $path)&#10;&quot;$path/tools/sync-js-bundle-to-app.sh&quot; --pre-build&#10;&#10;">
             </ActionContent>
          </ExecutionAction>
       </PreActions>
@@ -25,9 +25,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-               BuildableName = "Xcompanion.app"
-               BlueprintName = "Xcompanion"
-               ReferencedContainer = "container:Xcompanion.xcodeproj">
+               BuildableName = "command.app"
+               BlueprintName = "command"
+               ReferencedContainer = "container:command.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -54,9 +54,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-            BuildableName = "Xcompanion.app"
-            BlueprintName = "Xcompanion"
-            ReferencedContainer = "container:Xcompanion.xcodeproj">
+            BuildableName = "command.app"
+            BlueprintName = "command"
+            ReferencedContainer = "container:command.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <EnvironmentVariables>
@@ -78,9 +78,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F6EF7DBE2D4C4F2C0074006B"
-            BuildableName = "Xcompanion.app"
-            BlueprintName = "Xcompanion"
-            ReferencedContainer = "container:Xcompanion.xcodeproj">
+            BuildableName = "command.app"
+            BlueprintName = "command"
+            ReferencedContainer = "container:command.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
