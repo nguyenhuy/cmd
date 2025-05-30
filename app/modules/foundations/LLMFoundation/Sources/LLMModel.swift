@@ -85,13 +85,14 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     documentationURL: URL(string: "https://platform.openai.com/docs/models/o4-mini"))
 
   public static var allCases: [LLMModel] {
+    // Keep them ordered by most likely to be a good default.
     [
-      .claudeHaiku_3_5,
-      .claudeSonnet_3_7,
       .claudeSonnet_4_0,
+      .claudeSonnet_3_7,
       .claudeOpus_4,
       .gpt_4_1,
       .gpt_4o,
+      .claudeHaiku_3_5,
       .o3,
       .o4_mini,
     ]
