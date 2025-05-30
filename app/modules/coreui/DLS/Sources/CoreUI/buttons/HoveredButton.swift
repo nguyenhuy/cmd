@@ -7,14 +7,14 @@ import SwiftUI
 
 public struct HoveredButton<Content: View>: View {
 
-    /// Creates a button that changes its appearance when hovered.
-    /// - Parameters:
-    /// - action: The action to perform when the button is tapped.
-    /// - onHoverColor: The color to apply when the button is hovered.
-    /// - backgroundColor: The background color of the button.
-    /// - padding: The amount of padding around the button content.
-    /// - cornerRadius: The corner radius of the button.
-    /// - content: A closure that returns the content of the button.
+  /// Creates a button that changes its appearance when hovered.
+  /// - Parameters:
+  /// - action: The action to perform when the button is tapped.
+  /// - onHoverColor: The color to apply when the button is hovered.
+  /// - backgroundColor: The background color of the button.
+  /// - padding: The amount of padding around the button content.
+  /// - cornerRadius: The corner radius of the button.
+  /// - content: A closure that returns the content of the button.
   public init(
     action: @escaping () -> Void,
     onHoverColor: Color = .clear,
