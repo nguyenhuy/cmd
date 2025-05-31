@@ -21,6 +21,8 @@ clean:
 	swift package clean && \
 	find . -not -path './.git/*' 2> /dev/null | \
 	git check-ignore --stdin | \
-	while read file; do rm -rf "$$file"; done
+	while read file; do rm -rf "$$file"; done; \
+	cd "$(shell git rev-parse --show-toplevel)/app" && \
+	find . -path '*.xcuserstate' 2> /dev/null | git check-ignore --stdin | xargs -I{} rm {}
 test:
 	@cd modules && swift test -Xswiftc -suppress-warnings --quiet

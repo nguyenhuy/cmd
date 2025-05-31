@@ -1,24 +1,24 @@
 # MacOS App development
 
-### High level structure
+## High level structure
 The app has two targets. A standard MacOS target for the host app, and an Xcode extension. The host app bundles and boots a local Node server. Most of the logic lives in the host app. The host app talks to the Xcode extension through the AX API (ie programatically tapping buttons in Xcode's menu) and the extension talks to the host app trough the local server that relays messages.
 
 When open source implementations for some isolated features are avaialble in Typescript, we might include them in the local Node server and trigger them from the host app over http. An example is the creation and restauration of Checkpoints. This save development time and we can always port those features to Swift at a later time.
 
-### Modularization
+## Modularization
 We favor a highly modularized code base. The motivation is to promote isolation and testing. It should also help with faster rebuild times and SwiftUI previews.
 
-##### Module.swift
+### Module.swift
 Each module defines a `Module.swift` file where its dependencies are listed. They don't make sense on their own, but are are aggregated to create the shared [`Package.swift`](./modules/Package.swift) that is a standard Swift package.
 The `Module.swift` are the source of thruth and the `Package.swift` is a derived artifact. If you need to make ad-hoc changes to `Package.swift`, edit its template `Package.base.swift`.
 
-##### syncing dependencies
-`make sync-dependencies` aggregates all dependencies, detect missing & unused ones and fix them, and generate a local `Package.swift` for each module. The latter is not checked in. It allows to open and iterate on just one module and its required dependencies instead of all of the codebase.
+### syncing dependencies
+`make sync-dependencies` aggregates all dependencies, detect missing & unused ones and fix them
 
-##### 3rd party
+### 3rd party
 3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.base.swift`.
 
-##### Modules structure
+### Modules structure
 - foundation: usually some utility with no or little dependencies.
 - coreUI: reusable UI components
 - service: handle a specific role (for example networking). They define an interface and an implementation. They usually behave like a singleton.
@@ -34,9 +34,10 @@ The `Module.swift` are the source of thruth and the `Package.swift` is a derived
 | plugin | ✅ | ❌ | ❌ | ❌ | ❌ |
 | app | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-### Tips
+### Focus mode (advanced, fast iteration)
+You can focus on just one module and its dependencies. This can allow for really fast iteration, and reliable SwiftUI previews.
 
-If for some reason Xcode stops showing files in Swift packages, removing untracked files from `./modules` will help:
-```bash
-make clean
-```
+To do so:
+- generate a local `Package.swift`: `make sync-all-dependencies`. You should now see `Package.swift` alongside your `Module.swift`, for instance at `./modules/features/Onboarding/Package.swift` (This new file is gitignored)
+- you can now open the corresponding folder as a standard Swift package in Xcode. You'll then be working on a smaller set of files, and your development cycle should be faster.
+- ⚠️ before going back to working on the main xcode project, run `make clean` as Xcode is not liking something with nested Swift packages, and will not show your files in the file hierarchy anymore.
