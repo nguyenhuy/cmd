@@ -47,7 +47,7 @@ jobs:
       with:
         xcode-version: latest-stable
     - name: Run tests
-      run: cd app && make clean && make test
+      run: cd app && ./cmd.sh clean && ./cmd.sh test
 
   lint-swift:
     runs-on: macos-15
@@ -61,8 +61,8 @@ jobs:
     - name: Install swiftformat
       run: brew install swiftformat
     - name: Run linter
-      run: cd app && make lint
-    - name: Verify that `make lint` did not change outputs (if it did, please re-run it and re-commit!)
+      run: cd app && ./cmd.sh lint:swift
+    - name: Verify that `cmd lint:swift` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
   sync-app-dependencies:
@@ -80,8 +80,8 @@ jobs:
     - name: Install swiftformat
       run: brew install swiftformat
     - name: Run sync dependencies
-      run: cd app && make sync-dependencies
-    - name: Verify that `make sync-dependencies` did not change outputs (if it did, please re-run it and re-commit!)
+      run: cd app && ./cmd.sh sync:dependencies
+    - name: Verify that `cmd sync:dependencies` did not change outputs (if it did, please re-run it and re-commit!)
       run: git diff --exit-code
 
   test-node:

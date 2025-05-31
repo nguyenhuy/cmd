@@ -75,7 +75,7 @@ struct FileChangeView_Previews: PreviewProvider {
       baseLineContent: baseContent,
       targetContent: targetContent,
       canBeApplied: true,
-      formattedDiff: nil // Setting to nil to test the fallback in our extension
+      formattedDiff: nil, // Setting to nil to test the fallback in our extension
     )
   }
 }

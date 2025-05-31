@@ -32,7 +32,7 @@ cd "${ROOT_DIR}/app"
 
 # lint
 mkdir -p .build/caches/swiftformat
-swiftformat --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat
-swiftformat --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat
+swiftformat --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat --quiet
+swiftformat --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat --quiet
 
 cd "${CURRENT_DIR}"

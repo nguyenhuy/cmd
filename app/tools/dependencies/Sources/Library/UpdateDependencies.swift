@@ -235,8 +235,9 @@ extension UpdateDependencies {
   ///   - generate `Package.swift` for each module
   ///
   ///   - Parameters:
-  ///   - packagePath: The path to the package directory.
-  public static func update(packagePath: URL, all: Bool) throws {
+  ///   - packagePath: The path to the root package directory.
+  ///   - all: If true, also generate `Package.swift` files for each module.
+  public static func update(packagePath: URL, all: Bool = false) throws -> [String: TargetInfo] {
     let basePackagePath = packagePath.deletingLastPathComponent()
       .appending(path: "Package.base.swift")
     let basePackageSource = try Parser.parse(source: String(contentsOf: basePackagePath, encoding: .utf8))
@@ -254,24 +255,25 @@ extension UpdateDependencies {
       basePackageSource: basePackageSource,
       packageDirPath: basePackagePath.deletingLastPathComponent()).generate()
 
-    if all {
-      // Generate all the derived Package.swift for each module
-      let targetExtractor = ExtractModuleInfo(packageDirPath: basePackagePath.deletingLastPathComponent())
-      targetExtractor.walk(mainPackageSource)
-      let allTargets = targetExtractor.targetInfo
-        .reduce(into: [String: TargetInfo]()) { acc, target in acc[target.name] = target }
+    // Generate all the derived Package.swift for each module
+    let targetExtractor = ExtractModuleInfo(packageDirPath: basePackagePath.deletingLastPathComponent())
+    targetExtractor.walk(mainPackageSource)
+    let allTargets = targetExtractor.targetInfo
+      .reduce(into: [String: TargetInfo]()) { acc, target in acc[target.name] = target }
 
-      for modulePath in allTargets.values
-        .compactMap({ $0.modulePath?.path })
-        .uniqueSorted(by: \.self)
-      {
-        try GenerateModulePackage(
-          modulePath: modulePath,
-          allTargets: allTargets,
-          basePackageSource: basePackageSource,
-          basePackagePath: basePackagePath).run()
-      }
+    guard all else { return allTargets }
+
+    for modulePath in allTargets.values
+      .compactMap({ $0.modulePath?.path })
+      .uniqueSorted(by: \.self)
+    {
+      try GenerateModulePackage(
+        modulePath: modulePath,
+        allTargets: allTargets,
+        basePackageSource: basePackageSource,
+        basePackagePath: basePackagePath).run()
     }
+    return allTargets
   }
 }
 

@@ -13,7 +13,7 @@ Each module defines a `Module.swift` file where its dependencies are listed. The
 The `Module.swift` are the source of thruth and the `Package.swift` is a derived artifact. If you need to make ad-hoc changes to `Package.swift`, edit its template `Package.base.swift`.
 
 ### syncing dependencies
-`make sync-dependencies` aggregates all dependencies, detect missing & unused ones and fix them
+`cmd sync:dependencies` aggregates all dependencies, detect missing & unused ones and fix them
 
 ### 3rd party
 3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.base.swift`.
@@ -38,6 +38,6 @@ The `Module.swift` are the source of thruth and the `Package.swift` is a derived
 You can focus on just one module and its dependencies. This can allow for really fast iteration, and reliable SwiftUI previews.
 
 To do so:
-- generate a local `Package.swift`: `make sync-all-dependencies`. You should now see `Package.swift` alongside your `Module.swift`, for instance at `./modules/features/Onboarding/Package.swift` (This new file is gitignored)
-- you can now open the corresponding folder as a standard Swift package in Xcode. You'll then be working on a smaller set of files, and your development cycle should be faster.
-- ⚠️ before going back to working on the main xcode project, run `make clean` as Xcode is not liking something with nested Swift packages, and will not show your files in the file hierarchy anymore.
+- Close open Xcode windows that might overlap with what you will focus on.
+- Run `cmd focus --module <module name, e.g. 'AppFoundation'>` (you can run `cmd focus --list` to see all the available modules).
+- ⚠️ When done, run `cmd clean`. Xcode doesn't like some of the artifacts created by local Swift packages, and will not show your files in the file hierarchy anymore.

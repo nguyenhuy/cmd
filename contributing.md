@@ -21,7 +21,13 @@ brew install jc
 brew install jq
 brew install shfmt
 cp -R ./tools/githooks/. .git/hooks
-```
+
+# helper for dev tools to bashrc
+echo '
+# Run helper tools for the cmd app
+function cmd {
+  (cd $(git rev-parse --show-toplevel)/app && ./cmd.sh "$@")
+}' >> ~/.zshrc
 
 ## App developement
 See the [app's development guide](./app/contributing.md) for more details.

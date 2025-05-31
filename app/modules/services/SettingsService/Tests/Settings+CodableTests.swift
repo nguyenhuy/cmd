@@ -146,7 +146,7 @@ struct SettingsCodableTests {
       allowAnonymousAnalytics: true, // default
       preferedProviders: [.gpt_4o: .openAI],
       llmProviderSettings: [:], // default,
-      inactiveModels: [] // default
+      inactiveModels: [], // default
     )
 
     try testDecoding(expectedSettings, json)
