@@ -322,12 +322,11 @@ final class ChatInputViewModel {
   }
   
   /// Handle the user's approval response.
-  func handleApprovalResponse(_ result: ApprovalResult) {
-    defer {
-      pendingApproval = nil
-      approvalContinuation = nil
+  func handleApproval(of request: ToolApprovalRequest, result: ApprovalResult) {
+    guard let trackedRequest = self.toolCallsPendingApproval.removeFirst(where: { $0.0.if == request.id }) else {
+      // log error
     }
-    approvalContinuation?.resume(returning: result)
+    trackedRequest.resume(returning: result)
   }
 
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
