@@ -80,6 +80,10 @@ public final class ReadFileTool: NonStreamableTool {
   }
 
   public let name = "read_file"
+  
+  public var displayName: String {
+    "Read File Tool"
+  }
 
   public let description = """
     Description: Request to read the content of a file.

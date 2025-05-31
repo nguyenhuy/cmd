@@ -11,15 +11,26 @@ public struct IconsLabelButton: View {
   public init(
     action: @escaping () -> Void,
     systemNames: [String],
-    label: String)
+    label: String,
+    onHoverColor: Color = Color.primary.opacity(0.1),
+    padding: CGFloat = 4,
+    cornerRadius: CGFloat = 4)
   {
     self.action = action
     self.systemNames = systemNames
     self.label = label
+    self.onHoverColor = onHoverColor
+    self.padding = padding
+    self.cornerRadius = cornerRadius
   }
   
   public var body: some View {
-    Button(action: action) {
+    HoveredButton(
+      action: action,
+      onHoverColor: onHoverColor,
+      padding: padding,
+      cornerRadius: cornerRadius)
+    {
       HStack(spacing: 2) {
         Text(label)
         ForEach(Array(systemNames.enumerated()), id: \.offset) { _, systemName in
@@ -27,13 +38,14 @@ public struct IconsLabelButton: View {
         }
       }
     }
-    .acceptClickThrough()
-    .buttonStyle(.plain)
   }
   
   let action: () -> Void
   let systemNames: [String]
   let label: String
+  let onHoverColor: Color
+  let padding: CGFloat
+  let cornerRadius: CGFloat
 }
 
 #Preview {

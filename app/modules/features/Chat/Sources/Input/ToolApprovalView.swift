@@ -15,27 +15,31 @@ struct ToolApprovalView: View {
   let onAlwaysApprove: () -> Void
   
   var body: some View {
-    HStack(spacing: 12) {
-      Text(request.toolName)
+    VStack(alignment: .leading) {
+      Text(request.displayName)
         .fontWeight(.medium)
-      
-      Spacer()
-      IconsLabelButton(
-        action: onDeny,
-        systemNames: ["shift", "command", "delete.left"],
-        label: "Reject")
-      
-      IconsLabelButton(
-        action: onApprove,
-        systemNames: ["command", "return"],
-        label: "Allow Once")
-      
-      IconsLabelButton(
-        action: onAlwaysApprove,
-        systemNames: ["shift", "command", "enter"],
-        label: "Always Allow")
+        .frame(maxWidth: .infinity, alignment: .leading)
+      HStack(spacing: 12) {
+        IconsLabelButton(
+          action: onDeny,
+          systemNames: ["shift", "command", "delete.left"],
+          label: "Reject")
+        .keyboardShortcut(.delete, modifiers: [.shift, .command])
+        
+        IconsLabelButton(
+          action: onApprove,
+          systemNames: ["command", "return"],
+          label: "Allow Once")
+        .keyboardShortcut(.return, modifiers: .command)
+        
+        IconsLabelButton(
+          action: onAlwaysApprove,
+          systemNames: ["shift", "command", "return"],
+          label: "Always Allow")
+        .keyboardShortcut(.return, modifiers: [.shift, .command])
+      }
     }
-    .padding(16)
+    .padding(12)
   }
 }
 
@@ -44,7 +48,7 @@ struct ToolApprovalView: View {
 #Preview {
   ToolApprovalView(
     request: ToolApprovalRequest(
-      toolName: "get_workspace_info"
+      displayName: "get_workspace_info"
     ),
     onApprove: {},
     onDeny: {},

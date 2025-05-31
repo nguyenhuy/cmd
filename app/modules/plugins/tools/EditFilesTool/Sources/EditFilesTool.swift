@@ -209,6 +209,10 @@ public final class EditFilesTool: Tool {
       "suggest_files_changes"
     }
   }
+  
+  public var displayName: String {
+    "Edit Files Tool"
+  }
 
   public var description: String { """
     \(shortDescription)

@@ -94,6 +94,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
   func cancelCurrentMessage() {
     streamingTask?.cancel()
     streamingTask = nil
+    input.cancelAllPendingToolApprovalRequests()
   }
 
   /// Are we queing too much on the main thread?
@@ -105,6 +106,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
       defaultLogger.error("not sending as already streaming")
       return
     }
+    
+    // Cancel any pending tool approvals from previous messages
+    input.cancelAllPendingToolApprovalRequests()
+    
     guard let selectedModel = input.selectedModel else {
       defaultLogger.error("not sending as no model selected")
       return
@@ -236,6 +241,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
     case .alwaysApprove(let toolName):
       // Store preference and continue
       storeAlwaysApprovePreference(for: toolName)
+    case .cancelled:
+      throw CancellationError()
     }
   }
 

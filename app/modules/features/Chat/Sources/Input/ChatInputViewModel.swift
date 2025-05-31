@@ -21,18 +21,26 @@ import XcodeObserverServiceInterface
 
 // MARK: - ToolApprovalRequest
 
-// TODO: james - should move this `ToolFoundation`?
 struct ToolApprovalRequest: Identifiable {
   let id = UUID()
-  let toolName: String
+  let displayName: String
 }
 
 // MARK: - ApprovalResult
 
-enum ApprovalResult {
+enum ToolApprovalResult {
   case approved
   case denied
   case alwaysApprove(toolName: String)
+  case cancelled
+}
+
+// MARK: - PendingToolApproval
+
+/// The current tool approvals request pending user response.
+private struct PendingToolApproval {
+  let request: ToolApprovalRequest
+  let continuation: CheckedContinuation<ToolApprovalResult, Never>
 }
 
 // MARK: - ChatInputViewModel
@@ -125,7 +133,14 @@ final class ChatInputViewModel {
 
   /// When searching for references, the index of the selected search result (at this point the selection has not yet been confirmed).
   var selectedSearchResultIndex = 0
+  
+  /// The current tool approval request pending user response.
+  var pendingApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
 
+  /// Queue of tool approval requests waiting for user response.
+  /// Each entry contains both the request details and the continuation that will receive the user's decision.
+  private var toolCallsPendingApproval: [PendingToolApproval] = []
+  
   /// Which LLM model is selected to respond to the next message.
   var selectedModel: LLMModel? {
     didSet {
@@ -148,9 +163,6 @@ final class ChatInputViewModel {
       handleTextInputChange(from: oldValue)
     }
   }
-
-  /// The current tool approval request pending user response.
-  private(set) var pendingApproval: ToolApprovalRequest? = nil
 
   /// The results from the current reference search.
   private(set) var searchResults: [FileSuggestion]? = nil {
@@ -296,37 +308,29 @@ final class ChatInputViewModel {
     // We do not update `attachments` in this function as this is triggered by updating `textInput`.
     textInput = TextInput(str)
   }
-
-  /// The current tool approval request pending user response.
-  var pendingApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.0 }
-  
-  /// The current tool approvals request pending user response.
-  private var toolCallsPendingApproval: [(ToolApprovalRequest, CheckedContinuation<ApprovalResult, Never>)] = [] // nit: maybe nice to have a type over a tupple
   
   /// Request approval for a tool use operation.
-  func requestApproval(for toolUse: any ToolUse) async -> ApprovalResult {
-    let (approvalResult, continuation) = Future<ApprovalResult, Never>.make()
-    let request = ToolApprovalRequest(
-      toolName: toolUse.toolName
-    )
-    self.toolCallsPendingApproval.append((request, continuation))
-    
-    let result = await approvalResult.value
-    self.toolCallsPendingApproval.remove(where: { $0.0.id == request.id })
-    return result
+  func requestApproval(for toolUse: any ToolUse) async -> ToolApprovalResult {
+    await withCheckedContinuation { continuation in
+      let request = ToolApprovalRequest(
+        displayName: toolUse.toolDisplayName
+      )
+      self.toolCallsPendingApproval.append(PendingToolApproval(request: request, continuation: continuation))
+    }
   }
   
-  // I don't recall if we do it, but we should cancel tool calls when we cancel the stream (eg when you send a new message while the response is still processing)
   func cancelAllPendingToolApprovalRequests() {
-    toolCallsPendingApproval.forEach { $0.1.resume(returning: .cancelled) }
+    toolCallsPendingApproval.forEach { $0.continuation.resume(returning: .cancelled) }
   }
   
   /// Handle the user's approval response.
-  func handleApproval(of request: ToolApprovalRequest, result: ApprovalResult) {
-    guard let trackedRequest = self.toolCallsPendingApproval.removeFirst(where: { $0.0.if == request.id }) else {
-      // log error
+  func handleApproval(of request: ToolApprovalRequest, result: ToolApprovalResult) {
+    guard let index = self.toolCallsPendingApproval.firstIndex(where: { $0.request.id == request.id }) else {
+      defaultLogger.error("Could not find pending tool approval request with ID: \(request.id)")
+      return
     }
-    trackedRequest.resume(returning: result)
+    let pendingApproval = self.toolCallsPendingApproval.remove(at: index)
+    pendingApproval.continuation.resume(returning: result)
   }
 
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
@@ -349,7 +353,6 @@ final class ChatInputViewModel {
 
   private let searchTasks = ReplaceableTaskQueue<[FileSuggestion]?>()
   private var cancellables = Set<AnyCancellable>()
-  private var approvalContinuation: CheckedContinuation<ApprovalResult, Never>? = nil
 
   private func clearSearchResults() {
     updateSearchResults(searchQuery: nil)

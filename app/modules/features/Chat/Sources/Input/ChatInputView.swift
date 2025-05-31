@@ -60,13 +60,13 @@ struct ChatInputView: View {
         ToolApprovalView(
           request: pendingApproval,
           onApprove: {
-            inputViewModel.handleApprovalResponse(.approved)
+            inputViewModel.handleApproval(of: pendingApproval, result: .approved)
           },
           onDeny: {
-            inputViewModel.handleApprovalResponse(.denied)
+            inputViewModel.handleApproval(of: pendingApproval, result: .denied)
           },
           onAlwaysApprove: {
-            inputViewModel.handleApprovalResponse(.alwaysApprove(toolName: pendingApproval.toolName))
+            inputViewModel.handleApproval(of: pendingApproval, result: .alwaysApprove(toolName: pendingApproval.displayName))
           }
         )
         .transition(

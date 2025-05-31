@@ -19,7 +19,7 @@ public protocol Tool: Sendable {
   /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
   func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use
   /// The name of the tool, used to identify it. It should only contain alphanumeric characters.
-  var id: String { get }
+  var name: String { get }
   /// A description of what the tool does. The description of its input parameters is better suited for the `inputSchema` property.
   var description: String { get }
   /// The schema of the input parameters of the tool.
@@ -28,7 +28,7 @@ public protocol Tool: Sendable {
   func isAvailable(in mode: ChatMode) -> Bool
   /// Whether this tool expect to receive the input as it is being streamed, or only once it is received entirely.
   var canInputBeStreamed: Bool { get }
-  
+  /// The tool display name
   var displayName: String { get }
 }
 
@@ -79,7 +79,9 @@ public protocol ToolUse: Sendable {
 
 extension ToolUse {
 
-  public var toolName: String { callingTool.id }
+  public var toolName: String { callingTool.name }
+  
+  public var toolDisplayName: String { callingTool.displayName }
 
   public var result: Output {
     get async throws {

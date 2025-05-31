@@ -51,6 +51,10 @@ struct FailedTool: NonStreamableTool {
   func use(toolUseId _: String, input _: EmptyObject, context _: ToolExecutionContext) -> FailedToolUse {
     fatalError("Should not be called")
   }
+  
+  var displayName: String {
+    "Failed tool"
+  }
 
   let name: String
   var description: String { "Failed tool" }

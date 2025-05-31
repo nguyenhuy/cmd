@@ -83,6 +83,10 @@ public final class BuildTool: NonStreamableTool {
   }
 
   public let name = "build"
+  
+  public var displayName: String {
+    "Build Tool"
+  }
 
   public let description = """
     Request to trigger a build action in Xcode. This tool allows you to build for testing or running and to get the output in case of failure.
