@@ -297,16 +297,28 @@ final class ChatInputViewModel {
     textInput = TextInput(str)
   }
 
+  /// The current tool approval request pending user response.
+  var pendingApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.0 }
+  
+  /// The current tool approvals request pending user response.
+  private var toolCallsPendingApproval: [(ToolApprovalRequest, CheckedContinuation<ApprovalResult, Never>)] = [] // nit: maybe nice to have a type over a tupple
+  
   /// Request approval for a tool use operation.
   func requestApproval(for toolUse: any ToolUse) async -> ApprovalResult {
-    return await withCheckedContinuation { continuation in
-      let request = ToolApprovalRequest(
-        toolName: toolUse.toolName
-      )
-      
-      self.pendingApproval = request
-      self.approvalContinuation = continuation
-    }
+    let (approvalResult, continuation) = Future<ApprovalResult, Never>.make()
+    let request = ToolApprovalRequest(
+      toolName: toolUse.toolName
+    )
+    self.toolCallsPendingApproval.append((request, continuation))
+    
+    let result = await approvalResult.value
+    self.toolCallsPendingApproval.remove(where: { $0.0.id == request.id })
+    return result
+  }
+  
+  // I don't recall if we do it, but we should cancel tool calls when we cancel the stream (eg when you send a new message while the response is still processing)
+  func cancelAllPendingToolApprovalRequests() {
+    toolCallsPendingApproval.forEach { $0.1.resume(returning: .cancelled) }
   }
   
   /// Handle the user's approval response.
