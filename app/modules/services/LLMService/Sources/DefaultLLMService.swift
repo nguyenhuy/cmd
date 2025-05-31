@@ -169,9 +169,6 @@ final class DefaultLLMService: LLMService {
     let toolUse = toolUseRequest.toolUse
 
     do {
-      // Request approval before executing the tool
-      try await context.requestToolApproval(toolUse)
-      
       let toolOutput = try await toolUse.result
 
       // TODO: try to avoid this.
