@@ -1,5 +1,14 @@
 #!/bin/bash
 
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+current_dir=$(pwd)
+cd "$ROOT_DIR/app"
+
+reset() {
+	cd $current_dir
+}
+trap reset EXIT
+
 lint_swift_command() {
 	mkdir -p .build/caches/swiftformat &&
 		swiftformat --config rules-header.swiftformat . &&
@@ -11,7 +20,7 @@ sync_dependencies_command() {
 }
 
 close_xcode() {
-	if pgrep -x "Xcode" > /dev/null; then
+	if pgrep -x "Xcode" >/dev/null; then
 		# Kill Xcode.
 		pkill -x "Xcode"
 	fi
@@ -40,7 +49,7 @@ clean_command() {
 			while read file; do rm -rf "$file"; done
 	# Reset xcode state
 	cd "$(git rev-parse --show-toplevel)/app" &&
-	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
+		find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 }
 
 test_swift_command() {
@@ -74,6 +83,10 @@ build:release)
 clean)
 	# clean artifacts that might make Xcode behave weirdly and not showing files in the file hierarchy.
 	clean_command "$@"
+	;;
+watch)
+	# Watch file changes, and update derived files when necessary.
+	cd "$ROOT_DIR/local-server" && yarn watch
 	;;
 *)
 	echo "Command not found: $command"

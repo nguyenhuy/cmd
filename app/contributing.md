@@ -13,7 +13,7 @@ Each module defines a `Module.swift` file where its dependencies are listed. The
 The `Module.swift` are the source of thruth and the `Package.swift` is a derived artifact. If you need to make ad-hoc changes to `Package.swift`, edit its template `Package.base.swift`.
 
 ### syncing dependencies
-`cmd sync:dependencies` aggregates all dependencies, detect missing & unused ones and fix them
+`cmd sync:dependencies` aggregates all dependencies, detect missing & unused ones and fix them. `cmd watch` will continuously do so.
 
 ### 3rd party
 3rd party dependencies need to be written manually in the corresponding `Module.swift`, and new ones also need to be added to `Package.base.swift`.

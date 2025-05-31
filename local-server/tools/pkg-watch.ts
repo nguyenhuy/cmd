@@ -1,5 +1,5 @@
 import watch from "node-watch"
-import { spawn } from "child_process"
+import { execSync, spawn } from "child_process"
 import { computeAndSaveHash } from "../build.js"
 import generateSwiftSchema from "./generateSwiftSchema.js"
 
@@ -25,4 +25,13 @@ watch("./src/server/schemas", { recursive: true }, function (evt, name) {
 	} catch (error) {
 		console.error(`Error generating Swift schema: ${error as Error}`)
 	}
+})
+
+watch("../app/modules", { recursive: true }, function (evt, name) {
+	const fileName = name.split("/").pop()
+	if (fileName === "Package.swift" || fileName === "Module.swift" || !fileName?.endsWith(".swift")) {
+		return
+	}
+	const scriptPath = import.meta.resolve("../../app/cmd.sh").replace("file://", "")
+	execSync(`${scriptPath} sync:dependencies`)
 })
