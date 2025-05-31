@@ -236,7 +236,7 @@ extension UpdateDependencies {
   ///
   ///   - Parameters:
   ///   - packagePath: The path to the package directory.
-  public static func updateAll(packagePath: URL) throws {
+  public static func update(packagePath: URL, all: Bool) throws {
     let basePackagePath = packagePath.deletingLastPathComponent()
       .appending(path: "Package.base.swift")
     let basePackageSource = try Parser.parse(source: String(contentsOf: basePackagePath, encoding: .utf8))
@@ -254,20 +254,23 @@ extension UpdateDependencies {
       basePackageSource: basePackageSource,
       packageDirPath: basePackagePath.deletingLastPathComponent()).generate()
 
-    // Generate all the derived Package.swift for each module
-    let targetExtractor = ExtractModuleInfo(packageDirPath: basePackagePath.deletingLastPathComponent())
-    targetExtractor.walk(mainPackageSource)
-    let allTargets = targetExtractor.targetInfo.reduce(into: [String: TargetInfo]()) { acc, target in acc[target.name] = target }
+    if all {
+      // Generate all the derived Package.swift for each module
+      let targetExtractor = ExtractModuleInfo(packageDirPath: basePackagePath.deletingLastPathComponent())
+      targetExtractor.walk(mainPackageSource)
+      let allTargets = targetExtractor.targetInfo
+        .reduce(into: [String: TargetInfo]()) { acc, target in acc[target.name] = target }
 
-    for modulePath in allTargets.values
-      .compactMap({ $0.modulePath?.path })
-      .uniqueSorted(by: \.self)
-    {
-      try GenerateModulePackage(
-        modulePath: modulePath,
-        allTargets: allTargets,
-        basePackageSource: basePackageSource,
-        basePackagePath: basePackagePath).run()
+      for modulePath in allTargets.values
+        .compactMap({ $0.modulePath?.path })
+        .uniqueSorted(by: \.self)
+      {
+        try GenerateModulePackage(
+          modulePath: modulePath,
+          allTargets: allTargets,
+          basePackageSource: basePackageSource,
+          basePackagePath: basePackagePath).run()
+      }
     }
   }
 }

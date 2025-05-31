@@ -6,6 +6,9 @@ lint:
 # Sync module dependencies
 sync-dependencies:
 	@./tools/dependencies/sync.sh
+# Sync module dependencies, including local Package.swift files (this might make Xcode behave unexpectedly when working on the main app)
+sync-all-dependencies:
+	@./tools/dependencies/sync.sh --all
 # Create a release build, and update the one installed locally
 build_release:
 	@./tools/release/release.sh

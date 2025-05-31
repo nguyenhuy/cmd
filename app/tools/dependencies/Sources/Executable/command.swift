@@ -26,9 +26,11 @@ struct SyncCommand: ParsableCommand {
 
   @Option(name: [.short, .long], help: "The path to the package to sync")
   var path: String
+  @Flag(name: [.short, .long], help: "Update all dependencies")
+  var all = false
 
   func run() throws {
     let packagePath = URL(fileURLWithPath: path).canonicalURL
-    try UpdateDependencies.updateAll(packagePath: packagePath)
+    try UpdateDependencies.update(packagePath: packagePath, all: all)
   }
 }
