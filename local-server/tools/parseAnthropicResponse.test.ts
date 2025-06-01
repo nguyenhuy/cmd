@@ -444,7 +444,8 @@ data: {"type":"message_stop" }
 			{
 				name: "Read",
 				parameters: {
-					file_path: "/Users/guigui/dev/Xcompanion/app/modules/coreui/CodePreview/Tests/DiffViewModelTests.swift",
+					file_path:
+						"/Users/guigui/dev/Xcompanion/app/modules/coreui/CodePreview/Tests/DiffViewModelTests.swift",
 				},
 			},
 			{
@@ -457,7 +458,8 @@ data: {"type":"message_stop" }
 			{
 				name: "Read",
 				parameters: {
-					file_path: "/Users/guigui/dev/Xcompanion/app/modules/foundations/SwiftTesting/Sources/Expectation.swift",
+					file_path:
+						"/Users/guigui/dev/Xcompanion/app/modules/foundations/SwiftTesting/Sources/Expectation.swift",
 				},
 			},
 		])
