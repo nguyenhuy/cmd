@@ -18,13 +18,13 @@ fi
 
 # If --list is provided, list the packages and exit
 if [[ "$*" == *"--list"* ]]; then
-    ./tmp/bin/sync-package-dependencies focus --path "${ROOT_DIR}/app/modules/Package.swift" "$@"
+	./tmp/bin/sync-package-dependencies focus --path "${ROOT_DIR}/app/modules/Package.swift" "$@"
 
-    # lint Package.swift / Module.swift
-    cd "${ROOT_DIR}/app"
-    mkdir -p .build/caches/swiftformat
-    swiftformat --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat --quiet
-    swiftformat --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat --quiet
+	# lint Package.swift / Module.swift
+	cd "${ROOT_DIR}/app"
+	mkdir -p .build/caches/swiftformat
+	swiftformat --config rules.swiftformat ./**/Module.swift --cache .build/caches/swiftformat --quiet
+	swiftformat --config rules.swiftformat ./**/Package.swift --cache .build/caches/swiftformat --quiet
 
 	exit 0
 fi
@@ -44,4 +44,3 @@ echo "Opening package at: ${package_path_for_module}"
 # Tell Xcode to not re-open windows that were open when it quit,
 # to avoid having several windows using the same files which Xcode doesn't support.
 open -a "$xcode_path" "$package_path_for_module" --args -ApplePersistenceIgnoreState YES
-
