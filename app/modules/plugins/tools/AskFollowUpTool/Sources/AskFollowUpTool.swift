@@ -59,7 +59,7 @@ public final class AskFollowUpTool: NonStreamableTool {
   public let name = "ask_followup"
   
   public var displayName: String {
-    "Follow Up Tool"
+    "Follow Up"
   }
 
   public let description = """

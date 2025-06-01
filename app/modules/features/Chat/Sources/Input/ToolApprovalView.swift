@@ -16,15 +16,14 @@ struct ToolApprovalView: View {
   
   var body: some View {
     VStack(alignment: .leading) {
-      Text(request.displayName)
-        .fontWeight(.medium)
+      Text("**cmd** wants to use the *\(request.displayName)* tool")
         .frame(maxWidth: .infinity, alignment: .leading)
       HStack(spacing: 12) {
         IconsLabelButton(
-          action: onDeny,
-          systemNames: ["shift", "command", "delete.left"],
-          label: "Reject")
-        .keyboardShortcut(.delete, modifiers: [.shift, .command])
+          action: onAlwaysApprove,
+          systemNames: ["command", "shift", "return"],
+          label: "Always Allow")
+        .keyboardShortcut(.return, modifiers: [.shift, .command])
         
         IconsLabelButton(
           action: onApprove,
@@ -33,10 +32,10 @@ struct ToolApprovalView: View {
         .keyboardShortcut(.return, modifiers: .command)
         
         IconsLabelButton(
-          action: onAlwaysApprove,
-          systemNames: ["shift", "command", "return"],
-          label: "Always Allow")
-        .keyboardShortcut(.return, modifiers: [.shift, .command])
+          action: onDeny,
+          systemNames: ["command", "shift", "delete.left"],
+          label: "Reject")
+        .keyboardShortcut(.delete, modifiers: [.shift, .command])
       }
     }
     .padding(12)

@@ -94,7 +94,7 @@ public final class LSTool: NonStreamableTool {
   public let name = "list_files"
   
   public var displayName: String {
-    "List Files Tool"
+    "List Files"
   }
 
   public let description = """

@@ -108,7 +108,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
   public let name = "execute_command"
   
   public var displayName: String {
-    "Execute Command Tool"
+    "Execute Command"
   }
 
   public let description = """

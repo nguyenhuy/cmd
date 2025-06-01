@@ -85,7 +85,7 @@ public final class BuildTool: NonStreamableTool {
   public let name = "build"
   
   public var displayName: String {
-    "Build Tool"
+    "Build"
   }
 
   public let description = """

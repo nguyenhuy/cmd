@@ -211,7 +211,7 @@ public final class EditFilesTool: Tool {
   }
   
   public var displayName: String {
-    "Edit Files Tool"
+    "Edit Files"
   }
 
   public var description: String { """

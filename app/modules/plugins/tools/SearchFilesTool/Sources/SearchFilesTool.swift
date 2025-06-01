@@ -90,7 +90,7 @@ public final class SearchFilesTool: NonStreamableTool {
   public let name = "search_files"
 
   public var displayName: String {
-    "Search Files Tool"
+    "Search Files"
   }
 
   public let description = """
