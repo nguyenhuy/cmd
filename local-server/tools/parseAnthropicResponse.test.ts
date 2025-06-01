@@ -238,7 +238,7 @@ data: {"type":"message_stop"             }`
 			{
 				name: "Bash",
 				parameters: {
-					command: "cd /Users/me/command/app/modules && swift test 2>&1 | head -100",
+					command: "cd /Users/guigui/dev/Xcompanion/app/modules && swift test 2>&1 | head -100",
 					description: "Run tests again after fixing ChatContext",
 				},
 			},
@@ -444,20 +444,20 @@ data: {"type":"message_stop" }
 			{
 				name: "Read",
 				parameters: {
-					file_path: "/Users/me/command/app/modules/coreui/CodePreview/Tests/DiffViewModelTests.swift",
+					file_path: "/Users/guigui/dev/Xcompanion/app/modules/coreui/CodePreview/Tests/DiffViewModelTests.swift",
 				},
 			},
 			{
 				name: "Read",
 				parameters: {
 					file_path:
-						"/Users/me/command/app/modules/plugins/tools/EditFilesTool/Tests/EditFileToolTests.swift",
+						"/Users/guigui/dev/Xcompanion/app/modules/plugins/tools/EditFilesTool/Tests/EditFileToolTests.swift",
 				},
 			},
 			{
 				name: "Read",
 				parameters: {
-					file_path: "/Users/me/command/app/modules/foundations/SwiftTesting/Sources/Expectation.swift",
+					file_path: "/Users/guigui/dev/Xcompanion/app/modules/foundations/SwiftTesting/Sources/Expectation.swift",
 				},
 			},
 		])
