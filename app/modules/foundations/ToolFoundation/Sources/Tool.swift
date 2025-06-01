@@ -80,7 +80,7 @@ public protocol ToolUse: Sendable {
 extension ToolUse {
 
   public var toolName: String { callingTool.name }
-  
+
   public var toolDisplayName: String { callingTool.displayName }
 
   public var result: Output {

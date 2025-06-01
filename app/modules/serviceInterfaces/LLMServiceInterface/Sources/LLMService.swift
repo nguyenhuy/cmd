@@ -39,17 +39,19 @@ public protocol LLMService: Sendable {
     async throws -> [AssistantMessage]
 }
 
-// MARK: - LLMService Error
+// MARK: - LLMServiceError
 
 public enum LLMServiceError: Error {
   case toolUsageDenied
 }
 
+// MARK: LocalizedError
+
 extension LLMServiceError: LocalizedError {
   public var errorDescription: String? {
     switch self {
     case .toolUsageDenied:
-      return "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification."
+      "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification."
     }
   }
 }

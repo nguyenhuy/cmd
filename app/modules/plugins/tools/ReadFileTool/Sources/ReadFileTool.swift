@@ -80,10 +80,6 @@ public final class ReadFileTool: NonStreamableTool {
   }
 
   public let name = "read_file"
-  
-  public var displayName: String {
-    "Read File"
-  }
 
   public let description = """
     Description: Request to read the content of a file.
@@ -92,6 +88,10 @@ public final class ReadFileTool: NonStreamableTool {
     - offset: (optional) Starting line number (0-indexed). Default is 0.
     - limit: (optional) Maximum number of lines to read. If not provided, the tool will attempt to read the entire file.
     """
+
+  public var displayName: String {
+    "Read File"
+  }
 
   public var inputSchema: JSON {
     .object([

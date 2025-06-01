@@ -89,13 +89,13 @@ public final class SearchFilesTool: NonStreamableTool {
 
   public let name = "search_files"
 
-  public var displayName: String {
-    "Search Files"
-  }
-
   public let description = """
     Request to perform a regex search across files in a specified directory, providing context-rich results. This tool searches for patterns or specific content across multiple files, displaying each match with encapsulating context.
     """
+
+  public var displayName: String {
+    "Search Files"
+  }
 
   public var inputSchema: JSON {
     .object([

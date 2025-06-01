@@ -92,14 +92,14 @@ public final class LSTool: NonStreamableTool {
   }
 
   public let name = "list_files"
-  
-  public var displayName: String {
-    "List Files"
-  }
 
   public let description = """
     Request to list files and directories within the specified directory. If recursive is true, it will list all files and directories recursively. If recursive is false or not provided, it will only list the top-level contents.
     """
+
+  public var displayName: String {
+    "List Files"
+  }
 
   public var inputSchema: JSON {
     .object([

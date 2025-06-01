@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import DLS
@@ -8,12 +8,12 @@ import ToolFoundation
 // MARK: - ToolApprovalView
 
 struct ToolApprovalView: View {
-  
+
   let request: ToolApprovalRequest
   let onApprove: () -> Void
   let onDeny: () -> Void
   let onAlwaysApprove: () -> Void
-  
+
   var body: some View {
     VStack(alignment: .leading) {
       Text("**cmd** wants to use the *\(request.displayName)* tool")
@@ -23,19 +23,19 @@ struct ToolApprovalView: View {
           action: onAlwaysApprove,
           systemNames: ["command", "shift", "return"],
           label: "Always Allow")
-        .keyboardShortcut(.return, modifiers: [.shift, .command])
-        
+          .keyboardShortcut(.return, modifiers: [.shift, .command])
+
         IconsLabelButton(
           action: onApprove,
           systemNames: ["command", "return"],
           label: "Allow Once")
-        .keyboardShortcut(.return, modifiers: .command)
-        
+          .keyboardShortcut(.return, modifiers: .command)
+
         IconsLabelButton(
           action: onDeny,
           systemNames: ["command", "shift", "delete.left"],
           label: "Reject")
-        .keyboardShortcut(.delete, modifiers: [.shift, .command])
+          .keyboardShortcut(.delete, modifiers: [.shift, .command])
       }
     }
     .padding(12)
@@ -47,10 +47,8 @@ struct ToolApprovalView: View {
 #Preview {
   ToolApprovalView(
     request: ToolApprovalRequest(
-      displayName: "get_workspace_info"
-    ),
-    onApprove: {},
-    onDeny: {},
-    onAlwaysApprove: {}
-  )
+      displayName: "get_workspace_info"),
+    onApprove: { },
+    onDeny: { },
+    onAlwaysApprove: { })
 }

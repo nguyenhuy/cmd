@@ -67,14 +67,11 @@ struct ChatInputView: View {
           },
           onAlwaysApprove: {
             inputViewModel.handleApproval(of: pendingApproval, result: .alwaysApprove(toolName: pendingApproval.displayName))
-          }
-        )
-        .transition(
-          .asymmetric(
-            insertion: .move(edge: .bottom).combined(with: .opacity),
-            removal: .move(edge: .bottom).combined(with: .opacity)
-          )
-        )
+          })
+          .transition(
+            .asymmetric(
+              insertion: .move(edge: .bottom).combined(with: .opacity),
+              removal: .move(edge: .bottom).combined(with: .opacity)))
       }
       VStack(alignment: .leading, spacing: 0) {
         HStack(spacing: 8) {

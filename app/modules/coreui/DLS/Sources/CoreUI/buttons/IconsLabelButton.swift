@@ -1,4 +1,4 @@
-// Copyright Xcompanion. All rights reserved.
+// Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import Foundation
@@ -7,7 +7,7 @@ import SwiftUI
 // MARK: - IconsLabelButton
 
 public struct IconsLabelButton: View {
-  
+
   public init(
     action: @escaping () -> Void,
     systemNames: [String],
@@ -23,7 +23,7 @@ public struct IconsLabelButton: View {
     self.padding = padding
     self.cornerRadius = cornerRadius
   }
-  
+
   public var body: some View {
     HoveredButton(
       action: action,
@@ -39,7 +39,7 @@ public struct IconsLabelButton: View {
       }
     }
   }
-  
+
   let action: () -> Void
   let systemNames: [String]
   let label: String
@@ -51,15 +51,15 @@ public struct IconsLabelButton: View {
 #Preview {
   VStack {
     IconsLabelButton(
-      action: {},
+      action: { },
       systemNames: ["command", "return"],
       label: "Accept")
     IconsLabelButton(
-      action: {},
+      action: { },
       systemNames: ["return"],
       label: "Send")
     IconsLabelButton(
-      action: {},
+      action: { },
       systemNames: ["shift", "command", "delete.left"],
       label: "Reject")
   }

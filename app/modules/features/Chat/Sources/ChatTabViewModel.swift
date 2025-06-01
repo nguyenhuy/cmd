@@ -106,10 +106,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
       defaultLogger.error("not sending as already streaming")
       return
     }
-    
+
     // Cancel any pending tool approvals from previous messages
     input.cancelAllPendingToolApprovalRequests()
-    
+
     guard let selectedModel = input.selectedModel else {
       defaultLogger.error("not sending as no model selected")
       return
@@ -229,10 +229,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
     if shouldAlwaysApprove(toolName: toolUse.toolName) {
       return // Skip approval for this tool
     }
-    
+
     let approvalResult = await input.requestApproval(
       for: toolUse)
-    
+
     switch approvalResult {
     case .denied:
       throw LLMServiceError.toolUsageDenied
@@ -273,11 +273,11 @@ final class ChatTabViewModel: Identifiable, Equatable {
       defaultLogger.error("Failed to create checkpoint", error)
     }
   }
-  
+
   private func storeAlwaysApprovePreference(for toolName: String) {
     userDefaults.set(true, forKey: "\(Self.userDefaultsAlwaysApproveKey)\(toolName)")
   }
-  
+
   private func shouldAlwaysApprove(toolName: String) -> Bool {
     userDefaults.bool(forKey: "\(Self.userDefaultsAlwaysApproveKey)\(toolName)")
   }

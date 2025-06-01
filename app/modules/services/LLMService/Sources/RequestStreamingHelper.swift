@@ -218,18 +218,18 @@ final class RequestStreamingHelper: Sendable {
           Task { [weak self] in
             guard let self else { return }
             do {
-              try await self.context.requestToolApproval(toolUse)
+              try await context.requestToolApproval(toolUse)
               toolUse.startExecuting()
             } catch {
               defaultLogger.error("Tool approval denied or cancelled: \(error)")
               // Replace the tool use with a failed one
-              var updatedContent = self.result.content
+              var updatedContent = result.content
               if let index = updatedContent.firstIndex(where: { $0.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId }) {
                 updatedContent[index] = .tool(ToolUseMessage(toolUse: FailedToolUse(
                   toolUseId: toolUse.toolUseId,
                   toolName: toolUse.toolName,
                   error: error)))
-                self.result.update(with: AssistantMessage(content: updatedContent))
+                result.update(with: AssistantMessage(content: updatedContent))
               }
             }
           }
@@ -287,7 +287,7 @@ final class RequestStreamingHelper: Sendable {
           await context.prepareForWriteToolUse()
         }
         content.append(toolUse: toolUse)
-        
+
         // Request approval before executing the tool
         do {
           try await context.requestToolApproval(toolUse)
