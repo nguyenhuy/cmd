@@ -46,4 +46,12 @@ Target.module(
     "XcodeObserverServiceInterface",
   ],
   resources: [],
-  testDependencies: [])
+  testDependencies: [
+    "AppEventServiceInterface",
+    "ChatAppEvents",
+    "ChatFoundation",
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "PermissionsServiceInterface",
+    "SwiftTesting",
+  ])

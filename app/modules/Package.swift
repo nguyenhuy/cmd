@@ -116,7 +116,15 @@ targets.append(contentsOf: Target.module(
     "XcodeObserverServiceInterface",
   ],
   resources: [],
-  testDependencies: [],
+  testDependencies: [
+    "AppEventServiceInterface",
+    "ChatAppEvents",
+    "ChatFoundation",
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "PermissionsServiceInterface",
+    "SwiftTesting",
+  ],
   path: "./App"))
 
 targets.append(contentsOf: Target.module(
@@ -313,7 +321,12 @@ targets.append(contentsOf: Target.module(
     "LLMFoundation",
     "SettingsServiceInterface",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "FoundationInterfaces",
+    "LLMFoundation",
+    "SettingsServiceInterface",
+    "SwiftTesting",
+  ],
   path: "./features/Settings"))
 
 targets.append(contentsOf: Target.module(
@@ -369,7 +382,16 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "DLS",
+    "FoundationInterfaces",
     "PermissionsServiceInterface",
+    "SettingsServiceInterface",
+  ],
+  resources: [.process("Resources")],
+  testDependencies: [
+    "FoundationInterfaces",
+    "PermissionsServiceInterface",
+    "SettingsServiceInterface",
+    "SwiftTesting",
   ],
   path: "./features/Onboarding"))
 

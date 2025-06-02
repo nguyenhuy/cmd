@@ -6,12 +6,37 @@ import FoundationInterfaces
 import SwiftUI
 
 struct InternalSettingsView: View {
+  @Binding var repeatLastLLMInteraction: Bool
+  @Binding var showOnboardingScreenAgain: Bool
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
-  @Binding var allowAnonymousAnalytics: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
       VStack(spacing: 16) {
+        HStack {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Repeat last LLM interaction")
+            Text("Enable for debugging LLM responses")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+          Spacer()
+          Toggle("", isOn: $repeatLastLLMInteraction)
+            .toggleStyle(.switch)
+        }
+
+        HStack {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Show onboarding again")
+            Text("Show onboarding flow at next app launch")
+              .font(.caption)
+              .foregroundColor(.secondary)
+          }
+          Spacer()
+          Toggle("", isOn: $showOnboardingScreenAgain)
+            .toggleStyle(.switch)
+        }
+
         HStack {
           VStack(alignment: .leading, spacing: 4) {
             Text("Point Release Xcode Extension to Debug App")
@@ -22,25 +47,6 @@ struct InternalSettingsView: View {
           Spacer()
           Toggle("", isOn: $pointReleaseXcodeExtensionToDebugApp)
             .toggleStyle(.switch)
-        }
-
-        HStack {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Repeat last LLM interaction")
-            Text("Enable for debugging LLM responses")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-          Spacer()
-          Toggle("", isOn: Binding<Bool>(
-            get: {
-              userDefaults.bool(forKey: "llmService.isRepeating")
-            },
-            set: { value in
-              userDefaults.set(value, forKey: "llmService.isRepeating")
-            }
-          ))
-          .toggleStyle(.switch)
         }
       }
       .padding(16)

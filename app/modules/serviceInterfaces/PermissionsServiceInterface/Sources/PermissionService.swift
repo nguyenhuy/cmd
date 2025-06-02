@@ -11,18 +11,11 @@ public enum Permission {
   case xcodeExtension
 }
 
-// MARK: - RequestablePermission
-
-public enum RequestablePermission {
-  case accessibility
-  // xcode extension permission cannot be requested programmatically that we know of.
-}
-
 // MARK: - PermissionsService
 
 public protocol PermissionsService: Sendable {
   /// Prompt the user to grant the desired permission.
-  func request(permission: RequestablePermission)
+  func request(permission: Permission)
 
   /// Check if the permission is granted. The publisher will be updated as the permissions status changes.
   func status(for permission: Permission) -> ReadonlyCurrentValueSubject<Bool?, Never>
