@@ -18,7 +18,6 @@ struct PermissionsView: View {
           AccessibilityPermissionView(
             isAccessibilityPermissionGranted: viewModel.isAccessibilityPermissionGranted,
             requestAccessibilityPermission: viewModel.handleRequestAccessibilityPermission)
-          //          .isHidden(viewModel.currentStep != .accessibilityPermission)
 
           if viewModel.isAccessibilityPermissionGranted {
             XcodeExtensionPermissionView(
@@ -27,8 +26,6 @@ struct PermissionsView: View {
                 viewModel.handleMoveToNextStep()
               }, requestXcodeExtensionPermission: viewModel.handleRequestXcodeExtensionPermission)
           }
-
-          //        .isHidden(viewModel.currentStep != .xcodeExtensionPermission)
           Spacer(minLength: 0)
         }
         Spacer(minLength: 0)

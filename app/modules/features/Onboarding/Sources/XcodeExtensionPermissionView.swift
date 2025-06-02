@@ -30,7 +30,7 @@ struct XcodeExtensionPermissionView: View {
         } else {
           Icon(systemName: "hammer")
             .frame(width: 30, height: 30)
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .padding(5)
             .background(.blue)
             .roundedCorner(radius: 8)

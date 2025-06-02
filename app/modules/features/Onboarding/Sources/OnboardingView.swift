@@ -63,7 +63,6 @@ struct OnboardingView: View {
           "**cmd** is free to use, but you need to bring your own API key. Configure at least one provider below to get started.")
           .lineLimit(nil)
           .fixedSize(horizontal: false, vertical: true)
-          .frame(maxWidth: OnboardingView.Constants.maxTextWidth, alignment: .leading)
         Spacer(minLength: 0)
       }
 
@@ -71,6 +70,22 @@ struct OnboardingView: View {
         viewModel.handleMoveToNextStep()
       }
 
+      if viewModel.canSkipProviderSetup {
+        HoveredButton(
+          action: {
+            viewModel.handleMoveToNextStep()
+          },
+          onHoverColor: .accentColor.opacity(0.8),
+          backgroundColor: .accentColor,
+          padding: 8,
+          cornerRadius: 6)
+        {
+          Text("Next")
+            .font(.headline)
+            .foregroundColor(.white)
+            .lineLimit(1)
+        }
+      }
       Spacer(minLength: 0)
     }
   }

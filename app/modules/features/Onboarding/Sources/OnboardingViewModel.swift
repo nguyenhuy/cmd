@@ -40,6 +40,7 @@ final class OnboardingViewModel {
 
     isAccessibilityPermissionGranted = permissionsService.status(for: .accessibility).currentValue == true
     isXcodeExtensionPermissionGranted = permissionsService.status(for: .xcodeExtension).currentValue == true
+    canSkipProviderSetup = !settingsService.value(for: \.availableModels).isEmpty
 
     currentStep = .welcome
     currentStep = getStep()
@@ -69,8 +70,8 @@ final class OnboardingViewModel {
     settingsService.liveValue(for: \.availableModels).sink { @Sendable [weak self] models in
       Task { @MainActor in
         guard let self else { return }
-        if !models.isEmpty, self.currentStep == .providersSetup {
-          self.handleMoveToNextStep()
+        if !models.isEmpty {
+          self.canSkipProviderSetup = true
         }
       }
     }.store(in: &cancellables)
@@ -80,6 +81,10 @@ final class OnboardingViewModel {
 
   private(set) var isAccessibilityPermissionGranted: Bool
 
+  private(set) var canSkipProviderSetup: Bool
+
+  private(set) var hasSkippedProviderSetup = false
+
   private(set) var currentStep: OnboardingStep
 
   func handleMoveToNextStep() {
@@ -88,6 +93,9 @@ final class OnboardingViewModel {
     }
     if currentStep == .xcodeExtensionPermission {
       skipXcodeExtension = true
+    }
+    if currentStep == .providersSetup, canSkipProviderSetup {
+      hasSkippedProviderSetup = true
     }
     if currentStep == .setupComplete {
       userDefaults.set(true, forKey: .hasCompletedOnboardingUserDefaultsKey)
@@ -132,7 +140,7 @@ final class OnboardingViewModel {
     if permissionsService.status(for: .xcodeExtension).currentValue == false, !skipXcodeExtension {
       return .xcodeExtensionPermission
     }
-    if settingsService.value(for: \.availableModels).isEmpty {
+    if !hasSkippedProviderSetup {
       return .providersSetup
     }
     return .setupComplete
