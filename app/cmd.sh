@@ -32,7 +32,7 @@ focus_dependency_command() {
 	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 
 	./tools/dependencies/focus.sh "$@"
-	echo "👉 Don't forget to use 'cmd clean' before re-opening the app's xcodeproj"
+	echo "👉 Don't forget to use 'cmd open:app' the next time you re-open the app's xcodeproj, instead of opening it manually."
 }
 
 build_release_command() {
@@ -75,6 +75,12 @@ sync:dependencies)
 focus)
 	focus_dependency_command "$@"
 	;;
+open:app)
+	clean_command &&
+		xcode_path=$(xcode-select -p) &&
+		xcode_path="${xcode_path%%.app*}.app" &&
+		open -a "$xcode_path" "./command.xcodeproj" --args -ApplePersistenceIgnoreState YES
+	;;
 build:release)
 	# build the app for release.
 	# use --archive to also archive the app.
@@ -82,7 +88,7 @@ build:release)
 	;;
 clean)
 	# clean artifacts that might make Xcode behave weirdly and not showing files in the file hierarchy.
-	clean_command "$@"
+	clean_command
 	;;
 watch)
 	# Watch file changes, and update derived files when necessary.

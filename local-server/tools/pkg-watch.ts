@@ -32,6 +32,13 @@ watch("../app/modules", { recursive: true }, function (evt, name) {
 	if (fileName === "Package.swift" || fileName === "Module.swift" || !fileName?.endsWith(".swift")) {
 		return
 	}
-	const scriptPath = import.meta.resolve("../../app/cmd.sh").replace("file://", "")
-	execSync(`${scriptPath} sync:dependencies`)
+	const appPath = import.meta.resolve("../../app").replace("file://", "").replace("index.json", "")
+
+	// Look for Package.swift files in the modules directory that are not checked in. Their presence indicates that they need to be updated.
+	const ignoredSwiftPackage = execSync(
+		`find ${appPath}/modules -not -path './.git/*' -name Package.swift 2>/dev/null | git check-ignore --stdin`,
+	)
+	const generateAllPackages = `${ignoredSwiftPackage}`.includes("Package.swift")
+
+	execSync(`${appPath}/cmd.sh sync:dependencies ${generateAllPackages ? "--all" : ""}`)
 })
