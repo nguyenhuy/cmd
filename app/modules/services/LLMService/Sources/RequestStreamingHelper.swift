@@ -212,9 +212,30 @@ final class RequestStreamingHelper: Sendable {
       }
 
       if isInputComplete {
-        // TODO: move to handle(toolUseReque to help ensure that we execute the tool use with an input that has no change of having missing data.
-        streamingToolUse?.startExecuting()
-        endStreamedToolUse()
+        // Request approval before executing the tool
+        if let toolUse = streamingToolUse {
+          endStreamedToolUse()
+          Task { [weak self] in
+            guard let self else { return }
+            do {
+              try await context.requestToolApproval(toolUse)
+              toolUse.startExecuting()
+            } catch {
+              defaultLogger.error("Tool approval denied or cancelled: \(error)")
+              // Replace the tool use with a failed one
+              var updatedContent = result.content
+              if let index = updatedContent.firstIndex(where: { $0.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId }) {
+                updatedContent[index] = .tool(ToolUseMessage(toolUse: FailedToolUse(
+                  toolUseId: toolUse.toolUseId,
+                  toolName: toolUse.toolName,
+                  error: error)))
+                result.update(with: AssistantMessage(content: updatedContent))
+              }
+            }
+          }
+        } else {
+          endStreamedToolUse()
+        }
       }
     } catch {
       // If the above fails, this is because the input could not be parsed by the tool.
@@ -266,7 +287,20 @@ final class RequestStreamingHelper: Sendable {
           await context.prepareForWriteToolUse()
         }
         content.append(toolUse: toolUse)
-        toolUse.startExecuting()
+
+        // Request approval before executing the tool
+        do {
+          try await context.requestToolApproval(toolUse)
+          toolUse.startExecuting()
+        } catch {
+          defaultLogger.error("Tool approval denied or cancelled: \(error)")
+          // Replace the tool use with a failed one
+          content.removeLast()
+          content.append(toolUse: FailedToolUse(
+            toolUseId: toolUse.toolUseId,
+            toolName: toolUse.toolName,
+            error: error))
+        }
 
       } catch {
         // If the above fails, this is because the input could not be parsed by the tool.

@@ -210,6 +210,10 @@ public final class EditFilesTool: Tool {
     }
   }
 
+  public var displayName: String {
+    "Edit Files"
+  }
+
   public var description: String { """
     \(shortDescription)
     This tool allows for precise, surgical replaces to files by specifying exactly what content to search for and what to replace it with.

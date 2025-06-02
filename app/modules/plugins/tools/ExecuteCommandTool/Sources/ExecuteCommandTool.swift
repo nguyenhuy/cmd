@@ -112,6 +112,10 @@ public final class ExecuteCommandTool: NonStreamableTool {
     DO NOT use this to create or update files. Instead describe them as code suggestions, and wait for the users to approve the changes.
     """
 
+  public var displayName: String {
+    "Execute Command"
+  }
+
   public var inputSchema: JSON {
     .object([
       "type": .string("object"),

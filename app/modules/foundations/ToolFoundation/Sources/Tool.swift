@@ -28,6 +28,8 @@ public protocol Tool: Sendable {
   func isAvailable(in mode: ChatMode) -> Bool
   /// Whether this tool expect to receive the input as it is being streamed, or only once it is received entirely.
   var canInputBeStreamed: Bool { get }
+  /// The tool display name
+  var displayName: String { get }
 }
 
 extension Tool {
@@ -78,6 +80,8 @@ public protocol ToolUse: Sendable {
 extension ToolUse {
 
   public var toolName: String { callingTool.name }
+
+  public var toolDisplayName: String { callingTool.displayName }
 
   public var result: Output {
     get async throws {

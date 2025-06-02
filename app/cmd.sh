@@ -11,7 +11,7 @@ sync_dependencies_command() {
 }
 
 close_xcode() {
-	if pgrep -x "Xcode" > /dev/null; then
+	if pgrep -x "Xcode" >/dev/null; then
 		# Kill Xcode.
 		pkill -x "Xcode"
 	fi
@@ -40,7 +40,7 @@ clean_command() {
 			while read file; do rm -rf "$file"; done
 	# Reset xcode state
 	cd "$(git rev-parse --show-toplevel)/app" &&
-	find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
+		find . -path '*.xcuserstate' 2>/dev/null | git check-ignore --stdin | xargs -I{} rm {}
 }
 
 test_swift_command() {

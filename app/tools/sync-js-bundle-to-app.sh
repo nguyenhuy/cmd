@@ -64,7 +64,7 @@ build_and_copy() {
 		# So we need to exit with a non-zero exit code to indicate that the build needs to be restarted with the correct files.
 		echo "The local server has been updated. Please restart the build." >&2
 		exit 1
-	fi	
+	fi
 }
 
 # Sync the schema

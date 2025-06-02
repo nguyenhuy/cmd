@@ -89,6 +89,10 @@ public final class ReadFileTool: NonStreamableTool {
     - limit: (optional) Maximum number of lines to read. If not provided, the tool will attempt to read the entire file.
     """
 
+  public var displayName: String {
+    "Read File"
+  }
+
   public var inputSchema: JSON {
     .object([
       "type": .string("object"),
