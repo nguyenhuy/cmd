@@ -88,6 +88,10 @@ public final class BuildTool: NonStreamableTool {
     Request to trigger a build action in Xcode. This tool allows you to build for testing or running and to get the output in case of failure.
     """
 
+  public var displayName: String {
+    "Build"
+  }
+
   public var inputSchema: JSON {
     .object([
       "type": .string("object"),

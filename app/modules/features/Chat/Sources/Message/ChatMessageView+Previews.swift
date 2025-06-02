@@ -39,6 +39,7 @@ struct TestTool: NonStreamableTool {
   var inputSchema = JSON.object([:])
 
   var name: String { "TestTool" }
+  var displayName: String { "Test Tool" }
   var description: String { "A tool for testing." }
 
   func use(toolUseId _: String, input _: String, context _: ToolExecutionContext) -> Use {

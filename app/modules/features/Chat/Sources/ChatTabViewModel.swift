@@ -94,6 +94,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
   func cancelCurrentMessage() {
     streamingTask?.cancel()
     streamingTask = nil
+    input.cancelAllPendingToolApprovalRequests()
   }
 
   /// Are we queing too much on the main thread?
@@ -105,6 +106,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
       defaultLogger.error("not sending as already streaming")
       return
     }
+
+    // Cancel any pending tool approvals from previous messages
+    input.cancelAllPendingToolApprovalRequests()
+
     guard let selectedModel = input.selectedModel else {
       defaultLogger.error("not sending as no model selected")
       return
@@ -139,6 +144,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
             project: projectInfo?.path,
             projectRoot: projectInfo?.dirPath,
             prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() },
+            requestToolApproval: { [weak self] toolUse in
+              try await self?.handleToolApproval(for: toolUse)
+            },
             chatMode: input.mode),
           handleUpdateStream: { newMessages in
             Task { @MainActor [weak self] in
@@ -189,6 +197,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
+  private static let userDefaultsAlwaysApproveKey = "alwaysApprove_"
+
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
   @ObservationIgnored
@@ -211,6 +221,28 @@ final class ChatTabViewModel: Identifiable, Equatable {
   private var streamingTask: Task<Void, any Error>? = nil {
     didSet {
       isStreamingResponse = streamingTask != nil
+    }
+  }
+
+  private func handleToolApproval(for toolUse: any ToolUse) async throws {
+    // Check if user has already approved this tool type
+    if shouldAlwaysApprove(toolName: toolUse.toolName) {
+      return // Skip approval for this tool
+    }
+
+    let approvalResult = await input.requestApproval(
+      for: toolUse)
+
+    switch approvalResult {
+    case .denied:
+      throw LLMServiceError.toolUsageDenied
+    case .approved:
+      break // Continue execution
+    case .alwaysApprove(let toolName):
+      // Store preference and continue
+      storeAlwaysApprovePreference(for: toolName)
+    case .cancelled:
+      throw CancellationError()
     }
   }
 
@@ -240,6 +272,14 @@ final class ChatTabViewModel: Identifiable, Equatable {
     } catch {
       defaultLogger.error("Failed to create checkpoint", error)
     }
+  }
+
+  private func storeAlwaysApprovePreference(for toolName: String) {
+    userDefaults.set(true, forKey: "\(Self.userDefaultsAlwaysApproveKey)\(toolName)")
+  }
+
+  private func shouldAlwaysApprove(toolName: String) -> Bool {
+    userDefaults.bool(forKey: "\(Self.userDefaultsAlwaysApproveKey)\(toolName)")
   }
 
   private func updateProjectInfo() -> SelectedProjectInfo? {
@@ -274,17 +314,20 @@ struct DefaultChatContext: ChatContext {
     project: URL?,
     projectRoot: URL?,
     prepareForWriteToolUse: @escaping @Sendable () async -> Void,
+    requestToolApproval: @escaping @Sendable (any ToolUse) async throws -> Void,
     chatMode: ChatMode)
   {
     self.project = project
     self.projectRoot = projectRoot
     self.prepareForWriteToolUse = prepareForWriteToolUse
+    self.requestToolApproval = requestToolApproval
     self.chatMode = chatMode
   }
 
   let project: URL?
   let projectRoot: URL?
   let prepareForWriteToolUse: @Sendable () async -> Void
+  let requestToolApproval: @Sendable (any ToolUse) async throws -> Void
   let chatMode: ChatMode
 }
 

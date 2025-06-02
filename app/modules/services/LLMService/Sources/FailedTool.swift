@@ -38,21 +38,27 @@ struct FailedToolUse: ToolUse {
 // MARK: - FailedTool
 
 struct FailedTool: NonStreamableTool {
+  init(name: String) {
+    self.name = name
+  }
+
   typealias Use = FailedToolUse
+
+  let name: String
+
+  var displayName: String {
+    "Failed tool"
+  }
+
+  var description: String { "Failed tool" }
+  var inputSchema: JSON { .object([:]) }
 
   func isAvailable(in _: ChatMode) -> Bool {
     true
-  }
-
-  init(name: String) {
-    self.name = name
   }
 
   func use(toolUseId _: String, input _: EmptyObject, context _: ToolExecutionContext) -> FailedToolUse {
     fatalError("Should not be called")
   }
 
-  let name: String
-  var description: String { "Failed tool" }
-  var inputSchema: JSON { .object([:]) }
 }

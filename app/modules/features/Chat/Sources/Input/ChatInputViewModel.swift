@@ -15,8 +15,33 @@ import LoggingServiceInterface
 import PDFKit
 import SettingsServiceInterface
 import SwiftUI
+import ToolFoundation
 import UniformTypeIdentifiers
 import XcodeObserverServiceInterface
+
+// MARK: - ToolApprovalRequest
+
+struct ToolApprovalRequest: Identifiable {
+  let id = UUID()
+  let displayName: String
+}
+
+// MARK: - ToolApprovalResult
+
+enum ToolApprovalResult {
+  case approved
+  case denied
+  case alwaysApprove(toolName: String)
+  case cancelled
+}
+
+// MARK: - PendingToolApproval
+
+/// The current tool approvals request pending user response.
+private struct PendingToolApproval {
+  let request: ToolApprovalRequest
+  let continuation: CheckedContinuation<ToolApprovalResult, Never>
+}
 
 // MARK: - ChatInputViewModel
 
@@ -108,6 +133,9 @@ final class ChatInputViewModel {
 
   /// When searching for references, the index of the selected search result (at this point the selection has not yet been confirmed).
   var selectedSearchResultIndex = 0
+
+  /// The current tool approval request pending user response.
+  var pendingApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
 
   /// Which LLM model is selected to respond to the next message.
   var selectedModel: LLMModel? {
@@ -277,8 +305,35 @@ final class ChatInputViewModel {
     textInput = TextInput(str)
   }
 
+  /// Request approval for a tool use operation.
+  func requestApproval(for toolUse: any ToolUse) async -> ToolApprovalResult {
+    await withCheckedContinuation { continuation in
+      let request = ToolApprovalRequest(
+        displayName: toolUse.toolDisplayName)
+      self.toolCallsPendingApproval.append(PendingToolApproval(request: request, continuation: continuation))
+    }
+  }
+
+  func cancelAllPendingToolApprovalRequests() {
+    for item in toolCallsPendingApproval { item.continuation.resume(returning: .cancelled) }
+  }
+
+  /// Handle the user's approval response.
+  func handleApproval(of request: ToolApprovalRequest, result: ToolApprovalResult) {
+    guard let index = toolCallsPendingApproval.firstIndex(where: { $0.request.id == request.id }) else {
+      defaultLogger.error("Could not find pending tool approval request with ID: \(request.id)")
+      return
+    }
+    let pendingApproval = toolCallsPendingApproval.remove(at: index)
+    pendingApproval.continuation.resume(returning: result)
+  }
+
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
   private static let userDefaultsChatModeKey = "chatMode"
+
+  /// Queue of tool approval requests waiting for user response.
+  /// Each entry contains both the request details and the continuation that will receive the user's decision.
+  private var toolCallsPendingApproval: [PendingToolApproval] = []
 
   /// References to attachments within the text input.
   @ObservationIgnored private var inlineReferences = [String: Attachment]()
@@ -356,7 +411,6 @@ final class ChatInputViewModel {
     }
     selectedModel = activeModels.first
   }
-
 }
 
 // MARK: - TextInput

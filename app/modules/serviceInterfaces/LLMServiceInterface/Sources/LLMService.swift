@@ -21,6 +21,8 @@ public protocol ChatContext: Sendable {
 
   /// When a tool that is not read-only runs, this function will be called before.
   var prepareForWriteToolUse: @Sendable () async -> Void { get }
+  /// Request user approval before executing a tool.
+  var requestToolApproval: @Sendable (any ToolUse) async throws -> Void { get }
   /// Which chat mode applies to the current context.
   var chatMode: ChatMode { get }
 }
@@ -35,6 +37,23 @@ public protocol LLMService: Sendable {
     context: ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> [AssistantMessage]
+}
+
+// MARK: - LLMServiceError
+
+public enum LLMServiceError: Error {
+  case toolUsageDenied
+}
+
+// MARK: LocalizedError
+
+extension LLMServiceError: LocalizedError {
+  public var errorDescription: String? {
+    switch self {
+    case .toolUsageDenied:
+      "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification."
+    }
+  }
 }
 
 #if DEBUG
