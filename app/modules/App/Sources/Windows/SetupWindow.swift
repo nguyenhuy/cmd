@@ -3,11 +3,12 @@
 
 import AppKit
 import Onboarding
+import SettingsFeature
 import SwiftUI
 
 final class SetupWindow: NSWindow {
 
-  init() {
+  init(onComplete: @escaping () -> Void) {
     // Use a temporary size that will be adjusted once content is loaded
     super.init(
       contentRect: NSRect(x: 0, y: 0, width: 600, height: 400),
@@ -15,7 +16,20 @@ final class SetupWindow: NSWindow {
       backing: .buffered,
       defer: false)
 
-    let root = SetupView()
+    let root = OnboardingFeatureBuilder.build(.init(
+      bringWindowToFront: { [weak self] in
+        NSApplication.shared.activate()
+        self?.makeKeyAndOrderFront(nil)
+        self?.orderFrontRegardless()
+      },
+      onDone: {
+        onComplete()
+      },
+      createLLMProvidersView: { _ in
+        AnyView(ProvidersView(providerSettings: .init(
+          get: { self.settingsViewModel.providerSettings },
+          set: { self.settingsViewModel.providerSettings = $0 })))
+      }))
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
     let hostingView = NSHostingView(rootView: root)
@@ -38,4 +52,6 @@ final class SetupWindow: NSWindow {
     // Center window on screen
     center()
   }
+
+  private let settingsViewModel = SettingsViewModel()
 }

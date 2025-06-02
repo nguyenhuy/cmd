@@ -7,4 +7,9 @@ Target.module(
     "LLMFoundation",
     "SettingsServiceInterface",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "FoundationInterfaces",
+    "LLMFoundation",
+    "SettingsServiceInterface",
+    "SwiftTesting",
+  ])

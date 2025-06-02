@@ -20,7 +20,8 @@ public struct SettingsView: View {
           onNavigate: { section in
             currentView = section
           },
-          onDismiss: onDismiss)
+          onDismiss: onDismiss,
+          hasAvailableLLMModels: !viewModel.availableModels.isEmpty)
       }
 
       if currentView != .landing {
@@ -65,13 +66,6 @@ public struct SettingsView: View {
         }
 
         Spacer()
-
-//        HoveredButton(action: {
-//          viewModel.save()
-//        },
-//                      onHoverColor: colorScheme.secondarySystemBackground) {
-//          Text("Save")
-//        }
       }
 
       // Header with icon and title
@@ -99,8 +93,9 @@ public struct SettingsView: View {
 
       case .internalSettings:
         InternalSettingsView(
-          pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
-          allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics)
+          repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
+          showOnboardingScreenAgain: $viewModel.showOnboardingScreenAgain,
+          pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp)
 
       case .about:
         AboutSettingsView(allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics)
@@ -160,6 +155,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
 private struct SettingsLandingView: View {
   let onNavigate: (SettingsSection) -> Void
   let onDismiss: () -> Void
+  let hasAvailableLLMModels: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -198,10 +194,13 @@ private struct SettingsLandingView: View {
             section: .providers,
             description: "Manage API keys and setup LLM providers",
             action: onNavigate)
-          SettingsCard(
-            section: .models,
-            description: "Models configuration",
-            action: onNavigate)
+
+          if hasAvailableLLMModels {
+            SettingsCard(
+              section: .models,
+              description: "Models configuration",
+              action: onNavigate)
+          }
 
           SettingsCard(
             section: .about,

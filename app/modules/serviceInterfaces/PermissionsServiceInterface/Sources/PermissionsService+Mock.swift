@@ -16,12 +16,18 @@ public final class MockPermissionsService: PermissionsService {
   }
 
   public var onRequestAccessibilityPermission: (@Sendable () -> Void)?
+  public var onRequestXcodeExtensionPermission: (@Sendable () -> Void)?
 
-  public func request(permission: RequestablePermission) {
+  public func request(permission: Permission) {
     switch permission {
     case .accessibility:
       Task { @MainActor in
         onRequestAccessibilityPermission?()
+      }
+
+    case .xcodeExtension:
+      Task { @MainActor in
+        onRequestXcodeExtensionPermission?()
       }
     }
   }

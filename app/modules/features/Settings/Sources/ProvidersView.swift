@@ -8,10 +8,12 @@ import SwiftUI
 
 // MARK: - ProvidersView
 
-struct ProvidersView: View {
-  @Binding var providerSettings: AllLLMProviderSettings
+public struct ProvidersView: View {
+  public init(providerSettings: Binding<AllLLMProviderSettings>) {
+    _providerSettings = providerSettings
+  }
 
-  var body: some View {
+  public var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       // Search bar
       HStack {
@@ -47,6 +49,8 @@ struct ProvidersView: View {
       setInitialOrder()
     }
   }
+
+  @Binding var providerSettings: AllLLMProviderSettings
 
   @State private var orderedProviders: [LLMProvider] = LLMProvider.allCases
 

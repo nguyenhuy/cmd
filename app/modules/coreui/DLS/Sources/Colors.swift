@@ -73,6 +73,10 @@ extension ColorScheme {
     self == .dark ? .white : .black
   }
 
+  public var secondaryForeground: Color {
+    self == .dark ? Color(white: 0.8) : Color(white: 0.2)
+  }
+
   // TODO: this depends on the theme used in Xcode.
   // The current color schema can be read with `defaults read ~/Library/Preferences/com.apple.dt.Xcode | grep XCFontAndColorCurrent`
   // also contains indentation info, path to the detault app (eg file:///Applications/Xcode-16.2.0.app/),

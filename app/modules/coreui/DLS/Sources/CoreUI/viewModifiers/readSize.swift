@@ -48,12 +48,21 @@ extension View {
       set: { newValue in read(newValue) }))
   }
 
-  /// Reads the size of this view and reports it via a binding. Also display the view.
+  /// Reads the size of this view and reports it via a closure. Also display the view.
   public func readingSize(_ read: @escaping @MainActor (CGSize) -> Void) -> some View {
     onGeometryChange(for: CGSize.self) { proxy in
       proxy.size
     } action: { size in
       read(size)
+    }
+  }
+
+  /// Reads the size of this view and reports it via a binding. Also display the view.
+  public func readingSize(_ size: Binding<CGSize>) -> some View {
+    onGeometryChange(for: CGSize.self) { proxy in
+      proxy.size
+    } action: { newSize in
+      size.wrappedValue = newSize
     }
   }
 }

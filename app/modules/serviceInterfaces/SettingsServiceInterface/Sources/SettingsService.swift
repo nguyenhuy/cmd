@@ -87,3 +87,9 @@ public protocol SettingsService: Sendable {
 public protocol SettingsServiceProviding {
   var settingsService: SettingsService { get }
 }
+
+public typealias UserDefaultsKey = String
+
+extension UserDefaultsKey {
+  public static let hasCompletedOnboardingUserDefaultsKey = "hasCompletedOnboarding"
+}

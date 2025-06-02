@@ -6,7 +6,9 @@ import AppKit
 import ChatAppEvents
 import Combine
 import Dependencies
+import FoundationInterfaces
 import Observation
+import Onboarding
 import PermissionsServiceInterface
 import XcodeObserverServiceInterface
 
@@ -16,7 +18,7 @@ import XcodeObserverServiceInterface
 final class WindowsViewModel {
 
   init() {
-    state = .init(isSidePanelVisible: false, isSetupVisible: false)
+    state = .init(isSidePanelVisible: false, isOnbardingVisible: false)
 
     appEventHandlerRegistry.registerHandler { [weak self] event in
       await self?.handle(appEvent: event) ?? false
@@ -28,20 +30,21 @@ final class WindowsViewModel {
 
   struct State {
     let isSidePanelVisible: Bool
-    let isSetupVisible: Bool
+    let isOnbardingVisible: Bool
 
     func with(
       isSidePanelVisible: Bool? = nil,
-      isSetupVisible: Bool? = nil)
+      isOnbardingVisible: Bool? = nil)
       -> State
     {
       State(
         isSidePanelVisible: isSidePanelVisible ?? self.isSidePanelVisible,
-        isSetupVisible: isSetupVisible ?? self.isSetupVisible)
+        isOnbardingVisible: isOnbardingVisible ?? self.isOnbardingVisible)
     }
   }
 
   enum WindowsAction {
+    case onboardingDidComplete
     case showApplication
     case closeSidePanel
     case stopChat
@@ -54,16 +57,21 @@ final class WindowsViewModel {
     switch action {
     case .showApplication:
       state = state.with(isSidePanelVisible: true)
+
     case .closeSidePanel:
       state = state.with(isSidePanelVisible: false)
+
     case .stopChat:
       state = state.with(isSidePanelVisible: false)
+
     case .accessibilityPermissionChanged(let isGranted):
-      if isGranted == true {
-        state = state.with(isSetupVisible: false)
-      } else if isGranted == false {
-        state = state.with(isSetupVisible: true)
-      }
+      guard let isGranted else { return }
+
+      isAccessibilityPermissionGranted = isGranted
+      state = state.with(isOnbardingVisible: isOnbardingVisible)
+
+    case .onboardingDidComplete:
+      state = state.with(isOnbardingVisible: isOnbardingVisible)
     }
   }
 
@@ -71,8 +79,24 @@ final class WindowsViewModel {
   @Dependency(\.appEventHandlerRegistry) private var appEventHandlerRegistry
   @ObservationIgnored
   @Dependency(\.permissionsService) private var permissionsService
+  @ObservationIgnored
+  @Dependency(\.userDefaults) private var userDefaults
 
+  @ObservationIgnored private var isAccessibilityPermissionGranted = true // default to true for initial state
   private var cancellables = Set<AnyCancellable>()
+
+  private var isOnbardingVisible: Bool {
+    if userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey) != true {
+      // Show onboarding at least once
+      return true
+    }
+    if !isAccessibilityPermissionGranted {
+      // Show onboarding if accessibility permission is not granted
+      return true
+    }
+    // If we want to show the onboarding in other conditions, we can add this logic here.
+    return false
+  }
 
   private func handle(appEvent: AppEvent) -> Bool {
     if appEvent is AddCodeToChatEvent {

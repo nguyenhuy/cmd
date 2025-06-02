@@ -23,20 +23,27 @@ final class DefaultPermissionsService: PermissionsService {
     bundle: Bundle,
     isAccessibilityPermissionGranted: @MainActor @escaping @Sendable () -> Bool,
     requestAccessibilityPermission: @MainActor @escaping @Sendable () -> Void,
+    requestXcodeExtensionPermission: @MainActor @escaping @Sendable () -> Void,
     pollIntervalNS: UInt64 = 1_000_000_000)
   {
     self.shellService = shellService
     self.isAccessibilityPermissionGranted = isAccessibilityPermissionGranted
     self.requestAccessibilityPermission = requestAccessibilityPermission
+    self.requestXcodeExtensionPermission = requestXcodeExtensionPermission
     self.pollIntervalNS = pollIntervalNS
     self.bundle = bundle
   }
 
-  func request(permission: RequestablePermission) {
+  func request(permission: Permission) {
     switch permission {
     case .accessibility:
       Task { @MainActor in
         requestAccessibilityPermission()
+      }
+
+    case .xcodeExtension:
+      Task { @MainActor in
+        requestXcodeExtensionPermission()
       }
     }
   }
@@ -78,6 +85,7 @@ final class DefaultPermissionsService: PermissionsService {
   private let pollIntervalNS: UInt64
   private let isAccessibilityPermissionGranted: @MainActor @Sendable () -> Bool
   private let requestAccessibilityPermission: @MainActor @Sendable () -> Void
+  private let requestXcodeExtensionPermission: @MainActor @Sendable () -> Void
   private let accessibilityPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
   private let xcodeExtensionPermissionStatus = CurrentValueSubject<Bool?, Never>(nil)
 
@@ -140,6 +148,18 @@ extension BaseProviding where
           AXIsProcessTrustedWithOptions([
             kAXTrustedCheckOptionPrompt.takeRetainedValue() as NSString: true,
           ] as NSDictionary)
+          if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+          }
+        },
+        requestXcodeExtensionPermission: {
+          if
+            let url =
+            URL(
+              string: "x-apple.systempreferences:com.apple.ExtensionsPreferences?extensionPointIdentifier=com.apple.dt.Xcode.extension.source-editor")
+          {
+            NSWorkspace.shared.open(url)
+          }
         })
     }
   }

@@ -4,6 +4,7 @@
 import Combine
 import Dependencies
 import Foundation
+import FoundationInterfaces
 import LLMFoundation
 import SettingsServiceInterface
 import SwiftUI
@@ -16,10 +17,15 @@ public final class SettingsViewModel {
   public init() {
     @Dependency(\.settingsService) var settingsService
     self.settingsService = settingsService
+    @Dependency(\.userDefaults) var userDefaults
+    self.userDefaults = userDefaults
+
     let settings = settingsService.values()
     self.settings = settings
 
     providerSettings = settings.llmProviderSettings
+    repeatLastLLMInteraction = userDefaults.bool(forKey: "llmService.isRepeating")
+    showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -29,16 +35,16 @@ public final class SettingsViewModel {
       .store(in: &cancellables)
   }
 
-  private(set) var settings: SettingsServiceInterface.Settings
-
   // MARK: - Initialization
 
-  var providerSettings: AllLLMProviderSettings {
+  public var providerSettings: AllLLMProviderSettings {
     didSet {
       settings.llmProviderSettings = providerSettings
       settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
     }
   }
+
+  private(set) var settings: SettingsServiceInterface.Settings
 
   var allowAnonymousAnalytics: Bool {
     get {
@@ -47,6 +53,19 @@ public final class SettingsViewModel {
     set {
       settings.allowAnonymousAnalytics = newValue
       settingsService.update(setting: \.allowAnonymousAnalytics, to: newValue)
+    }
+  }
+
+  // MARK: - Internal settings
+  var repeatLastLLMInteraction: Bool {
+    didSet {
+      userDefaults.set(repeatLastLLMInteraction, forKey: "llmService.isRepeating")
+    }
+  }
+
+  var showOnboardingScreenAgain: Bool {
+    didSet {
+      userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
     }
   }
 
@@ -107,9 +126,10 @@ public final class SettingsViewModel {
   private var cancellables = Set<AnyCancellable>()
 
   private let settingsService: SettingsService
+  private let userDefaults: UserDefaultsI
 }
 
-typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]
+public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]
 extension AllLLMProviderSettings {
   var nextCreatedOrder: Int {
     (values.map(\.createdOrder).max() ?? 0) + 1

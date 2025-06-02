@@ -30,7 +30,8 @@ struct DefaultPermissionsServiceTests {
     let sut = DefaultPermissionsService(
       requestAccessibilityPermission: {
         exp.fulfill()
-      })
+      },
+      requestXcodeExtensionPermission: { })
     sut.request(permission: .accessibility)
     try await fulfillment(of: exp)
   }
@@ -44,7 +45,8 @@ struct DefaultPermissionsServiceTests {
     let sut = DefaultPermissionsService(
       isAccessibilityPermissionGranted: {
         pollCount.increment() >= pollUntilGranted
-      })
+      },
+      requestXcodeExtensionPermission: { })
 
     let receivedValues = Atomic<[Bool?]>([])
     let cancellable = sut.status(for: .accessibility).sink { value in
@@ -94,7 +96,8 @@ extension DefaultPermissionsService {
     shellService: ShellService = MockShellService(),
     userDefaults: UserDefaults = UserDefaults.standard,
     isAccessibilityPermissionGranted: @escaping @Sendable () -> Bool = { false },
-    requestAccessibilityPermission: @escaping @Sendable () -> Void = { })
+    requestAccessibilityPermission: @escaping @Sendable () -> Void = { },
+    requestXcodeExtensionPermission: @escaping @Sendable () -> Void = { })
   {
     self.init(
       shellService: shellService,
@@ -102,6 +105,7 @@ extension DefaultPermissionsService {
       bundle: Bundle.main,
       isAccessibilityPermissionGranted: isAccessibilityPermissionGranted,
       requestAccessibilityPermission: requestAccessibilityPermission,
+      requestXcodeExtensionPermission: requestXcodeExtensionPermission,
       pollIntervalNS: 1)
   }
 }

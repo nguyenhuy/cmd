@@ -7,16 +7,18 @@ import SwiftUI
 
 #Preview("Internal Settings - Component Only") {
   InternalSettingsView(
-    pointReleaseXcodeExtensionToDebugApp: .constant(false),
-    allowAnonymousAnalytics: .constant(true))
+    repeatLastLLMInteraction: .constant(true),
+    showOnboardingScreenAgain: .constant(true),
+    pointReleaseXcodeExtensionToDebugApp: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
 
 #Preview("Internal Settings - Debug Enabled") {
   InternalSettingsView(
-    pointReleaseXcodeExtensionToDebugApp: .constant(true),
-    allowAnonymousAnalytics: .constant(false))
+    repeatLastLLMInteraction: .constant(false),
+    showOnboardingScreenAgain: .constant(true),
+    pointReleaseXcodeExtensionToDebugApp: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }
