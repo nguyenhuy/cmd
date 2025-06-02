@@ -26,10 +26,10 @@
 		"build": "node ./build.js",
 		"build:prod": "NODE_ENV=production yarn build && yarn copy-to-app",
 		"build:watch": "yarn build --watch",
-		"copy-to-app": "tsx ./tools/copy-to-app.ts",
-		"watch": "yarn build:watch & tsx ./tools/pkg-watch.ts",
-		"hot-reload-server": "tsx ./tools/hot-server-reload.ts",
-		"export-schema-swift": "tsx ./tools/generateSwiftSchema.ts"
+		"copy-to-app": "yarn tsx ./tools/copy-to-app.ts",
+		"watch": "yarn build:watch & yarn tsx ./tools/pkg-watch.ts",
+		"hot-reload-server": "yarn tsx ./tools/hot-server-reload.ts",
+		"export-schema-swift": "yarn tsx ./tools/generateSwiftSchema.ts"
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^1.2.12",
