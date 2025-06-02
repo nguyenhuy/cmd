@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>SUFeedURL</key>
+	<string></string>
+	<key>SUPublicEDKey</key>
+	<string>oIUy9brsbVznI5y2tOrX59KVITPCxYltusDhv4z9byE=</string>
 	<key>APP_BUNDLE_IDENTIFIER</key>
 	<string>$(HOST_APP_BUNDLE_IDENTIFIER)</string>
 	<key>DebugUserDefaultsSharedSuiteName</key>

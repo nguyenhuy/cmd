@@ -31,6 +31,14 @@ Build the app in Debug configuration
 
 Build and archive the app for Mac App Store distribution
 
+### mac distribute_release
+
+```sh
+[bundle exec] fastlane mac distribute_release
+```
+
+Build and archive the app for Mac App Store distribution
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

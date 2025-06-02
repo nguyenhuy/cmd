@@ -1,5 +1,27 @@
 default_platform(:mac)
 
+# Load a secret from the keychain if it is not passed as an environment variable.
+require 'base64'
+
+def load_secret(env_key)
+  return ENV[env_key] if ENV[env_key] # && store_secret_to_keychain(env_key, ENV[env_key])
+
+  encoded = `security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null`.strip
+  return nil if encoded.empty?
+  # Use base64 encoding to avoid dealing with new lines.
+  decoded = Base64.decode64(encoded)
+  ENV[env_key] = decoded
+end
+
+# Store a secret to the keychain if it is not already stored or if it has changed.
+def store_secret_to_keychain(key, value)
+  encoded_value = Base64.strict_encode64(value)
+  existing_encoded = `security find-generic-password -s 'dev.getcmd.#{key}' -w 2>/dev/null`.strip
+  return if existing_encoded == encoded_value
+
+  sh("security add-generic-password -a '#{ENV['USER']}' -s 'dev.getcmd.#{key}' -w '#{encoded_value}' -U")
+end
+
 platform :mac do
   desc "Build the app in Debug configuration"
   lane :build_debug do
@@ -28,12 +50,89 @@ platform :mac do
       project: "./command.xcodeproj",
       configuration: "Release",
       export_method: "mac-application",
-      output_directory: "builds/release",
+      output_directory: "build/release",
+      derived_data_path: "build/derived_data",
       output_name: "command.app",
       scheme: "command",
       silent: true,
       skip_archive: true
     )
+    sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
+  end
+
+  desc "Build and archive the app for Mac App Store distribution"
+  lane :distribute_release do
+    setup_ci if ENV['CI']
+
+    personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
+    match(
+      git_bearer_authorization:personal_github_access_token,
+      type: 'developer_id',
+      team_id: 'GP78T2GNXD',
+      readonly: true
+    )
+
+    # Build and archive the app
+    sh("../tools/release/configure_xcodeproj_for_release_build.sh")
+    build_mac_app(
+      xcargs: "-allowProvisioningUpdates",
+      export_method: "developer-id",
+      export_options: {
+        method: "developer-id",
+        signingStyle: "manual",
+        signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
+        teamID: "GP78T2GNXD"
+      },
+      skip_profile_detection: "true",
+      
+      project: "./command.xcodeproj",
+      configuration: "Release",
+      output_directory: "build/release",
+      derived_data_path: "build/derived_data",
+      output_name: "command",
+      scheme: "command",
+      silent: true,
+      skip_archive: false
+    )
+
+    build_path = File.absolute_path("../build")
+    release_path = "#{build_path}/release/"
+    app_path = "#{release_path}/command.app"
+
+    # Notarize the app
+    notary_key_id = load_secret("NOTARY_KEY_ID")
+    notary_key_path = File.absolute_path("./AuthKey_#{notary_key_id}.p8")
+    notary_secret_p8 = load_secret("NOTARY_P8")
+    notary_issuer_id = load_secret("NOTARY_ISSUER_ID")
+
+    app_store_connect_api_key(
+      key_id: notary_key_id,
+      issuer_id: notary_issuer_id,
+      key_content: notary_secret_p8,
+    )
+
+    notarize(
+      package: app_path,
+      verbose: false,
+      print_log: true,
+      use_notarytool: true
+    )
+
+    # Upload the app to GitHub Release
+    zip_path = zip(path: app_path)
+    sparkle_path = File.absolute_path("../build/derived_data/SourcePackages/artifacts/sparkle/Sparkle")
+    sparkle_output_path = File.absolute_path("../appcast.xml")
+
+    sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
+
+    sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
+
+    sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/generate_appcast #{release_path} -o '#{sparkle_output_path}' --download-url-prefix 'https://github.com/gsabran/cmd/releases/download/0.1.0/' --ed-key-file -")
+    echo sparkle_output_path
+    cat sparkle_output_path
+
+    sh("rm -rf #{build_path}")
+
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
 end

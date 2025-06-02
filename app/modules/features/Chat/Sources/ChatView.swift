@@ -29,10 +29,12 @@ public struct ChatView: View {
 
   public init(
     viewModel: ChatViewModel,
-    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
+    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) },
+    AppUpdaterView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
   {
     self.viewModel = viewModel
     self.SettingsView = SettingsView
+    self.AppUpdaterView = AppUpdaterView
   }
 
   public var body: some View {
@@ -41,6 +43,7 @@ public struct ChatView: View {
         quickActionsRow
         secondaryActionRow
         if let selectedTab = viewModel.selectedTab {
+          AppUpdaterView { }
           ChatMessageList(viewModel: selectedTab)
             .id("ChatMessageList-\(selectedTab.id)")
           ChatInputView(
@@ -78,6 +81,7 @@ public struct ChatView: View {
   @Environment(\.colorScheme) private var colorScheme
 
   private let SettingsView: (@escaping @MainActor () -> Void) -> AnyView
+  private let AppUpdaterView: (@escaping @MainActor () -> Void) -> AnyView
 
   @Bindable private var viewModel: ChatViewModel
 

@@ -77,6 +77,7 @@ targets.append(contentsOf: Target.module(
     "AccessibilityObjCFoundation",
     "AppEventService",
     "AppEventServiceInterface",
+    "AppUpdater",
     "AskFollowUpTool",
     "BuildTool",
     "Chat",
@@ -394,6 +395,13 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./features/Onboarding"))
+
+targets.append(contentsOf: Target.module(
+  name: "AppUpdater",
+  dependencies: [
+    .product(name: "Sparkle", package: "Sparkle"),
+  ],
+  path: "./features/AppUpdater"))
 
 targets.append(contentsOf: Target.module(
   name: "AppExtension",
@@ -933,6 +941,7 @@ let package = Package(
     .package(url: "https://github.com/swiftlang/swift-syntax", from: "600.0.1"),
     .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.51.1"),
     .package(url: "https://github.com/statsig-io/statsig-kit", from: "1.53.5"),
+    .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.7.0"),
 
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
