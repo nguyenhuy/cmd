@@ -47,7 +47,7 @@ jobs:
       with:
         xcode-version: latest-stable
     - name: Run tests
-      run: cd app && ./cmd.sh clean && ./cmd.sh test
+      run: cd app && ./cmd.sh clean && ./cmd.sh test:swift
 
   lint-swift:
     runs-on: macos-15
