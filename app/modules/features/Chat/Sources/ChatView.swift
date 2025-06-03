@@ -43,7 +43,6 @@ public struct ChatView: View {
         quickActionsRow
         secondaryActionRow
         if let selectedTab = viewModel.selectedTab {
-          AppUpdaterView { }
           ChatMessageList(viewModel: selectedTab)
             .id("ChatMessageList-\(selectedTab.id)")
           ChatInputView(
