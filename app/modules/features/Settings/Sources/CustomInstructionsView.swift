@@ -18,11 +18,11 @@ struct CustomInstructionsView: View {
         Divider()
         agentModeView
         InformationCard(
-          title: "Tips for Custom Prompts",
+          title: "Tips for Custom Instructions",
           tips: [
-            "Keep prompts concise and specific to your needs",
-            "Custom prompts are prepended to the default system prompts",
-            "Leave empty to use default prompts"
+            "Keep instructions concise and specific to your needs",
+            "Custom instructions are inserted into the default system prompt",
+            "Use clear, actionable language rather than vague descriptions",
           ]
         )
         .padding(12)
