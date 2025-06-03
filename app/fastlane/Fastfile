@@ -67,8 +67,7 @@ platform :mac do
     setup_ci if ENV['CI']
 
     personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
-    sh('echo $FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN   | head -c8')
-    sh('echo $FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN   | tail -c8')
+    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
     match(
       type: 'developer_id',
       team_id: 'GP78T2GNXD',
@@ -97,7 +96,8 @@ platform :mac do
       scheme: "command",
       # silent: true,
       silent: false,
-      skip_archive: false
+      skip_archive: false,
+      xcodebuild_formatter: "cat",
     )
 
     build_path = File.absolute_path("../build")
@@ -132,7 +132,7 @@ platform :mac do
 
     sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
 
-    appcast_content = File.read(sparkle_secret_key)
+    appcast_content = File.read(sparkle_output_path)
     appcast_content.gsub!("REPLACE_SPARKLE_VERSION", version)
     appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
