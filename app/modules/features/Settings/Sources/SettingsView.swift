@@ -91,7 +91,7 @@ public struct SettingsView: View {
           providerForModels: $viewModel.providerForModels,
           inactiveModels: $viewModel.inactiveModels)
 
-      case .customPrompts:
+      case .customInstructions:
         CustomInstructionsView(customInstructions: $viewModel.customInstructions)
 
       case .internalSettings:
