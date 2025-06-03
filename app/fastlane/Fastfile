@@ -40,9 +40,9 @@ platform :mac do
 
     personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
     match(
-      git_bearer_authorization:personal_github_access_token,
       type: 'appstore',
-      readonly: true
+      readonly: true,
+      git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
     )
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
@@ -64,12 +64,12 @@ platform :mac do
   lane :distribute_release do
     setup_ci if ENV['CI']
 
-    personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
+    personal_github_access_token =  ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
     match(
-      git_bearer_authorization:personal_github_access_token,
       type: 'developer_id',
       team_id: 'GP78T2GNXD',
-      readonly: true
+      readonly: true,
+      git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
     )
 
     # Build and archive the app
