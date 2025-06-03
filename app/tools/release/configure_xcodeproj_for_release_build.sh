@@ -12,6 +12,7 @@ fi
 
 ## build the local server for production
 cd "$repo_root/local-server"
+yarn install
 echo "esbuild packages:"
 ls ./node_modules/ | grep esbuild
 echo "all packages:"
