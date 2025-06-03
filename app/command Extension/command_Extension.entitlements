@@ -10,8 +10,6 @@
 		<string>$(RELEASE_SHARED_USER_DEFAULTS_SUITE)</string>
 		<string>$(DEBUG_SHARED_USER_DEFAULTS_SUITE)</string>
 	</array>
-	<key>com.apple.security.cs.disable-executable-page-protection</key>
-	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
 </dict>
