@@ -6,6 +6,6 @@ RELEASE_SHARED_USER_DEFAULTS_SUITE = $(TeamIdentifierPrefix)dev.getcmd.shared
 
 INFOPLIST_KEY_ReleaseUserDefaultsSharedSuiteName = $(RELEASE_SHARED_USER_DEFAULTS_SUITE)
 INFOPLIST_KEY_DebugUserDefaultsSharedSuiteName = $(DEBUG_SHARED_USER_DEFAULTS_SUITE)
-
+APP_VERSION=0.0.3
 
 RELEASE_APP_BUNDLE_IDENTIFIER = dev.getcmd.command

@@ -77,29 +77,28 @@ platform :mac do
     # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
     git_url = readonly ? "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
+
+    # match(
+    #   type: 'appstore',
+    #   readonly: readonly,
+    #   git_url: git_url
+    # )
+    # match(
+    #   type: 'development',
+    #   readonly: readonly,
+    #   git_url: git_url
+    # )
     match(
       type: 'developer_id',
       team_id: 'GP78T2GNXD',
       readonly: readonly,
       git_url: git_url
     )
-    match(
-      type: 'appstore',
-      readonly: readonly,
-      git_url: git_url
-    )
-    match(
-      type: 'development',
-      readonly: readonly,
-      git_url: git_url
-    )
     # Print available signing certificates
     sh('security find-identity -v -p codesigning')
-    # No signing certificate "Mac Development" found: No "Mac Development" signing certificate matching team ID "GP78T2GNXD" with a private key was found.
 
     # Build and archive the app
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
-
 
     build_path = File.absolute_path("../build")
     release_path = "#{build_path}/release/"
@@ -110,7 +109,7 @@ platform :mac do
       export_method: "developer-id",
       export_options: {
         method: "developer-id",
-        signingStyle: "automatic",
+        signingStyle: "manual",
         signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
         teamID: "GP78T2GNXD",
         # provisioningProfiles: {
@@ -147,38 +146,50 @@ platform :mac do
     # Create metadata for the new release
     zip_path = zip(path: app_path)
     sparkle_path = "#{build_path}/derived_data/SourcePackages/artifacts/sparkle/Sparkle"
-    sparkle_output_path = File.absolute_path("./appcast.template.xml")
 
     sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
 
-    sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
+    sparkle_output = sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
+    app_config_path = File.absolute_path("../command.shared.xcconfig")
+    version = sh("cat #{app_config_path} | grep APP_VERSION").split("=").last.strip
 
-    appcast_content = File.read(sparkle_output_path)
+    puts "version: #{version}"
+
+    appcast_template_path = File.absolute_path("./appcast.template.xml")
+    appcast_path = File.absolute_path("./appcast.xml")
+    appcast_content = File.read(appcast_template_path)
     appcast_content.gsub!("REPLACE_SPARKLE_VERSION", version)
     appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
+    File.write(appcast_path, appcast_content)
 
-    # Upload the new release to github
-    require 'base64'
-    base64_content = Base64.encode64(appcast_content)
+    # # Upload the new release to github
+    # require 'base64'
+    # base64_content = Base64.encode64(appcast_content)
 
-    get_file = github_api(
-      http_method: "GET",
-      path: "/repos/gsabran/cmd/app/appcast.xml",
-    )
-    sha = JSON.parse(get_file[:body])["sha"]
+    # get_file = github_api(
+    #   api_token: load_secret("GITHUB_TOKEN"),
+    #   http_method: "GET",
+    #   server_url: "https://api.github.com",
+    #   path: "/repos/gsabran/cmd/app/appcast.xml",
+    # )
+    # sha = JSON.parse(get_file[:body])["sha"]
 
-    github_api(
-      http_method: "PUT",
-      path: "/repos/gsabran/cmd/app/appcast.xml",
-      body: { message: "Update #{version}", content: base64_content, sha: sha }
-    )
+    # github_api(
+    #   api_token: load_secret("GITHUB_TOKEN"),
+    #   http_method: "PUT",
+    #   server_url: "https://api.github.com",
+    #   path: "/repos/gsabran/cmd/app/appcast.xml",
+    #   body: { message: "Update #{version}", content: base64_content, sha: sha }
+    # )
 
     set_github_release(
+      api_token: load_secret("GITHUB_TOKEN"),
+      server_url: "https://api.github.com",
       repository_name: "gsabran/cmd",
-      name: version,
-      tag_name: version,
-      description: description,
+      name: "v#{version}",
+      tag_name: "v#{version}",
+      description: "test release",
       commitish: "main",
       upload_assets: zip_path
     )
@@ -186,5 +197,7 @@ platform :mac do
     sh("rm -rf #{build_path}")
 
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
+
+    puts "👉 Don't forget to push the changes to appcast.xml"
   end
 end

@@ -13,10 +13,6 @@ fi
 ## build the local server for production
 cd "$repo_root/local-server"
 yarn install
-echo "esbuild packages:"
-ls ./node_modules/ | grep esbuild
-echo "all packages:"
-ls ./node_modules/
 yarn build:prod
 
 # Modify the project config, as Xcode is unable to build the project when the Xcode extension target
