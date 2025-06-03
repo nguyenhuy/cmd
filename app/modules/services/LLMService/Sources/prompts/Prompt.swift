@@ -4,7 +4,7 @@
 import ChatFoundation
 import Foundation
 
-// MARK: PromptConfiguration
+// MARK: - PromptConfiguration
 
 /// Configuration container for generating LLM prompts.
 ///
@@ -17,7 +17,7 @@ struct PromptConfiguration {
   let customInstructions: String?
 }
 
-// MARK: Prompt
+// MARK: - Prompt
 
 enum Prompt {
 

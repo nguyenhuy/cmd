@@ -50,8 +50,8 @@ public struct Settings: Sendable, Equatable {
     public var agentMode: String
 
     public init(askModePrompt: String = "", agentModePrompt: String = "") {
-      self.askMode = askModePrompt
-      self.agentMode = agentModePrompt
+      askMode = askModePrompt
+      agentMode = agentModePrompt
     }
   }
 

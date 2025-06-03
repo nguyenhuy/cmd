@@ -9,9 +9,9 @@ import SwiftUI
 // MARK: - CustomInstructionsView
 
 struct CustomInstructionsView: View {
-  
+
   @Binding var customInstructions: SettingsServiceInterface.Settings.CustomInstructions
-  
+
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 24) {
@@ -24,22 +24,19 @@ struct CustomInstructionsView: View {
             "Keep instructions concise and specific to your needs",
             "Custom instructions are inserted into the default system prompt",
             "Use clear, actionable language rather than vague descriptions",
-          ]
-        )
-        .padding(12)
-        .background(
-          RoundedRectangle(cornerRadius: 8)
-            .fill(Color.blue.opacity(0.1))
-        )
-        .overlay(
-          RoundedRectangle(cornerRadius: 8)
-            .stroke(Color.blue.opacity(0.2), lineWidth: 1)
-        )
+          ])
+          .padding(12)
+          .background(
+            RoundedRectangle(cornerRadius: 8)
+              .fill(Color.blue.opacity(0.1)))
+          .overlay(
+            RoundedRectangle(cornerRadius: 8)
+              .stroke(Color.blue.opacity(0.2), lineWidth: 1))
         Spacer(minLength: 20)
       }
     }
   }
-  
+
   private var askModeView: some View {
     CustomInstructionSection(
       text: $customInstructions.askMode,
@@ -47,7 +44,7 @@ struct CustomInstructionsView: View {
       title: "Ask Mode",
       subtitle: "Provide extra instructions for Ask Mode.")
   }
-  
+
   private var agentModeView: some View {
     CustomInstructionSection(
       text: $customInstructions.agentMode,
@@ -57,16 +54,10 @@ struct CustomInstructionsView: View {
   }
 }
 
+// MARK: - CustomInstructionSection
+
 struct CustomInstructionSection: View {
-  
-  let iconName: String
-  let title: String
-  let subtitle: String
-  let minHeight: CGFloat
-  let maxHeight: CGFloat
-  let fontSize: CGFloat
-  @Binding var text: String
-  
+
   init(
     text: Binding<String>,
     iconName: String,
@@ -84,7 +75,16 @@ struct CustomInstructionSection: View {
     self.maxHeight = maxHeight
     self.fontSize = fontSize
   }
-  
+
+  @Binding var text: String
+
+  let iconName: String
+  let title: String
+  let subtitle: String
+  let minHeight: CGFloat
+  let maxHeight: CGFloat
+  let fontSize: CGFloat
+
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       HStack {
@@ -94,7 +94,7 @@ struct CustomInstructionSection: View {
           .font(.headline)
       }
       .foregroundColor(.primary)
-      
+
       Text(subtitle)
         .font(.caption)
         .foregroundColor(.secondary)
@@ -107,49 +107,50 @@ struct CustomInstructionSection: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
           RoundedRectangle(cornerRadius: 8)
-            .strokeBorder(Color.gray.opacity(0.2), lineWidth: 1)
-        )
+            .strokeBorder(Color.gray.opacity(0.2), lineWidth: 1))
     }
   }
 }
 
+// MARK: - InformationCard
+
 struct InformationCard: View {
-  
-  let iconName: String
-  let title: String
-  let tips: [String]
-  let iconColor: Color
-  
+
   init(
     iconName: String = "info.circle",
     title: String,
     tips: [String],
-    iconColor: Color = .blue
-  ) {
+    iconColor: Color = .blue)
+  {
     self.iconName = iconName
     self.title = title
     self.tips = tips
     self.iconColor = iconColor
   }
-  
+
+  let iconName: String
+  let title: String
+  let tips: [String]
+  let iconColor: Color
+
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 12) {
       Image(systemName: iconName)
         .font(.system(size: 14))
         .foregroundColor(iconColor)
-      
+
       VStack(alignment: .leading, spacing: 4) {
         Text(title)
           .font(.caption)
           .fontWeight(.medium)
-        
+
         ForEach(tips, id: \.self) { tip in
           Text("• \(tip)")
             .font(.caption2)
             .foregroundColor(.secondary)
         }
       }
-      
+
       Spacer()
     }
   }
@@ -162,10 +163,7 @@ struct InformationCard: View {
     customInstructions: .constant(
       SettingsServiceInterface.Settings.CustomInstructions(
         askModePrompt: "Focus on providing clear and concise answers",
-        agentModePrompt: "Be proactive in suggesting improvements"
-      )
-    )
-  )
-  .frame(width: 600, height: 500)
-  .padding()
+        agentModePrompt: "Be proactive in suggesting improvements")))
+    .frame(width: 600, height: 500)
+    .padding()
 }

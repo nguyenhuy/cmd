@@ -38,7 +38,7 @@ public enum ChatMode: String, Sendable, Hashable, Equatable, CaseIterable, Ident
       "Ask questions about your codebase."
     }
   }
-  
+
   /// The system image used for the current chat mode.
   public var systemImageName: String {
     switch self {
@@ -48,7 +48,7 @@ public enum ChatMode: String, Sendable, Hashable, Equatable, CaseIterable, Ident
       "bubble"
     }
   }
-  
+
   /// The command keyboard shortcut that can be shown in the UI.
   public var commandDisplay: String {
     switch self {

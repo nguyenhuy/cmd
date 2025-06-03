@@ -107,14 +107,13 @@ final class DefaultLLMService: LLMService {
   {
     let settings = settingsService.values()
     let (provider, providerSettings) = try settings.provider(for: model)
-    let customInstructions: String? = {
+    let customInstructions: String? =
       switch context.chatMode {
       case .ask:
-        return settings.customInstructions.askMode.isEmpty ? nil : settings.customInstructions.askMode
+        settings.customInstructions.askMode.isEmpty ? nil : settings.customInstructions.askMode
       case .agent:
-        return settings.customInstructions.agentMode.isEmpty ? nil : settings.customInstructions.agentMode
+        settings.customInstructions.agentMode.isEmpty ? nil : settings.customInstructions.agentMode
       }
-    }()
     let promptConfiguration = PromptConfiguration(
       projectRoot: context.projectRoot,
       mode: context.chatMode,
