@@ -122,18 +122,44 @@ platform :mac do
       use_notarytool: true
     )
 
-    # Upload the app to GitHub Release
+    # Create metadata for the new release
     zip_path = zip(path: app_path)
     sparkle_path = File.absolute_path("../build/derived_data/SourcePackages/artifacts/sparkle/Sparkle")
-    sparkle_output_path = File.absolute_path("../appcast.xml")
+    sparkle_output_path = File.absolute_path("./appcast.template.xml")
 
     sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
 
     sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
 
-    sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/generate_appcast #{release_path} -o '#{sparkle_output_path}' --download-url-prefix 'https://github.com/gsabran/cmd/releases/download/0.1.0/' --ed-key-file -")
-    echo sparkle_output_path
-    cat sparkle_output_path
+    appcast_content = File.read(sparkle_secret_key)
+    appcast_content.gsub!("REPLACE_SPARKLE_VERSION", version)
+    appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
+    appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
+
+    # Upload the new release to github
+    require 'base64'
+    base64_content = Base64.encode64(appcast_content)
+
+    get_file = github_api(
+      http_method: "GET",
+      path: "/repos/gsabran/cmd/app/appcast.xml",
+    )
+    sha = JSON.parse(get_file[:body])["sha"]
+
+    github_api(
+      http_method: "PUT",
+      path: "/repos/gsabran/cmd/app/appcast.xml",
+      body: { message: "Update #{version}", content: base64_content, sha: sha }
+    )
+
+    set_github_release(
+      repository_name: "gsabran/cmd",
+      name: version,
+      tag_name: version,
+      description: description,
+      commitish: "main",
+      upload_assets: zip_path
+    )
 
     sh("rm -rf #{build_path}")
 
