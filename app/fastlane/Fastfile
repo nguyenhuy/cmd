@@ -38,6 +38,7 @@ platform :mac do
   lane :build_release do
     setup_ci if ENV['CI']
 
+    # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
     match(
       type: 'appstore',
@@ -65,6 +66,8 @@ platform :mac do
     setup_ci if ENV['CI']
 
     personal_github_access_token =  ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
+    sh('echo $FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN   | head -c8')
+    sh('echo $FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN   | tail -c8')
     match(
       type: 'developer_id',
       team_id: 'GP78T2GNXD',
