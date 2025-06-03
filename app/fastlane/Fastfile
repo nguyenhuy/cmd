@@ -4,8 +4,8 @@ default_platform(:mac)
 require 'base64'
 
 def load_secret(env_key)
-  return ENV[env_key] if ENV[env_key] # && store_secret_to_keychain(env_key, ENV[env_key])
-
+  return ENV[env_key] if ENV[env_key]# && store_secret_to_keychain(env_key, ENV[env_key])
+  puts "Loading secret from keychain: #{env_key}"
   encoded = `security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null`.strip
   return nil if encoded.empty?
   # Use base64 encoding to avoid dealing with new lines.
@@ -39,7 +39,8 @@ platform :mac do
     setup_ci if ENV['CI']
 
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
-    personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
+    personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
+    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
     match(
       type: 'appstore',
       readonly: true,
@@ -65,7 +66,7 @@ platform :mac do
   lane :distribute_release do
     setup_ci if ENV['CI']
 
-    personal_github_access_token =  ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
+    personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     sh('echo $FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN   | head -c8')
     sh('echo $FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN   | tail -c8')
     match(

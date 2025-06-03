@@ -53,6 +53,7 @@ export async function computeAndSaveBuildFileSize() {
 		fileBuffer = await fs.readFile("./dist/main.bundle.js")
 	} catch (error) {
 		// the bundle file doesn't exist yet. This is ok.
+		return;
 	}
 	
 	// buid file size in MB
