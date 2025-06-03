@@ -117,7 +117,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
   case landing
   case providers
   case models
-  case customPrompts
+  case customInstructions
   case internalSettings
   case about
 
@@ -131,7 +131,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Providers"
     case .models:
       "Models"
-    case .customPrompts:
+    case .customInstructions:
       "Custom Instructions"
     case .internalSettings:
       "Internal Settings"
@@ -148,7 +148,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "key"
     case .models:
       "cpu"
-    case .customPrompts:
+    case .customInstructions:
       "text.bubble"
     case .internalSettings:
       "slider.horizontal.3"
@@ -211,8 +211,8 @@ private struct SettingsLandingView: View {
           }
 
           SettingsCard(
-            section: .customPrompts,
-            description: "Customize prompts for Ask and Agent modes",
+            section: .customInstructions,
+            description: "Customize instructions for Ask and Agent modes",
             action: onNavigate)
 
           SettingsCard(
