@@ -44,10 +44,3 @@ extension SPUStandardUpdaterController {
 }
 
 extension SPUStandardUpdaterController: @retroactive @unchecked Sendable { }
-
-public enum AppUpdaterBuilder {
-  @MainActor
-  public static func build() -> AnyView {
-    AnyView(CheckForUpdatesView(updater: SPUStandardUpdaterController.shared.updater))
-  }
-}
