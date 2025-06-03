@@ -91,6 +91,9 @@ public struct SettingsView: View {
           providerForModels: $viewModel.providerForModels,
           inactiveModels: $viewModel.inactiveModels)
 
+      case .customPrompts:
+        CustomPromptsView(customPrompts: $viewModel.customPrompts)
+
       case .internalSettings:
         InternalSettingsView(
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
@@ -114,6 +117,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
   case landing
   case providers
   case models
+  case customPrompts
   case internalSettings
   case about
 
@@ -127,6 +131,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Providers"
     case .models:
       "Models"
+    case .customPrompts:
+      "Custom Instructions"
     case .internalSettings:
       "Internal Settings"
     case .about:
@@ -142,6 +148,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "key"
     case .models:
       "cpu"
+    case .customPrompts:
+      "text.bubble"
     case .internalSettings:
       "slider.horizontal.3"
     case .about:
@@ -201,6 +209,11 @@ private struct SettingsLandingView: View {
               description: "Models configuration",
               action: onNavigate)
           }
+
+          SettingsCard(
+            section: .customPrompts,
+            description: "Customize prompts for Ask and Agent modes",
+            action: onNavigate)
 
           SettingsCard(
             section: .about,
