@@ -42,10 +42,14 @@ platform :mac do
     # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
     personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+    readonly = true
+    # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
+    git_url = readonly ? "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
     match(
       type: 'appstore',
-      readonly: true,
-      git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
+      readonly: readonly,
+      git_url: git_url
     )
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
@@ -69,67 +73,68 @@ platform :mac do
 
     personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
     ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+    readonly = true
+    # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
+    git_url = readonly ? "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
     match(
       type: 'developer_id',
       team_id: 'GP78T2GNXD',
-      readonly: true,
-      git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
+      readonly: readonly,
+      git_url: git_url
     )
     match(
       type: 'appstore',
-      readonly: true,
-      git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
+      readonly: readonly,
+      git_url: git_url
     )
     match(
       type: 'development',
-      readonly: true,
-      git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
-      # use this url to write, assuming you have ssh access to git.
-      # git_url: "git@github.com:gsabran/command-provisioning-profiles.git"
+      readonly: readonly,
+      git_url: git_url
     )
     # Print available signing certificates
-    sh('security find-identity -v -p codesigning') 
+    sh('security find-identity -v -p codesigning')
     # No signing certificate "Mac Development" found: No "Mac Development" signing certificate matching team ID "GP78T2GNXD" with a private key was found.
 
     # Build and archive the app
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
+
+
+    build_path = File.absolute_path("../build")
+    release_path = "#{build_path}/release/"
+    app_name = "command"
+    app_path = "#{release_path}/#{app_name}.app"
     build_mac_app(
       xcargs: "-allowProvisioningUpdates",
       export_method: "developer-id",
       export_options: {
         method: "developer-id",
-        signingStyle: "manual",
+        signingStyle: "automatic",
         signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
-        teamID: "GP78T2GNXD"
+        teamID: "GP78T2GNXD",
+        # provisioningProfiles: {
+        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
+        # }
       },
       skip_profile_detection: "true",
       
       project: "./command.xcodeproj",
       configuration: "Release",
-      output_directory: "build/release",
-      derived_data_path: "build/derived_data",
-      output_name: "command",
+      output_directory: release_path,
+      derived_data_path: "#{build_path}/derived_data",
+      output_name: app_name,
       scheme: "command",
-      # silent: true,
-      silent: false,
+      silent: true,
       skip_archive: false,
-      xcodebuild_formatter: "cat",
+      xcodebuild_formatter: "xcbeautify",
     )
 
-    build_path = File.absolute_path("../build")
-    release_path = "#{build_path}/release/"
-    app_path = "#{release_path}/command.app"
-
     # Notarize the app
-    notary_key_id = load_secret("NOTARY_KEY_ID")
-    notary_key_path = File.absolute_path("./AuthKey_#{notary_key_id}.p8")
-    notary_secret_p8 = load_secret("NOTARY_P8")
-    notary_issuer_id = load_secret("NOTARY_ISSUER_ID")
-
     app_store_connect_api_key(
-      key_id: notary_key_id,
-      issuer_id: notary_issuer_id,
-      key_content: notary_secret_p8,
+      key_id: load_secret("NOTARY_KEY_ID"),
+      issuer_id: load_secret("NOTARY_ISSUER_ID"),
+      key_content: load_secret("NOTARY_P8"),
     )
 
     notarize(
@@ -141,7 +146,7 @@ platform :mac do
 
     # Create metadata for the new release
     zip_path = zip(path: app_path)
-    sparkle_path = File.absolute_path("../build/derived_data/SourcePackages/artifacts/sparkle/Sparkle")
+    sparkle_path = "#{build_path}/derived_data/SourcePackages/artifacts/sparkle/Sparkle"
     sparkle_output_path = File.absolute_path("./appcast.template.xml")
 
     sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
