@@ -31,7 +31,7 @@ jobs:
       run: cd local-server && yarn install
     - uses: actions/checkout@v4
     - name: Make release
-      run: cd app && fastlane distribute_release
+      run: cd app && fastlane distribute_release --verbose
       env:
         FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN: ${{ secrets.FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN }}
         MATCH_PASSWORD: ${{ secrets.FASTLANE_MACH_PASSWORD }}

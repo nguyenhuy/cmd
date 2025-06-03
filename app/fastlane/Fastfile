@@ -95,7 +95,8 @@ platform :mac do
       derived_data_path: "build/derived_data",
       output_name: "command",
       scheme: "command",
-      silent: true,
+      # silent: true,
+      silent: false,
       skip_archive: false
     )
 
