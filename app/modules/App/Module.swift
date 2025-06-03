@@ -7,6 +7,7 @@ Target.module(
     "AccessibilityObjCFoundation",
     "AppEventService",
     "AppEventServiceInterface",
+    "AppUpdater",
     "AskFollowUpTool",
     "BuildTool",
     "Chat",

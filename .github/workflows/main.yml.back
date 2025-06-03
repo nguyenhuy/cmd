@@ -1,14 +1,16 @@
 # This workflow will build a Swift project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
 
-name: MacOS App
+name: Integration tests
 
 on:
   push:
     branches: [ "main" ]
 #  pull_request:
 #    branches: [ "main" ]
-
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 jobs:
   build-release-app:
     runs-on: macos-15

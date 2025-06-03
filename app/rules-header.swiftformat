@@ -1,7 +1,7 @@
 # copied from https://github.com/airbnb/swift/blob/master/Sources/AirbnbSwiftFormatTool/airbnb.swiftformat
 
 # Exclude checkout directories for common package managers
---exclude Carthage,Pods,.build,**/Module.swift,**/Package.swift
+--exclude Carthage,Pods,.build,**/Module.swift,**/Package.swift,build
 
 # options
 --header Copyright command. All rights reserved.\nLicensed under the XXX License. See License.txt in the project root for license information.

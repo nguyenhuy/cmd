@@ -135,7 +135,7 @@ final class DefaultLLMService: LLMService {
         isTaskCancelled: { isTaskCancelled.value },
         repeatDebugHelper: repeatDebugHelper)
       #else
-      let stream = await server.streamPostRequest(path: "sendMessage", data: data)
+      let stream = server.streamPostRequest(path: "sendMessage", data: data)
 
       let helper = RequestStreamingHelper(
         stream: stream,

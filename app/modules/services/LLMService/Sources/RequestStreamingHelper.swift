@@ -24,6 +24,7 @@ final class RequestStreamingHelper: Sendable {
   ///   - tools: The list of tools available to the assistant.
   ///   - context: The context in which the request is executed.
   ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
+  ///   - repeatDebugHelper: A debug helper that will repeat the last streamed responses, regardless of the current input.
   init(
     stream: AsyncThrowingStream<Data, any Error>,
     result: MutableCurrentValueStream<AssistantMessage>,
@@ -51,14 +52,13 @@ final class RequestStreamingHelper: Sendable {
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
     context: any ChatContext,
-    isTaskCancelled: @escaping () -> Bool)
+    isTaskCancelled: @escaping @Sendable () -> Bool)
   {
     self.stream = stream
     self.result = result
     self.tools = tools
     self.context = context
     self.isTaskCancelled = isTaskCancelled
-    repeatDebugHelper = repeatDebugHelper
   }
   #endif
 

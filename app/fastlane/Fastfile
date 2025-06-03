@@ -1,5 +1,27 @@
 default_platform(:mac)
 
+# Load a secret from the keychain if it is not passed as an environment variable.
+require 'base64'
+
+def load_secret(env_key)
+  return ENV[env_key] if ENV[env_key]# && store_secret_to_keychain(env_key, ENV[env_key])
+  puts "Loading secret from keychain: #{env_key}"
+  encoded = `security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null`.strip
+  return nil if encoded.empty?
+  # Use base64 encoding to avoid dealing with new lines.
+  decoded = Base64.decode64(encoded)
+  ENV[env_key] = decoded
+end
+
+# Store a secret to the keychain if it is not already stored or if it has changed.
+def store_secret_to_keychain(key, value)
+  encoded_value = Base64.strict_encode64(value)
+  existing_encoded = `security find-generic-password -s 'dev.getcmd.#{key}' -w 2>/dev/null`.strip
+  return if existing_encoded == encoded_value
+
+  sh("security add-generic-password -a '#{ENV['USER']}' -s 'dev.getcmd.#{key}' -w '#{encoded_value}' -U")
+end
+
 platform :mac do
   desc "Build the app in Debug configuration"
   lane :build_debug do
@@ -9,6 +31,7 @@ platform :mac do
       skip_archive: true,
       scheme: "command",
       silent: true,
+      xcodebuild_formatter: "xcbeautify",
     )
   end
 
@@ -16,11 +39,17 @@ platform :mac do
   lane :build_release do
     setup_ci if ENV['CI']
 
-    personal_github_access_token = ENV["FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN"]
+    # use a fine grained token with permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    personal_github_access_token = load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
+    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+    readonly = true
+    # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
+    git_url = readonly ? "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
     match(
-      git_bearer_authorization:personal_github_access_token,
       type: 'appstore',
-      readonly: true
+      readonly: readonly,
+      git_url: git_url
     )
 
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
@@ -28,12 +57,147 @@ platform :mac do
       project: "./command.xcodeproj",
       configuration: "Release",
       export_method: "mac-application",
-      output_directory: "builds/release",
+      output_directory: "build/release",
+      derived_data_path: "build/derived_data",
       output_name: "command.app",
       scheme: "command",
       silent: true,
       skip_archive: true
     )
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
+  end
+
+  desc "Build and archive the app for Mac App Store distribution"
+  lane :distribute_release do
+    setup_ci if ENV['CI']
+
+    personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
+    ENV['MATCH_PASSWORD'] = load_secret("MATCH_PASSWORD")
+    readonly = true
+    # The fine grained token should have permissions for: Contents, Metadata (maybe also commit statuses and pull requests)
+    # I could not find how to pass it in the header. It is in the git URL. If it is not set, like when running locally and saving new certificates, we need to use the SSH URL.
+    git_url = readonly ? "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git" : "git@github.com:gsabran/command-provisioning-profiles.git"
+
+    # match(
+    #   type: 'appstore',
+    #   readonly: readonly,
+    #   git_url: git_url
+    # )
+    # match(
+    #   type: 'development',
+    #   readonly: readonly,
+    #   git_url: git_url
+    # )
+    match(
+      type: 'developer_id',
+      team_id: 'GP78T2GNXD',
+      readonly: readonly,
+      git_url: git_url
+    )
+    # Print available signing certificates
+    sh('security find-identity -v -p codesigning')
+
+    # Build and archive the app
+    sh("../tools/release/configure_xcodeproj_for_release_build.sh")
+
+    build_path = File.absolute_path("../build")
+    release_path = "#{build_path}/release/"
+    app_name = "command"
+    app_path = "#{release_path}/#{app_name}.app"
+    build_mac_app(
+      xcargs: "-allowProvisioningUpdates",
+      export_method: "developer-id",
+      export_options: {
+        method: "developer-id",
+        signingStyle: "manual",
+        signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
+        teamID: "GP78T2GNXD",
+        # provisioningProfiles: {
+        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
+        # }
+      },
+      skip_profile_detection: "true",
+      
+      project: "./command.xcodeproj",
+      configuration: "Release",
+      output_directory: release_path,
+      derived_data_path: "#{build_path}/derived_data",
+      output_name: app_name,
+      scheme: "command",
+      silent: true,
+      skip_archive: false,
+      xcodebuild_formatter: "xcbeautify",
+    )
+
+    # Notarize the app
+    app_store_connect_api_key(
+      key_id: load_secret("NOTARY_KEY_ID"),
+      issuer_id: load_secret("NOTARY_ISSUER_ID"),
+      key_content: load_secret("NOTARY_P8"),
+    )
+
+    notarize(
+      package: app_path,
+      verbose: false,
+      print_log: true,
+      use_notarytool: true
+    )
+
+    # Create metadata for the new release
+    zip_path = zip(path: app_path)
+    sparkle_path = "#{build_path}/derived_data/SourcePackages/artifacts/sparkle/Sparkle"
+
+    sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
+
+    sparkle_output = sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
+    app_config_path = File.absolute_path("../command.shared.xcconfig")
+    version = sh("cat #{app_config_path} | grep APP_VERSION").split("=").last.strip
+
+    puts "version: #{version}"
+
+    appcast_template_path = File.absolute_path("./appcast.template.xml")
+    appcast_path = File.absolute_path("./appcast.xml")
+    appcast_content = File.read(appcast_template_path)
+    appcast_content.gsub!("REPLACE_SPARKLE_VERSION", version)
+    appcast_content.gsub!("REPLACE_SPARKLE_DESCRIPTION", "Test description for the release\nnew line")
+    appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
+    File.write(appcast_path, appcast_content)
+
+    # # Upload the new release to github
+    # require 'base64'
+    # base64_content = Base64.encode64(appcast_content)
+
+    # get_file = github_api(
+    #   api_token: load_secret("GITHUB_TOKEN"),
+    #   http_method: "GET",
+    #   server_url: "https://api.github.com",
+    #   path: "/repos/gsabran/cmd/app/appcast.xml",
+    # )
+    # sha = JSON.parse(get_file[:body])["sha"]
+
+    # github_api(
+    #   api_token: load_secret("GITHUB_TOKEN"),
+    #   http_method: "PUT",
+    #   server_url: "https://api.github.com",
+    #   path: "/repos/gsabran/cmd/app/appcast.xml",
+    #   body: { message: "Update #{version}", content: base64_content, sha: sha }
+    # )
+
+    set_github_release(
+      api_token: load_secret("GITHUB_TOKEN"),
+      server_url: "https://api.github.com",
+      repository_name: "gsabran/cmd",
+      name: "v#{version}",
+      tag_name: "v#{version}",
+      description: "test release",
+      commitish: "main",
+      upload_assets: zip_path
+    )
+
+    sh("rm -rf #{build_path}")
+
+    sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
+
+    puts "👉 Don't forget to push the changes to appcast.xml"
   end
 end

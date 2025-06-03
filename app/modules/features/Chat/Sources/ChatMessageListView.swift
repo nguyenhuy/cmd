@@ -24,11 +24,10 @@ struct ChatMessageList: View {
   #endif
 
   init(viewModel: ChatTabViewModel) {
-    self.init(
-      events: viewModel.events,
-      onRestoreTapped: { [weak viewModel] checkpoint in
-        viewModel?.handleRestore(checkpoint: checkpoint)
-      })
+    events = viewModel.events
+    onRestoreTapped = { [weak viewModel] checkpoint in
+      viewModel?.handleRestore(checkpoint: checkpoint)
+    }
   }
 
   var body: some View {

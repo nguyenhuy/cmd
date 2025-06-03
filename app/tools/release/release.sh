@@ -35,10 +35,6 @@ fi
 ## verify that there is no un-committed changes, if so this will log the diff and exit
 git diff --exit-code
 
-## build the local server for production
-cd "$repo_root/local-server"
-yarn build:prod
-
 ## build the app
 cd "$repo_root/app"
 
