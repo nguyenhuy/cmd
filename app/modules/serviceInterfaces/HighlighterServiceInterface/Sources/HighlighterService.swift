@@ -13,6 +13,10 @@ public protocol HighlighterServiceProviding {
 }
 
 extension HighlightColors {
+  
+  /// Provides theme-aware syntax highlighting colors based on system appearance.
+  /// @MainActor ensures thread safety when accessing NSAppearance APIs.
+  @MainActor
   public static var codeHighlight: HighlightColors {
     let isDarkMode = NSAppearance.currentDrawing().bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
     if isDarkMode {
