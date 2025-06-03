@@ -92,7 +92,7 @@ public struct SettingsView: View {
           inactiveModels: $viewModel.inactiveModels)
 
       case .customPrompts:
-        CustomPromptsView(customPrompts: $viewModel.customPrompts)
+        CustomInstructionsView(customInstructions: $viewModel.customInstructions)
 
       case .internalSettings:
         InternalSettingsView(

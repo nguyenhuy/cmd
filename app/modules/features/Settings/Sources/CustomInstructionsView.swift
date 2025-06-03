@@ -5,11 +5,11 @@ import DLS
 import SettingsServiceInterface
 import SwiftUI
 
-// MARK: - CustomPromptsView
+// MARK: - CustomInstructionsView
 
-struct CustomPromptsView: View {
+struct CustomInstructionsView: View {
   
-  @Binding var customPrompts: SettingsServiceInterface.Settings.CustomPrompts
+  @Binding var customInstructions: SettingsServiceInterface.Settings.CustomInstructions
   
   var body: some View {
     ScrollView {
@@ -41,7 +41,7 @@ struct CustomPromptsView: View {
   
   private var askModeView: some View {
     CustomInstructionSection(
-      text: $customPrompts.agentModePrompt,
+      text: $customInstructions.agentMode,
       iconName: "bubble",
       title: "Ask Mode",
       subtitle: "Provide extra instructions for Ask Mode.")
@@ -49,7 +49,7 @@ struct CustomPromptsView: View {
   
   private var agentModeView: some View {
     CustomInstructionSection(
-      text: $customPrompts.agentModePrompt,
+      text: $customInstructions.agentMode,
       iconName: "infinity",
       title: "Agent Mode",
       subtitle: "Provide extra instructions for Agent Mode.")
@@ -157,9 +157,9 @@ struct InformationCard: View {
 // MARK: - Preview
 
 #Preview {
-  CustomPromptsView(
-    customPrompts: .constant(
-      SettingsServiceInterface.Settings.CustomPrompts(
+  CustomInstructionsView(
+    customInstructions: .constant(
+      SettingsServiceInterface.Settings.CustomInstructions(
         askModePrompt: "Focus on providing clear and concise answers",
         agentModePrompt: "Be proactive in suggesting improvements"
       )
