@@ -113,6 +113,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var customInstructions: SettingsServiceInterface.Settings.CustomInstructions {
+    get {
+      settings.customInstructions
+    }
+    set {
+      settings.customInstructions = newValue
+      settingsService.update(setting: \.customInstructions, to: newValue)
+    }
+  }
+
   /// All the models that are available, based on the available providers.
   var availableModels: [LLMModel] {
     settings.availableModels
