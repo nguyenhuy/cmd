@@ -1,6 +1,7 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import ChatFoundation
 import DLS
 import SettingsServiceInterface
 import SwiftUI
@@ -41,8 +42,8 @@ struct CustomInstructionsView: View {
   
   private var askModeView: some View {
     CustomInstructionSection(
-      text: $customInstructions.agentMode,
-      iconName: "bubble",
+      text: $customInstructions.askMode,
+      iconName: ChatMode.ask.systemImageName,
       title: "Ask Mode",
       subtitle: "Provide extra instructions for Ask Mode.")
   }
@@ -50,7 +51,7 @@ struct CustomInstructionsView: View {
   private var agentModeView: some View {
     CustomInstructionSection(
       text: $customInstructions.agentMode,
-      iconName: "infinity",
+      iconName: ChatMode.agent.systemImageName,
       title: "Agent Mode",
       subtitle: "Provide extra instructions for Agent Mode.")
   }
