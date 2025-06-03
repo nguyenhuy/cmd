@@ -107,13 +107,7 @@ final class DefaultLLMService: LLMService {
   {
     let settings = settingsService.values()
     let (provider, providerSettings) = try settings.provider(for: model)
-    let customInstructions: String? =
-      switch context.chatMode {
-      case .ask:
-        settings.customInstructions.askMode.isEmpty ? nil : settings.customInstructions.askMode
-      case .agent:
-        settings.customInstructions.agentMode.isEmpty ? nil : settings.customInstructions.agentMode
-      }
+    let customInstructions = customInstructions(for: context.chatMode, from: settings)
     let promptConfiguration = PromptConfiguration(
       projectRoot: context.projectRoot,
       mode: context.chatMode,
@@ -200,7 +194,20 @@ final class DefaultLLMService: LLMService {
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     }
   }
-
+  
+  /// Retrieves the appropriate custom instructions based on the chat mode.
+  private func customInstructions(
+    for chatMode: ChatMode,
+    from settings: Settings)
+    -> String?
+  {
+    switch chatMode {
+    case .ask:
+      return settings.customInstructions.askMode
+    case .agent:
+      return settings.customInstructions.agentMode
+    }
+  }
 }
 
 extension BaseProviding where

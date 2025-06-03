@@ -6,9 +6,9 @@ import DLS
 import SettingsServiceInterface
 import SwiftUI
 
-// MARK: - CustomInstructionsView
+// MARK: - ChatModeView
 
-struct CustomInstructionsView: View {
+struct ChatModeView: View {
 
   @Binding var customInstructions: SettingsServiceInterface.Settings.CustomInstructions
 
@@ -39,7 +39,10 @@ struct CustomInstructionsView: View {
 
   private var askModeView: some View {
     CustomInstructionSection(
-      text: $customInstructions.askMode,
+      text: Binding(
+        get: { customInstructions.askMode ?? "" },
+        set: { customInstructions.askMode = $0.isEmpty ? nil : $0 }
+      ),
       iconName: ChatMode.ask.systemImageName,
       title: "Ask Mode",
       subtitle: "Provide extra instructions for Ask Mode.")
@@ -47,7 +50,10 @@ struct CustomInstructionsView: View {
 
   private var agentModeView: some View {
     CustomInstructionSection(
-      text: $customInstructions.agentMode,
+      text: Binding(
+        get: { customInstructions.agentMode ?? "" },
+        set: { customInstructions.agentMode = $0.isEmpty ? nil : $0 }
+      ),
       iconName: ChatMode.agent.systemImageName,
       title: "Agent Mode",
       subtitle: "Provide extra instructions for Agent Mode.")
@@ -157,9 +163,9 @@ struct InformationCard: View {
 }
 
 // MARK: - Preview
-
+#if DEBUG
 #Preview {
-  CustomInstructionsView(
+  ChatModeView(
     customInstructions: .constant(
       SettingsServiceInterface.Settings.CustomInstructions(
         askModePrompt: "Focus on providing clear and concise answers",
@@ -167,3 +173,4 @@ struct InformationCard: View {
     .frame(width: 600, height: 500)
     .padding()
 }
+#endif

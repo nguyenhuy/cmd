@@ -46,10 +46,10 @@ public struct Settings: Sendable, Equatable {
   }
 
   public struct CustomInstructions: Sendable, Codable, Equatable {
-    public var askMode: String
-    public var agentMode: String
+    public var askMode: String?
+    public var agentMode: String?
 
-    public init(askModePrompt: String = "", agentModePrompt: String = "") {
+    public init(askModePrompt: String? = nil, agentModePrompt: String? = nil) {
       askMode = askModePrompt
       agentMode = agentModePrompt
     }
