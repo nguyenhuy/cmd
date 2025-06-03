@@ -31,6 +31,7 @@ platform :mac do
       skip_archive: true,
       scheme: "command",
       silent: true,
+      xcodebuild_formatter: "xcbeautify",
     )
   end
 
@@ -71,6 +72,11 @@ platform :mac do
     match(
       type: 'developer_id',
       team_id: 'GP78T2GNXD',
+      readonly: true,
+      git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
+    )
+    match(
+      type: 'appstore',
       readonly: true,
       git_url: "https://#{personal_github_access_token}@github.com/gsabran/command-provisioning-profiles.git"
     )
