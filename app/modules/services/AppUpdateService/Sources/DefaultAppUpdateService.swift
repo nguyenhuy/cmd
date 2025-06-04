@@ -5,6 +5,7 @@ import AppFoundation
 import AppUpdateServiceInterface
 @preconcurrency import Combine
 import DependencyFoundation
+import FoundationInterfaces
 import LoggingServiceInterface
 import SettingsServiceInterface
 @preconcurrency import Sparkle
@@ -16,8 +17,12 @@ let updateLogger = defaultLogger.subLogger(subsystem: "appUpdate")
 
 @ThreadSafe
 final class DefaultAppUpdateService: AppUpdateService {
-  init(settingsService: SettingsService) {
+  init(
+    settingsService: SettingsService,
+    userDefaults: UserDefaultsI)
+  {
     self.settingsService = settingsService
+    self.userDefaults = userDefaults
     monitorSettingChanges()
   }
 
@@ -52,6 +57,27 @@ final class DefaultAppUpdateService: AppUpdateService {
     exit(0)
   }
 
+  func isUpdateSkipped(_ update: AppUpdateInfo?) -> Bool {
+    guard let update else { return false }
+    return skippedUpdateVersions.contains(update.version)
+  }
+
+  func skip(update: AppUpdateInfo?) {
+    guard let update else {
+      updateLogger.error("No version provided to skip update.")
+      return
+    }
+
+    let skippedVersions = skippedUpdateVersions + [update.version]
+    let newSkippedVersions = (try? JSONEncoder().encode(skippedVersions)).map { String(data: $0, encoding: .utf8) } ?? "[]"
+
+    userDefaults.set(newSkippedVersions ?? "[]", forKey: Self.skippedVersionKey)
+  }
+
+  fileprivate static let skippedVersionKey = "AppUpdateService.skippedVersion"
+
+  private let userDefaults: UserDefaultsI
+
   private var cancellables: Set<AnyCancellable> = []
   private let settingsService: SettingsService
 
@@ -60,6 +86,11 @@ final class DefaultAppUpdateService: AppUpdateService {
   private let _hasUpdateAvailable = CurrentValueSubject<AppUpdateResult, Never>(.noUpdateAvailable)
   private var canCheckForUpdates = false
   private var updateTask: Task<Void, Error>?
+
+  private var skippedUpdateVersions: [String] {
+    let skippedVersions = userDefaults.string(forKey: Self.skippedVersionKey) ?? "[]"
+    return (try? JSONDecoder().decode([String].self, from: Data(skippedVersions.utf8))) ?? []
+  }
 
   private func monitorSettingChanges() {
     settingsService.liveValue(for: \.automaticallyCheckForUpdates).sink { @Sendable [weak self] automaticallyCheckForUpdates in
@@ -340,10 +371,15 @@ final class BackgroundUserDriver: NSObject, SPUUserDriver, Sendable {
 
 // MARK: - Dependency Injection
 
-extension BaseProviding where Self: SettingsServiceProviding {
+extension BaseProviding where
+  Self: SettingsServiceProviding,
+  Self: UserDefaultsProviding
+{
   public var appUpdateService: AppUpdateService {
     shared {
-      DefaultAppUpdateService(settingsService: settingsService)
+      DefaultAppUpdateService(
+        settingsService: settingsService,
+        userDefaults: sharedUserDefaults)
     }
   }
 }

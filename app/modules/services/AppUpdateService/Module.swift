@@ -5,6 +5,7 @@ Target.module(
     "AppFoundation",
     "AppUpdateServiceInterface",
     "DependencyFoundation",
+    "FoundationInterfaces",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "ThreadSafe",

@@ -82,4 +82,60 @@ struct MockAppUpdateServiceTests {
     sut.checkForUpdatesContinously()
     try await fulfillment(of: exp)
   }
+
+  @Test
+  func test_skipUpdateCallsCallback() async throws {
+    let sut = MockAppUpdateService()
+    let exp = expectation(description: "Skip update called")
+    let updateInfo = AppUpdateInfo(version: "1.5.0", fileURL: nil, releaseNotesURL: nil)
+
+    sut.onSkipUpdate = { version in
+      #expect(version?.version == "1.5.0")
+      exp.fulfill()
+    }
+
+    sut.skip(update: updateInfo)
+    try await fulfillment(of: exp)
+  }
+
+  @Test
+  func test_skipUpdateSetsNoUpdateAvailable() async throws {
+    let updateInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
+    let sut = MockAppUpdateService(hasUpdateAvailable: .updateAvailable(info: updateInfo))
+
+    // Initially has update available
+    if case .updateAvailable = sut.hasUpdateAvailable.currentValue {
+      // Expected
+    } else {
+      Issue.record("Expected updateAvailable initially")
+    }
+
+    let exp = expectation(description: "Update becomes unavailable")
+    let cancellable = sut.hasUpdateAvailable.sink { result in
+      if result == .noUpdateAvailable {
+        exp.fulfill()
+      }
+    }
+
+    let skipInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
+    sut.skip(update: skipInfo)
+    try await fulfillment(of: exp)
+
+    #expect(sut.hasUpdateAvailable.currentValue == .noUpdateAvailable)
+    _ = cancellable
+  }
+
+  @Test
+  func test_skipUpdateWithNilVersion() async throws {
+    let sut = MockAppUpdateService()
+    let exp = expectation(description: "Skip update called with nil")
+
+    sut.onSkipUpdate = { version in
+      #expect(version == nil)
+      exp.fulfill()
+    }
+
+    sut.skip(update: nil)
+    try await fulfillment(of: exp)
+  }
 }

@@ -1,6 +1,7 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppUpdateServiceInterface
 import CheckpointServiceInterface
 import CodePreview
 import ConcurrencyFoundation
@@ -32,6 +33,15 @@ struct ChatMessageList: View {
 
   var body: some View {
     ScrollView {
+      if
+        case .updateAvailable(let appUpdateInfo) = appUpdateService.hasUpdateAvailable.currentValue,
+        !appUpdateService.isUpdateSkipped(appUpdateInfo)
+      {
+        AppUpdateBanner(
+          appUpdateInfo: appUpdateInfo,
+          onRelaunchTapped: { appUpdateService.relaunch() },
+          onSkipTapped: { appUpdateService.skip(update: appUpdateInfo) })
+      }
       LazyVStack(spacing: 0) {
         ForEach(events) { event in
           switch event {
@@ -46,7 +56,7 @@ struct ChatMessageList: View {
     }
   }
 
+  @Dependency(\.appUpdateService) private var appUpdateService
   private let events: [ChatEvent]
   private let onRestoreTapped: ((Checkpoint) -> Void)?
-
 }

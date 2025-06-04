@@ -317,6 +317,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "SettingsFeature",
   dependencies: [
+    "AppUpdateServiceInterface",
     "ConcurrencyFoundation",
     "DLS",
     "FoundationInterfaces",
@@ -339,6 +340,7 @@ targets.append(contentsOf: Target.module(
     .product(name: "HighlightSwift", package: "highlightswift"),
     "AppEventServiceInterface",
     "AppFoundation",
+    "AppUpdateServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",
     "CheckpointServiceInterface",
@@ -926,6 +928,7 @@ targets.append(contentsOf: Target.module(
     "AppFoundation",
     "AppUpdateServiceInterface",
     "DependencyFoundation",
+    "FoundationInterfaces",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "ThreadSafe",

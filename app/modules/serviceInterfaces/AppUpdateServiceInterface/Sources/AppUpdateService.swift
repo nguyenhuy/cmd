@@ -34,8 +34,12 @@ public protocol AppUpdateService: Sendable {
   func stopCheckingForUpdates()
   /// Keep checking for updates in the background at regular intervals. When an update is available, download it.
   func checkForUpdatesContinously()
-  /// Whether will be updated if it is restarted.
+  /// Whether there an app update has been installed.
   var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult, Never> { get }
+  /// Skip the current update
+  func skip(update: AppUpdateInfo?)
+  /// Return whether a given update is skipped.
+  func isUpdateSkipped(_ update: AppUpdateInfo?) -> Bool
 }
 
 // MARK: - AppUpdateServiceProviding

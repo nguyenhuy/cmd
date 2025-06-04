@@ -129,7 +129,7 @@ extension ColorScheme {
   public var tertiarySystemBackground: Color {
     let background = systemBackground
     if self == .dark {
-      return background.mixed(with: background.inverted, proportion: 0.02)
+      return background.mixed(with: background.inverted, proportion: 0.1)
     } else {
       return background.mixed(with: background.inverted, proportion: 0.1)
     }
