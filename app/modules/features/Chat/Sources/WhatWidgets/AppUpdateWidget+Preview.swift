@@ -9,8 +9,8 @@ private let appUpdateInfo = AppUpdateInfo(
   version: "1.0.0",
   fileURL: nil,
   releaseNotesURL: URL(string: "https://example.com/release-notes")!)
-#Preview("AppUpdateBanner", traits: .sizeThatFitsLayout) {
-  AppUpdateBanner(
+#Preview("AppUpdateWidget", traits: .sizeThatFitsLayout) {
+  VisibleAppUpdateWidget(
     appUpdateInfo: appUpdateInfo,
     onRelaunchTapped: { },
     onIgnoreTapped: { })

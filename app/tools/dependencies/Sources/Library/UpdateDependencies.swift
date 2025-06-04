@@ -46,7 +46,7 @@ public final class UpdateDependencies: SyntaxRewriter {
 
   public func rewrite(_ filePath: URL) throws {
     let modifiedSource = visit(packageSource)
-    try modifiedSource.description.write(to: filePath, atomically: true, encoding: .utf8)
+    try modifiedSource.description.update(url: filePath, atomically: true, encoding: .utf8)
   }
 
   public override func visit(_ node: FunctionCallExprSyntax) -> ExprSyntax {

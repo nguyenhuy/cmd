@@ -2,10 +2,40 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import AppUpdateServiceInterface
+import ConcurrencyFoundation
+import Dependencies
 import DLS
 import SwiftUI
 
-struct AppUpdateBanner: View {
+// MARK: - AppUpdateWidget
+
+struct AppUpdateWidget: View {
+  init() {
+    @Dependency(\.appUpdateService) var appUpdateService
+    let availableAppUpdate = appUpdateService.hasUpdateAvailable
+    self.availableAppUpdate = ObservableValue(availableAppUpdate.eraseToAnyPublisher(), initial: availableAppUpdate.currentValue)
+  }
+
+  var body: some View {
+    if
+      case .updateAvailable(let appUpdateInfo) = availableAppUpdate.value,
+      !appUpdateService.isUpdateIgnored(appUpdateInfo)
+    {
+      VisibleAppUpdateWidget(
+        appUpdateInfo: appUpdateInfo,
+        onRelaunchTapped: { appUpdateService.relaunch() },
+        onIgnoreTapped: { appUpdateService.ignore(update: appUpdateInfo) })
+    }
+  }
+
+  @Dependency(\.appUpdateService) private var appUpdateService
+  @Bindable private var availableAppUpdate: ObservableValue<AppUpdateResult>
+
+}
+
+// MARK: - VisibleAppUpdateWidget
+
+struct VisibleAppUpdateWidget: View {
   init(
     appUpdateInfo: AppUpdateInfo?,
     onRelaunchTapped: @escaping () -> Void,
