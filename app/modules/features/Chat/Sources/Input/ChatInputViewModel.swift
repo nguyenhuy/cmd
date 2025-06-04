@@ -320,11 +320,19 @@ final class ChatInputViewModel {
       self.toolCallsPendingApproval.append(PendingToolApproval(request: request, continuation: continuation))
     }
   }
-
+  
+  /// Cancels all pending tool approval requests.
+  /// We must clear the array before resuming continuations to prevent crashes from double-resumption if called multiple times.
   func cancelAllPendingToolApprovalRequests() {
-    for item in toolCallsPendingApproval { item.continuation.resume(returning: .cancelled) }
+    guard !toolCallsPendingApproval.isEmpty else { return }
+    
+    let pendingItems = toolCallsPendingApproval
+    toolCallsPendingApproval.removeAll()
+    
+    for item in pendingItems {
+      item.continuation.resume(returning: .cancelled)
+    }
   }
-
   /// Handle the user's approval response.
   func handleApproval(of request: ToolApprovalRequest, result: ToolApprovalResult) {
     guard let index = toolCallsPendingApproval.firstIndex(where: { $0.request.id == request.id }) else {
