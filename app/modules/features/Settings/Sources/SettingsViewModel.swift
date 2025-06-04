@@ -27,7 +27,6 @@ public final class SettingsViewModel {
 
     providerSettings = settings.llmProviderSettings
     repeatLastLLMInteraction = userDefaults.bool(forKey: "llmService.isRepeating")
-    showCheckForUpdateButton = userDefaults.bool(forKey: "showCheckForUpdateButton")
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
 
@@ -86,12 +85,6 @@ public final class SettingsViewModel {
     set {
       settings.pointReleaseXcodeExtensionToDebugApp = newValue
       settingsService.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: newValue)
-    }
-  }
-
-  var showCheckForUpdateButton: Bool {
-    didSet {
-      userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
     }
   }
 

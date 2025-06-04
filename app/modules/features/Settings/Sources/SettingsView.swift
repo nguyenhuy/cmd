@@ -97,7 +97,6 @@ public struct SettingsView: View {
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
           showOnboardingScreenAgain: $viewModel.showOnboardingScreenAgain,
           pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
-          showCheckForUpdateButton: $viewModel.showCheckForUpdateButton,
           showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease)
 
       case .about:

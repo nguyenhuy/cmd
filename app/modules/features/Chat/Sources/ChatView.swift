@@ -30,12 +30,10 @@ public struct ChatView: View {
 
   public init(
     viewModel: ChatViewModel,
-    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) },
-    AppUpdaterView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
+    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
   {
     self.viewModel = viewModel
     self.SettingsView = SettingsView
-    self.AppUpdaterView = AppUpdaterView
   }
 
   public var body: some View {
@@ -43,9 +41,6 @@ public struct ChatView: View {
       VStack(spacing: 0) {
         quickActionsRow
         secondaryActionRow
-        if showCheckForUpdatesButton {
-          AppUpdaterView { }
-        }
         if let selectedTab = viewModel.selectedTab {
           ChatMessageList(viewModel: selectedTab)
             .id("ChatMessageList-\(selectedTab.id)")
@@ -85,15 +80,10 @@ public struct ChatView: View {
 
   @Dependency(\.userDefaults) private var userDefaults
   private let SettingsView: (@escaping @MainActor () -> Void) -> AnyView
-  private let AppUpdaterView: (@escaping @MainActor () -> Void) -> AnyView
 
   @Bindable private var viewModel: ChatViewModel
 
   private let iconSizes: CGFloat = 22
-
-  private var showCheckForUpdatesButton: Bool {
-    userDefaults.bool(forKey: "showCheckForUpdateButton")
-  }
 
   @ViewBuilder
   private var quickActionsRow: some View {

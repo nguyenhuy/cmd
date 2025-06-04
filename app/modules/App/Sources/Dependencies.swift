@@ -4,6 +4,8 @@
 import AppEventService
 import AppEventServiceInterface
 import AppKit
+import AppUpdateService
+import AppUpdateServiceInterface
 import CheckpointService
 import CheckpointServiceInterface
 import Combine
@@ -41,6 +43,14 @@ extension AppEventHandlerRegistryDependencyKey: DependencyKey {
 extension AppsActivationStateDependencyKey: DependencyKey {
   public static var liveValue: AnyPublisher<AppsActivationState, Never> {
     AppScope.shared.appsActivationState
+  }
+}
+
+// MARK: - AppUpdateServiceDependencyKey + DependencyKey
+
+extension AppUpdateServiceDependencyKey: DependencyKey {
+  public static var liveValue: AppUpdateService {
+    AppScope.shared.appUpdateService
   }
 }
 
@@ -131,6 +141,10 @@ extension AppScope: AppEventHandlerRegistryProviding { }
 // MARK: - AppScope + AppsActivationStateProviding
 
 extension AppScope: AppsActivationStateProviding { }
+
+// MARK: - AppScope + AppUpdateServiceProviding
+
+extension AppScope: AppUpdateServiceProviding { }
 
 // MARK: - AppScope + CheckpointServiceProviding
 

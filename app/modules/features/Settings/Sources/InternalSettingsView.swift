@@ -11,7 +11,6 @@ struct InternalSettingsView: View {
   @Binding var repeatLastLLMInteraction: Bool
   @Binding var showOnboardingScreenAgain: Bool
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
-  @Binding var showCheckForUpdateButton: Bool
   @Binding var showInternalSettingsInRelease: Bool
 
   var body: some View {
@@ -30,7 +29,6 @@ struct InternalSettingsView: View {
           "Point Release Xcode Extension to Debug App",
           caption: "Use the debug version of the extension for development",
           value: $pointReleaseXcodeExtensionToDebugApp)
-        InternalSettingsRow("Show update button (wip)", value: $showCheckForUpdateButton)
       }
       .padding(16)
       .background(Color(NSColor.controlBackgroundColor))

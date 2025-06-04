@@ -4,7 +4,6 @@
 import AccessibilityFoundation
 import AccessibilityObjCFoundation
 import AppKit
-import AppUpdater
 import Chat
 import Dependencies
 import LoggingServiceInterface
@@ -58,9 +57,6 @@ final class SidePanel: XcodeWindow {
         AnyView(SettingsView(
           viewModel: SettingsViewModel(),
           onDismiss: onDismiss))
-      },
-      AppUpdaterView: { _ in
-        AppUpdaterBuilder.build()
       })
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 
