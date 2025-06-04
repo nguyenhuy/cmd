@@ -1,16 +1,16 @@
 Target.module(
   name: "ReadFileTool",
   dependencies: [
-    "CodePreview",
-    "DLS",
-    "FoundationInterfaces",
-    "HighlighterServiceInterface",
-    "JSONFoundation",
-    "ServerServiceInterface",
-    "ToolFoundation",
-  ],
+"CodePreview",
+"DLS",
+"FoundationInterfaces",
+"HighlighterServiceInterface",
+"JSONFoundation",
+"ServerServiceInterface",
+"ToolFoundation",
+],
   testDependencies: [
-    "FoundationInterfaces",
-    "LLMServiceInterface",
-    "SwiftTesting",
-  ])
+"FoundationInterfaces",
+"LLMServiceInterface",
+"SwiftTesting",
+])

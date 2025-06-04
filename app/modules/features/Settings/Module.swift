@@ -1,15 +1,15 @@
 Target.module(
   name: "SettingsFeature",
   dependencies: [
-    "ConcurrencyFoundation",
-    "DLS",
-    "FoundationInterfaces",
-    "LLMFoundation",
-    "SettingsServiceInterface",
-  ],
+"ConcurrencyFoundation",
+"DLS",
+"FoundationInterfaces",
+"LLMFoundation",
+"SettingsServiceInterface",
+],
   testDependencies: [
-    "FoundationInterfaces",
-    "LLMFoundation",
-    "SettingsServiceInterface",
-    "SwiftTesting",
-  ])
+"FoundationInterfaces",
+"LLMFoundation",
+"SettingsServiceInterface",
+"SwiftTesting",
+])

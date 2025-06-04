@@ -1,13 +1,13 @@
 Target.module(
   name: "BuildTool",
   dependencies: [
-    "AppFoundation",
-    "CodePreview",
-    "ConcurrencyFoundation",
-    "DLS",
-    "JSONFoundation",
-    "ServerServiceInterface",
-    "ToolFoundation",
-    "XcodeControllerServiceInterface",
-  ],
+"AppFoundation",
+"CodePreview",
+"ConcurrencyFoundation",
+"DLS",
+"JSONFoundation",
+"ServerServiceInterface",
+"ToolFoundation",
+"XcodeControllerServiceInterface",
+],
   testDependencies: [])
