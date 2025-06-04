@@ -39,6 +39,26 @@ public enum ChatMode: String, Sendable, Hashable, Equatable, CaseIterable, Ident
     }
   }
 
+  /// The system image used for the current chat mode.
+  public var systemImageName: String {
+    switch self {
+    case .agent:
+      "infinity"
+    case .ask:
+      "bubble"
+    }
+  }
+
+  /// The command keyboard shortcut that can be shown in the UI.
+  public var commandDisplay: String {
+    switch self {
+    case .agent:
+      "⌘I"
+    case .ask:
+      "⌘L"
+    }
+  }
+
   /// A description of the role, send to the LLM.
   public var roleDescription: String {
     switch self {

@@ -25,7 +25,9 @@ extension Settings: Codable {
         } ?? [:],
       inactiveModels: container
         .decodeIfPresent([String].self, forKey: "inactiveModels")?
-        .compactMap { modelName in LLMModel(rawValue: modelName) } ?? [])
+        .compactMap { modelName in LLMModel(rawValue: modelName) } ?? [],
+      customInstructions: container
+        .decodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings.CustomInstructions())
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -39,5 +41,6 @@ extension Settings: Codable {
       acc[el.key.rawValue] = el.value
     }, forKey: "llmProviderSettings")
     try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
+    try container.encode(customInstructions, forKey: "customInstructions")
   }
 }

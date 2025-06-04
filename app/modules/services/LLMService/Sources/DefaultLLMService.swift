@@ -105,10 +105,16 @@ final class DefaultLLMService: LLMService {
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void)
     async throws -> AssistantMessage
   {
-    let (provider, providerSettings) = try settingsService.values().provider(for: model)
+    let settings = settingsService.values()
+    let (provider, providerSettings) = try settings.provider(for: model)
+    let customInstructions = customInstructions(for: context.chatMode, from: settings)
+    let promptConfiguration = PromptConfiguration(
+      projectRoot: context.projectRoot,
+      mode: context.chatMode,
+      customInstructions: customInstructions)
     let params = try Schema.SendMessageRequestParams(
       messages: messageHistory,
-      system: Prompt.defaultPrompt(projectRoot: context.projectRoot, mode: context.chatMode),
+      system: Prompt.defaultPrompt(configuration: promptConfiguration),
       projectRoot: context.projectRoot?.path,
       tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: provider.id(for: model),
@@ -189,6 +195,19 @@ final class DefaultLLMService: LLMService {
     }
   }
 
+  /// Retrieves the appropriate custom instructions based on the chat mode.
+  private func customInstructions(
+    for chatMode: ChatMode,
+    from settings: Settings)
+    -> String?
+  {
+    switch chatMode {
+    case .ask:
+      settings.customInstructions.askMode
+    case .agent:
+      settings.customInstructions.agentMode
+    }
+  }
 }
 
 extension BaseProviding where

@@ -23,8 +23,9 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : false,
-        "llmProviderSettings" : {},
+        "customInstructions" : {},
         "inactiveModels" : [],
+        "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic",
@@ -52,6 +53,8 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "customInstructions" : {},
+        "inactiveModels" : [],
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "test-api-key",
@@ -60,8 +63,7 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {},
-        "inactiveModels" : []
+        "preferedProviders" : {}
       }
       """
 
@@ -92,6 +94,7 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "customInstructions" : {},
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "anthropic-key",
@@ -221,6 +224,7 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "customInstructions" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
@@ -319,6 +323,92 @@ struct SettingsCodableTests {
           baseUrl: "https://openrouter.ai/api/v1",
           createdOrder: 3),
       ])
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Encode and decode settings with custom instructions")
+  func testSettingsWithCustomInstructions() throws {
+    let customInstructions = Settings.CustomInstructions(
+      askModePrompt: "Always be concise and helpful",
+      agentModePrompt: "Focus on code quality and best practices")
+
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      preferedProviders: [.claudeHaiku_3_5: .anthropic],
+      llmProviderSettings: [:],
+      customInstructions: customInstructions)
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "customInstructions" : {
+          "agentMode" : "Focus on code quality and best practices",
+          "askMode" : "Always be concise and helpful"
+        },
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : true,
+        "preferedProviders" : {
+          "claude-haiku-35" : "anthropic"
+        }
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Decode settings with only askMode custom instruction")
+  func testSettingsWithOnlyAskModeCustomInstruction() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "customInstructions" : {
+          "askMode" : "Be brief and direct"
+        },
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {}
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      preferedProviders: [:],
+      llmProviderSettings: [:],
+      customInstructions: Settings.CustomInstructions(askModePrompt: "Be brief and direct", agentModePrompt: nil))
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Decode settings with only agentMode custom instruction")
+  func testSettingsWithOnlyAgentModeCustomInstruction() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "customInstructions" : {
+          "agentMode" : "Prioritize performance and efficiency"
+        },
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : true,
+        "preferedProviders" : {
+          "gpt-4o" : "openai"
+        }
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      preferedProviders: [.gpt_4o: .openAI],
+      llmProviderSettings: [:],
+      customInstructions: Settings.CustomInstructions(
+        askModePrompt: nil,
+        agentModePrompt: "Prioritize performance and efficiency"))
 
     try testDecoding(expectedSettings, json)
   }

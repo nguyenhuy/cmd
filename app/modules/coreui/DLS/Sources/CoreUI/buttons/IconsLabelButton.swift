@@ -48,6 +48,7 @@ public struct IconsLabelButton: View {
   let cornerRadius: CGFloat
 }
 
+#if DEBUG
 #Preview {
   VStack {
     IconsLabelButton(
@@ -64,3 +65,4 @@ public struct IconsLabelButton: View {
       label: "Reject")
   }
 }
+#endif
