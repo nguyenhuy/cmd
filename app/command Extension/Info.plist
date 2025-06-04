@@ -2,14 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ReleaseUserDefaultsSharedSuiteName</key>
-	<string>$(INFOPLIST_KEY_ReleaseUserDefaultsSharedSuiteName)</string>
 	<key>DebugUserDefaultsSharedSuiteName</key>
 	<string>$(INFOPLIST_KEY_DebugUserDefaultsSharedSuiteName)</string>
 	<key>HostAppBundleIdentifier</key>
 	<string>$(HOST_APP_BUNDLE_IDENTIFIER)</string>
-	<key>UserDefaultsSharedSuiteName</key>
-	<string>$(INFOPLIST_KEY_UserDefaultsSharedSuiteName)</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
@@ -20,5 +16,9 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.dt.Xcode.extension.source-editor</string>
 	</dict>
+	<key>ReleaseUserDefaultsSharedSuiteName</key>
+	<string>$(INFOPLIST_KEY_ReleaseUserDefaultsSharedSuiteName)</string>
+	<key>UserDefaultsSharedSuiteName</key>
+	<string>$(INFOPLIST_KEY_UserDefaultsSharedSuiteName)</string>
 </dict>
 </plist>

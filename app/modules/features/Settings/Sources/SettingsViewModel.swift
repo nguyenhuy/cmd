@@ -91,8 +91,7 @@ public final class SettingsViewModel {
 
   var showCheckForUpdateButton: Bool {
     didSet {
-      didSetShowCheckForUpdateButton()
-//            userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
+      userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
     }
   }
 
@@ -145,10 +144,6 @@ public final class SettingsViewModel {
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
   private let releaseUserDefaults: UserDefaultsI?
-
-  private func didSetShowCheckForUpdateButton() {
-    userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
-  }
 
 }
 
