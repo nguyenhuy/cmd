@@ -15,58 +15,14 @@ struct InternalSettingsView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
       VStack(spacing: 16) {
-        HStack {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Show internal settings in Release app")
-          }
-          Spacer()
-          Toggle("", isOn: $showInternalSettingsInRelease)
-            .toggleStyle(.switch)
-        }
-        HStack {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Repeat last LLM interaction")
-            Text("Enable for debugging LLM responses")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-          Spacer()
-          Toggle("", isOn: $repeatLastLLMInteraction)
-            .toggleStyle(.switch)
-        }
-
-        HStack {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Show onboarding again")
-            Text("Show onboarding flow at next app launch")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-          Spacer()
-          Toggle("", isOn: $showOnboardingScreenAgain)
-            .toggleStyle(.switch)
-        }
-
-        HStack {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Point Release Xcode Extension to Debug App")
-            Text("Use the debug version of the extension for development")
-              .font(.caption)
-              .foregroundColor(.secondary)
-          }
-          Spacer()
-          Toggle("", isOn: $pointReleaseXcodeExtensionToDebugApp)
-            .toggleStyle(.switch)
-        }
-
-        HStack {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Show update button (wip)")
-          }
-          Spacer()
-          Toggle("", isOn: $showCheckForUpdateButton)
-            .toggleStyle(.switch)
-        }
+        row("Show internal settings in Debug app", value: $showInternalSettingsInRelease)
+        row("Repeat last LLM interaction", caption: "Enable for debugging LLM responses", value: $repeatLastLLMInteraction)
+        row("Show onboarding again", caption: "Show onboarding flow at next app launch", value: $showOnboardingScreenAgain)
+        row(
+          "Point Release Xcode Extension to Debug App",
+          caption: "Use the debug version of the extension for development",
+          value: $pointReleaseXcodeExtensionToDebugApp)
+        row("Show update button (wip)", value: $showCheckForUpdateButton)
       }
       .padding(16)
       .background(Color(NSColor.controlBackgroundColor))
@@ -80,5 +36,22 @@ struct InternalSettingsView: View {
   }
 
   @Dependency(\.userDefaults) private var userDefaults
+
+  @ViewBuilder
+  private func row(_ text: String, caption: String? = nil, value: Binding<Bool>) -> some View {
+    HStack {
+      VStack(alignment: .leading, spacing: 4) {
+        Text(text)
+        if let caption {
+          Text(caption)
+            .font(.caption)
+            .foregroundColor(.secondary)
+        }
+      }
+      Spacer()
+      Toggle("", isOn: value)
+        .toggleStyle(.switch)
+    }
+  }
 
 }
