@@ -400,6 +400,10 @@ targets.append(contentsOf: Target.module(
   name: "AppUpdater",
   dependencies: [
     .product(name: "Sparkle", package: "Sparkle"),
+    "ConcurrencyFoundation",
+    "DLS",
+    "LoggingServiceInterface",
+    "ThreadSafe",
   ],
   path: "./features/AppUpdater"))
 

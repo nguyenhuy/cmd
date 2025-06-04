@@ -28,37 +28,46 @@ struct ChatMessageView: View {
   let message: ChatMessageContentWithRole
 
   var body: some View {
-    GeometryReader { geometry in
-      ReshareGeometry(geometry, geometryReader: $size) {
-        Color.clear
-      }
-    }.frame(height: 0)
-
-    HStack {
-      VStack(alignment: .leading, spacing: 0) {
-        switch message.content {
-        case .text(let textContent):
-          if !textContent.attachments.isEmpty {
-            AttachmentsView(attachments: .constant(textContent.attachments), isEditable: false)
-              .padding(5)
-              .padding(.top, 2)
-          }
-          ForEach(textContent.elements) { element in
-            textElementView(element)
-          }
-
-        case .toolUse(let toolUse):
-          ToolUseView(toolUse: toolUse.toolUse)
-            .padding(Constants.toolPadding)
-
-        case .nonUserFacingText:
-          EmptyView()
+    VStack(alignment: .leading) {
+      GeometryReader { geometry in
+        ReshareGeometry(geometry, geometryReader: $size) {
+          Color.clear
         }
+      }.frame(height: 0)
+
+      HStack {
+        VStack(alignment: .leading, spacing: 0) {
+          switch message.content {
+          case .text(let textContent):
+            if !textContent.attachments.isEmpty {
+              AttachmentsView(attachments: .constant(textContent.attachments), isEditable: false)
+                .padding(5)
+                .padding(.top, 2)
+            }
+            ForEach(textContent.elements) { element in
+              textElementView(element)
+            }
+
+          case .toolUse(let toolUse):
+            ToolUseView(toolUse: toolUse.toolUse)
+              .padding(Constants.toolPadding)
+
+          case .nonUserFacingText:
+            EmptyView()
+          }
+        }
+        Spacer(minLength: 0)
       }
-      Spacer(minLength: 0)
+      .background(message.role == .user ? colorScheme.secondarySystemBackground : .clear)
+      .roundedCorner(radius: Constants.cornerRadius)
+
+      if let failureReason = message.failureReason {
+        Text(failureReason)
+          .textSelection(.enabled)
+          .font(.system(size: 11))
+          .foregroundColor(.red)
+      }
     }
-    .background(message.role == .user ? colorScheme.secondarySystemBackground : .clear)
-    .roundedCorner(radius: Constants.cornerRadius)
   }
 
   @State private var size = CGSize.zero

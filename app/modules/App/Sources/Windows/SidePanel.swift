@@ -34,11 +34,6 @@ final class SidePanel: XcodeWindow {
     toolbar.autosavesConfiguration = false
     self.toolbar = toolbar
 
-    // Set fixed title bar height, same as Xcode's.
-    if let titlebarContainer = standardWindowButton(.closeButton)?.superview?.superview {
-      titlebarContainer.heightAnchor.constraint(equalToConstant: 20).isActive = true
-    }
-
     collectionBehavior = [
       .fullScreenAuxiliary,
       .fullScreenPrimary,

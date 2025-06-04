@@ -9,7 +9,9 @@ import SwiftUI
   InternalSettingsView(
     repeatLastLLMInteraction: .constant(true),
     showOnboardingScreenAgain: .constant(true),
-    pointReleaseXcodeExtensionToDebugApp: .constant(false))
+    pointReleaseXcodeExtensionToDebugApp: .constant(false),
+    showCheckForUpdateButton: .constant(false),
+    showInternalSettingsInRelease: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -18,7 +20,9 @@ import SwiftUI
   InternalSettingsView(
     repeatLastLLMInteraction: .constant(false),
     showOnboardingScreenAgain: .constant(true),
-    pointReleaseXcodeExtensionToDebugApp: .constant(true))
+    pointReleaseXcodeExtensionToDebugApp: .constant(true),
+    showCheckForUpdateButton: .constant(true),
+    showInternalSettingsInRelease: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }

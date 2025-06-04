@@ -19,13 +19,17 @@ public final class SettingsViewModel {
     self.settingsService = settingsService
     @Dependency(\.userDefaults) var userDefaults
     self.userDefaults = userDefaults
+    // This one is not dependency injected. That should be ok.
+    releaseUserDefaults = try? UserDefaults.releaseShared(bundle: .main)
 
     let settings = settingsService.values()
     self.settings = settings
 
     providerSettings = settings.llmProviderSettings
     repeatLastLLMInteraction = userDefaults.bool(forKey: "llmService.isRepeating")
+    showCheckForUpdateButton = userDefaults.bool(forKey: "showCheckForUpdateButton")
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
+    showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -69,6 +73,12 @@ public final class SettingsViewModel {
     }
   }
 
+  var showInternalSettingsInRelease: Bool {
+    didSet {
+      releaseUserDefaults?.set(showInternalSettingsInRelease, forKey: .showInternalSettingsInRelease)
+    }
+  }
+
   var pointReleaseXcodeExtensionToDebugApp: Bool {
     get {
       settings.pointReleaseXcodeExtensionToDebugApp
@@ -76,6 +86,13 @@ public final class SettingsViewModel {
     set {
       settings.pointReleaseXcodeExtensionToDebugApp = newValue
       settingsService.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: newValue)
+    }
+  }
+
+  var showCheckForUpdateButton: Bool {
+    didSet {
+      didSetShowCheckForUpdateButton()
+//            userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
     }
   }
 
@@ -127,6 +144,12 @@ public final class SettingsViewModel {
 
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
+  private let releaseUserDefaults: UserDefaultsI?
+
+  private func didSetShowCheckForUpdateButton() {
+    userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
+  }
+
 }
 
 public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]

@@ -95,7 +95,9 @@ public struct SettingsView: View {
         InternalSettingsView(
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
           showOnboardingScreenAgain: $viewModel.showOnboardingScreenAgain,
-          pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp)
+          pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
+          showCheckForUpdateButton: $viewModel.showCheckForUpdateButton,
+          showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease)
 
       case .about:
         AboutSettingsView(allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics)
@@ -212,6 +214,13 @@ private struct SettingsLandingView: View {
             section: .internalSettings,
             description: "Custom application settings",
             action: onNavigate)
+          #else
+          if viewModel.showInternalSettingsInRelease {
+            SettingsCard(
+              section: .internalSettings,
+              description: "Custom application settings",
+              action: onNavigate)
+          }
           #endif
         }
       }

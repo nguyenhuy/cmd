@@ -19,6 +19,8 @@ export default tseslint.config(
             "quotes": "off",
 			semi: "off",
 			"no-empty": "off",
+            // Enforce awaiting all promises
+            "@typescript-eslint/no-floating-promises": "error"
 		},
 	},
 	{

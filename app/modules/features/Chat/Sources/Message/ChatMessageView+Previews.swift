@@ -172,75 +172,131 @@ struct DebugStreamingMessage: View {
   @Bindable private var currentMessage: ChatMessage
 }
 
-#Preview {
+#Preview("Failed user message") {
   ScrollView {
-    VStack {
-      ChatMessageView(message: ChatMessageContentWithRole(
-        content: .text(.init(text: "What does this code do?", attachments: [
-          .fileSelection(Attachment.FileSelectionAttachment(
-            file: Attachment.FileAttachment(path: URL(filePath: "/Users/me/app/source.swift")!, content: mediumFileContent),
-            startLine: 4,
-            endLine: 10)),
-        ])),
-        role: .user))
-
-      ChatMessageView(message: ChatMessageContentWithRole(
-        content: .text(.init(text: "Not much")),
-        role: .assistant))
-
-      ChatMessageView(message: ChatMessageContentWithRole(
-        content: .text(.init(text: """
-          # This is some Markdown
-          * This is a list item
-
-          ## This is a subheading
-
-          This is a paragraph with a [link](https://www.google.com).
-
-          This is a paragraph with a ![image](https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png).
-
-          This is a paragraph with a `code` inline.
-
-          """)),
-        role: .assistant))
-
-      ChatMessageView(message: ChatMessageContentWithRole(
-        content: .text(.init(text: messageContentWithCode)),
-        role: .assistant))
-
-      withDependencies({
-        $0.fileManager = MockFileManager(files: [
-          "/path/to/file.swift": """
-            Hello, world!
-            What a wonderful world!
-            So lucky to be here!
-            """,
-        ])
-      }, operation: {
-        VStack {
-          ChatMessageView(message: ChatMessageContentWithRole(
-            content:
-            .text(.init(text: messageContentWithCodeDiff)),
-            role: .assistant))
-
-          ChatMessageView(message: ChatMessageContentWithRole(
-            content:
-            .toolUse(.init(toolUse: TestTool.Use())),
-            role: .assistant))
-        }
-      })
-
-      ChatMessageView(message: ChatMessageContentWithRole(
-        content: .text(.init(text: messageContentWithUnfinishedCode)),
-        role: .assistant))
-
-      DebugStreamingMessage(message: ChatMessage(
-        content: [.text(.init(text: messageContentWithLongCode))],
-        role: .assistant))
-      Spacer()
-    }
+    ChatMessageView(message: ChatMessageContentWithRole(
+      content: .text(.init(text: "Help me!")),
+      role: .user,
+      failureReason: "No more API credits"))
   }
-  .frame(maxWidth: 400, minHeight: 700, maxHeight: 700)
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("User message with file selection") {
+  ScrollView {
+    ChatMessageView(message: ChatMessageContentWithRole(
+      content: .text(.init(text: "What does this code do?", attachments: [
+        .fileSelection(Attachment.FileSelectionAttachment(
+          file: Attachment.FileAttachment(path: URL(filePath: "/Users/me/app/source.swift")!, content: mediumFileContent),
+          startLine: 4,
+          endLine: 10)),
+      ])),
+      role: .user))
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Simple assistant message") {
+  ScrollView {
+    ChatMessageView(message: ChatMessageContentWithRole(
+      content: .text(.init(text: "Not much")),
+      role: .assistant))
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Markdown message") {
+  ScrollView {
+    ChatMessageView(message: ChatMessageContentWithRole(
+      content: .text(.init(text: """
+        # This is some Markdown
+        * This is a list item
+
+        ## This is a subheading
+
+        This is a paragraph with a [link](https://www.google.com).
+
+        This is a paragraph with a ![image](https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png).
+
+        This is a paragraph with a `code` inline.
+
+        """)),
+      role: .assistant))
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Message with code") {
+  ScrollView {
+    ChatMessageView(message: ChatMessageContentWithRole(
+      content: .text(.init(text: messageContentWithCode)),
+      role: .assistant))
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Message with code diff") {
+  ScrollView {
+    withDependencies({
+      $0.fileManager = MockFileManager(files: [
+        "/path/to/file.swift": """
+          Hello, world!
+          What a wonderful world!
+          So lucky to be here!
+          """,
+      ])
+    }, operation: {
+      ChatMessageView(message: ChatMessageContentWithRole(
+        content: .text(.init(text: messageContentWithCodeDiff)),
+        role: .assistant))
+    })
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Tool use message") {
+  ScrollView {
+    withDependencies({
+      $0.fileManager = MockFileManager(files: [
+        "/path/to/file.swift": """
+          Hello, world!
+          What a wonderful world!
+          So lucky to be here!
+          """,
+      ])
+    }, operation: {
+      ChatMessageView(message: ChatMessageContentWithRole(
+        content: .toolUse(.init(toolUse: TestTool.Use())),
+        role: .assistant))
+    })
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Message with unfinished code") {
+  ScrollView {
+    ChatMessageView(message: ChatMessageContentWithRole(
+      content: .text(.init(text: messageContentWithUnfinishedCode)),
+      role: .assistant))
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Streaming message") {
+  ScrollView {
+    DebugStreamingMessage(message: ChatMessage(
+      content: [.text(.init(text: messageContentWithLongCode))],
+      role: .assistant))
+  }
+  .frame(width: 400)
   .padding()
 }
 

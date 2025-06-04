@@ -31,13 +31,21 @@ Build the app in Debug configuration
 
 Build and archive the app for Mac App Store distribution
 
+### mac create_and_sign_release
+
+```sh
+[bundle exec] fastlane mac create_and_sign_release
+```
+
+Build, archive and sign the app for distribution
+
 ### mac distribute_release
 
 ```sh
 [bundle exec] fastlane mac distribute_release
 ```
 
-Build and archive the app for Mac App Store distribution
+Build, archive, sign and publish the app for distribution
 
 ----
 

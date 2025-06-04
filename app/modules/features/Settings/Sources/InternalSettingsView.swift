@@ -9,10 +9,20 @@ struct InternalSettingsView: View {
   @Binding var repeatLastLLMInteraction: Bool
   @Binding var showOnboardingScreenAgain: Bool
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
+  @Binding var showCheckForUpdateButton: Bool
+  @Binding var showInternalSettingsInRelease: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
       VStack(spacing: 16) {
+        HStack {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Show internal settings in Release app")
+          }
+          Spacer()
+          Toggle("", isOn: $showInternalSettingsInRelease)
+            .toggleStyle(.switch)
+        }
         HStack {
           VStack(alignment: .leading, spacing: 4) {
             Text("Repeat last LLM interaction")
@@ -46,6 +56,15 @@ struct InternalSettingsView: View {
           }
           Spacer()
           Toggle("", isOn: $pointReleaseXcodeExtensionToDebugApp)
+            .toggleStyle(.switch)
+        }
+
+        HStack {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Show update button (wip)")
+          }
+          Spacer()
+          Toggle("", isOn: $showCheckForUpdateButton)
             .toggleStyle(.switch)
         }
       }

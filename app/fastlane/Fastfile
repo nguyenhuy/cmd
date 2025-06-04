@@ -169,11 +169,15 @@ platform :mac do
     File.write(appcast_path, appcast_content)
 
     sh("rm -rf #{build_path}") if remove_zip
+    { version: version, zip_path: zip_path, build_path: build_path }
   end
 
   desc "Build, archive, sign and publish the app for distribution"
   lane :distribute_release do
-    create_and_sign_release(remove_zip: false)
+    result = create_and_sign_release(remove_zip: false)
+    version = result[:version]
+    zip_path = result[:zip_path]
+    build_path = result[:build_path]
 
     set_github_release(
       api_token: load_secret("GITHUB_TOKEN"),

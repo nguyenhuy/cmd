@@ -160,7 +160,7 @@ describe("InterProcessesBridge", () => {
 			commandIdx++
 		})
 
-		const firstRequest = new Promise<Response>((resolve) => {
+		const firstRequest = new Promise<Response>((resolve) =>
 			request(app)
 				.post("/execute-command")
 				.send({
@@ -168,10 +168,10 @@ describe("InterProcessesBridge", () => {
 					command: "hello",
 					input: {},
 				})
-				.then(resolve)
-		})
+				.then(resolve),
+		)
 
-		const secondRequest = new Promise<Response>((resolve) => {
+		const secondRequest = new Promise<Response>((resolve) =>
 			request(app)
 				.post("/execute-command")
 				.send({
@@ -179,8 +179,8 @@ describe("InterProcessesBridge", () => {
 					command: "hello",
 					input: {},
 				})
-				.then(resolve)
-		})
+				.then(resolve),
+		)
 
 		await Promise.all([firstCommandReceived, secondCommandReceived])
 

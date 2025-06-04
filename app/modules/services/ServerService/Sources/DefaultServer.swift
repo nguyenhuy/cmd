@@ -257,7 +257,8 @@ final class DefaultServer: Server {
 
     guard filePaths.count == files.count else {
       throw AppError(
-        message: "Failed to locate all files to copy. Could not start the local server.\nYou likely need to do File>Packages>Reset Package Cache and rebuild to resolve the issue.")
+        message: "Application is missing required files",
+        debugDescription: "Failed to locate all files to copy. Could not start the local server.\nYou likely need to do File>Packages>Reset Package Cache and rebuild to resolve the issue.")
     }
 
     // Create application support directory if it doesn't exist

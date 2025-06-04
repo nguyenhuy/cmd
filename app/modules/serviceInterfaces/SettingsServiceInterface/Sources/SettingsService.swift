@@ -92,4 +92,5 @@ public typealias UserDefaultsKey = String
 
 extension UserDefaultsKey {
   public static let hasCompletedOnboardingUserDefaultsKey = "hasCompletedOnboarding"
+  public static let showInternalSettingsInRelease = "showInternalSettingsInRelease"
 }
