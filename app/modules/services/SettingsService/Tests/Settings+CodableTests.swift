@@ -406,7 +406,9 @@ struct SettingsCodableTests {
       allowAnonymousAnalytics: false,
       preferedProviders: [.gpt_4o: .openAI],
       llmProviderSettings: [:],
-      customInstructions: Settings.CustomInstructions(askModePrompt: nil, agentModePrompt: "Prioritize performance and efficiency"))
+      customInstructions: Settings.CustomInstructions(
+        askModePrompt: nil,
+        agentModePrompt: "Prioritize performance and efficiency"))
 
     try testDecoding(expectedSettings, json)
   }

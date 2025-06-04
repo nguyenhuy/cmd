@@ -41,8 +41,7 @@ struct ChatModeView: View {
     CustomInstructionSection(
       text: Binding(
         get: { customInstructions.askMode ?? "" },
-        set: { customInstructions.askMode = $0.isEmpty ? nil : $0 }
-      ),
+        set: { customInstructions.askMode = $0.isEmpty ? nil : $0 }),
       iconName: ChatMode.ask.systemImageName,
       title: "Ask Mode",
       subtitle: "Provide extra instructions for Ask Mode.")
@@ -52,8 +51,7 @@ struct ChatModeView: View {
     CustomInstructionSection(
       text: Binding(
         get: { customInstructions.agentMode ?? "" },
-        set: { customInstructions.agentMode = $0.isEmpty ? nil : $0 }
-      ),
+        set: { customInstructions.agentMode = $0.isEmpty ? nil : $0 }),
       iconName: ChatMode.agent.systemImageName,
       title: "Agent Mode",
       subtitle: "Provide extra instructions for Agent Mode.")

@@ -214,7 +214,7 @@ private struct SettingsLandingView: View {
             section: .chatModes,
             description: "Configure chat modes (Ask, Agent) and provide specific instructions",
             action: onNavigate)
-          
+
           SettingsCard(
             section: .about,
             description: nil,

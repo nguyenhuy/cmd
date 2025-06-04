@@ -194,7 +194,7 @@ final class DefaultLLMService: LLMService {
       return .init(role: .tool, content: [.toolResultMessage(toolResult)])
     }
   }
-  
+
   /// Retrieves the appropriate custom instructions based on the chat mode.
   private func customInstructions(
     for chatMode: ChatMode,
@@ -203,9 +203,9 @@ final class DefaultLLMService: LLMService {
   {
     switch chatMode {
     case .ask:
-      return settings.customInstructions.askMode
+      settings.customInstructions.askMode
     case .agent:
-      return settings.customInstructions.agentMode
+      settings.customInstructions.agentMode
     }
   }
 }
