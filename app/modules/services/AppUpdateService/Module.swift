@@ -6,6 +6,7 @@ Target.module(
     "AppUpdateServiceInterface",
     "DependencyFoundation",
     "LoggingServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
   ],
   testDependencies: [])

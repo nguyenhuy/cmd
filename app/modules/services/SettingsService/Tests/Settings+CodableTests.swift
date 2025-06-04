@@ -17,12 +17,14 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
+      automaticallyCheckForUpdates: false,
       preferedProviders: [.claudeHaiku_3_5: .anthropic, .gpt_4o: .openAI],
       llmProviderSettings: [:])
 
     let json = """
       {
         "allowAnonymousAnalytics" : false,
+        "automaticallyCheckForUpdates" : false,
         "llmProviderSettings" : {},
         "inactiveModels" : [],
         "pointReleaseXcodeExtensionToDebugApp" : true,
@@ -46,12 +48,14 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
+      automaticallyCheckForUpdates: true,
       preferedProviders: [:],
       llmProviderSettings: [.anthropic: providerSettings])
 
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : true,
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "test-api-key",
@@ -83,6 +87,7 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true,
+      automaticallyCheckForUpdates: true,
       preferedProviders: [.claudeHaiku_3_5: .anthropic],
       llmProviderSettings: [
         .anthropic: anthropicSettings,
@@ -92,6 +97,7 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : true,
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "anthropic-key",
@@ -124,6 +130,7 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
+      automaticallyCheckForUpdates: true,
       preferedProviders: [:],
       llmProviderSettings: [:])
 
@@ -144,6 +151,7 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true, // default
+      automaticallyCheckForUpdates: true, // default
       preferedProviders: [.gpt_4o: .openAI],
       llmProviderSettings: [:], // default,
       inactiveModels: [], // default
@@ -215,12 +223,14 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
+      automaticallyCheckForUpdates: true,
       preferedProviders: [:],
       llmProviderSettings: [:])
 
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : true,
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
@@ -321,5 +331,46 @@ struct SettingsCodableTests {
       ])
 
     try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Decode automaticallyCheckForUpdates setting with custom value")
+  func testAutomaticallyCheckForUpdatesDecoding() throws {
+    let json = """
+      {
+        "automaticallyCheckForUpdates" : false
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false, // default
+      allowAnonymousAnalytics: true, // default
+      automaticallyCheckForUpdates: false,
+      preferedProviders: [:], // default
+      llmProviderSettings: [:]) // default
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Encode automaticallyCheckForUpdates setting")
+  func testAutomaticallyCheckForUpdatesEncoding() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      automaticallyCheckForUpdates: false,
+      preferedProviders: [:],
+      llmProviderSettings: [:])
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : false,
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : false,
+        "preferedProviders" : {}
+      }
+      """
+
+    try testEncoding(settings, json)
   }
 }

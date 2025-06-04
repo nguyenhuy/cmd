@@ -12,6 +12,7 @@ extension Settings: Codable {
       pointReleaseXcodeExtensionToDebugApp: container
         .decodeIfPresent(Bool.self, forKey: "pointReleaseXcodeExtensionToDebugApp") ?? false,
       allowAnonymousAnalytics: container.decodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? true,
+      automaticallyCheckForUpdates: container.decodeIfPresent(Bool.self, forKey: "automaticallyCheckForUpdates") ?? true,
       preferedProviders: container.decodeIfPresent([String: String].self, forKey: "preferedProviders")?
         .reduce(into: [LLMModel: LLMProvider]()) { acc, el in
           guard let model = LLMModel(rawValue: el.key), let provider = LLMProvider(rawValue: el.value) else { return }
@@ -32,6 +33,7 @@ extension Settings: Codable {
     var container = encoder.container(keyedBy: String.self)
     try container.encode(pointReleaseXcodeExtensionToDebugApp, forKey: "pointReleaseXcodeExtensionToDebugApp")
     try container.encode(allowAnonymousAnalytics, forKey: "allowAnonymousAnalytics")
+    try container.encode(automaticallyCheckForUpdates, forKey: "automaticallyCheckForUpdates")
     try container.encode(preferedProviders.reduce(into: [String: String]()) { acc, el in
       acc[el.key.rawValue] = el.value.rawValue
     }, forKey: "preferedProviders")

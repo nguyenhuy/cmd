@@ -7,6 +7,7 @@ import SwiftUI
 
 struct AboutSettingsView: View {
   @Binding var allowAnonymousAnalytics: Bool
+  @Binding var automaticallyCheckForUpdates: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 24) {
@@ -44,6 +45,20 @@ struct AboutSettingsView: View {
             }
             Spacer()
             Toggle("", isOn: $allowAnonymousAnalytics)
+              .toggleStyle(.switch)
+          }
+
+          Divider()
+
+          HStack {
+            VStack(alignment: .leading, spacing: 4) {
+              Text("Automatically check for updates")
+              Text("Automatically download and install updates in the background when available.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            }
+            Spacer()
+            Toggle("", isOn: $automaticallyCheckForUpdates)
               .toggleStyle(.switch)
           }
         }

@@ -398,11 +398,6 @@ targets.append(contentsOf: Target.module(
   path: "./features/Onboarding"))
 
 targets.append(contentsOf: Target.module(
-  name: "AppUpdater",
-  dependencies: [],
-  path: "./features/AppUpdater"))
-
-targets.append(contentsOf: Target.module(
   name: "AppExtension",
   dependencies: [
     "AccessibilityFoundation",
@@ -932,6 +927,7 @@ targets.append(contentsOf: Target.module(
     "AppUpdateServiceInterface",
     "DependencyFoundation",
     "LoggingServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
   ],
   testDependencies: [],

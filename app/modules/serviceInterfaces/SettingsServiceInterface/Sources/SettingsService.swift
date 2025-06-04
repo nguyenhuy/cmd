@@ -14,12 +14,14 @@ public struct Settings: Sendable, Equatable {
   public init(
     pointReleaseXcodeExtensionToDebugApp: Bool,
     allowAnonymousAnalytics: Bool = false,
+    automaticallyCheckForUpdates: Bool = true,
     preferedProviders: [LLMModel: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
+    self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.inactiveModels = inactiveModels
@@ -45,6 +47,7 @@ public struct Settings: Sendable, Equatable {
 
   public var allowAnonymousAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
+  public var automaticallyCheckForUpdates: Bool
   // LLM settings
   public var preferedProviders: [LLMModel: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]

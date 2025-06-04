@@ -59,6 +59,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var automaticallyCheckForUpdates: Bool {
+    get {
+      settings.automaticallyCheckForUpdates
+    }
+    set {
+      settings.automaticallyCheckForUpdates = newValue
+      settingsService.update(setting: \.automaticallyCheckForUpdates, to: newValue)
+    }
+  }
+
   // MARK: - Internal settings
   var repeatLastLLMInteraction: Bool {
     didSet {

@@ -72,6 +72,43 @@ struct SettingsViewModelTests {
     #expect(mockSettingsService.value(for: \.allowAnonymousAnalytics) == true)
   }
 
+  @Test("automaticallyCheckForUpdates getter returns correct value")
+  func test_automaticallyCheckForUpdates_getter() {
+    let initialSettings = SettingsServiceInterface.Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      automaticallyCheckForUpdates: false)
+    let mockSettingsService = MockSettingsService(initialSettings)
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      SettingsViewModel()
+    }
+
+    #expect(viewModel.automaticallyCheckForUpdates == false)
+  }
+
+  @Test("automaticallyCheckForUpdates setter updates settings service")
+  func test_automaticallyCheckForUpdates_setter() {
+    let mockSettingsService = MockSettingsService()
+    let mockUserDefaults = MockUserDefaults()
+
+    let viewModel = withDependencies {
+      $0.settingsService = mockSettingsService
+      $0.userDefaults = mockUserDefaults
+    } operation: {
+      SettingsViewModel()
+    }
+
+    viewModel.automaticallyCheckForUpdates = false
+
+    #expect(viewModel.automaticallyCheckForUpdates == false)
+    #expect(mockSettingsService.value(for: \.automaticallyCheckForUpdates) == false)
+  }
+
   @Test("repeatLastLLMInteraction setter updates user defaults")
   func test_repeatLastLLMInteraction_setter() {
     let mockSettingsService = MockSettingsService()

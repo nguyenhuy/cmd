@@ -6,6 +6,7 @@ import AppUpdateServiceInterface
 @preconcurrency import Combine
 import DependencyFoundation
 import LoggingServiceInterface
+import SettingsServiceInterface
 @preconcurrency import Sparkle
 import ThreadSafe
 
@@ -15,7 +16,10 @@ let updateLogger = defaultLogger.subLogger(subsystem: "appUpdate")
 
 @ThreadSafe
 final class DefaultAppUpdateService: AppUpdateService {
-  init() { }
+  init(settingsService: SettingsService) {
+    self.settingsService = settingsService
+    monitorSettingChanges()
+  }
 
   var hasUpdateAvailable: ConcurrencyFoundation.ReadonlyCurrentValueSubject<AppUpdateResult, Never> {
     _hasUpdateAvailable.readonly()
@@ -26,8 +30,13 @@ final class DefaultAppUpdateService: AppUpdateService {
   }
 
   func checkForUpdatesContinously() {
+    #if DEBUG
+    // Only check for updates in release.
+    return
+    #else
     canCheckForUpdates = true
     startCheckingForUpdates()
+    #endif
   }
 
   func relaunch() {
@@ -43,11 +52,24 @@ final class DefaultAppUpdateService: AppUpdateService {
     exit(0)
   }
 
+  private var cancellables: Set<AnyCancellable> = []
+  private let settingsService: SettingsService
+
   private let delayBetweenChecks = Duration.seconds(60)
 
   private let _hasUpdateAvailable = CurrentValueSubject<AppUpdateResult, Never>(.noUpdateAvailable)
   private var canCheckForUpdates = false
   private var updateTask: Task<Void, Error>?
+
+  private func monitorSettingChanges() {
+    settingsService.liveValue(for: \.automaticallyCheckForUpdates).sink { @Sendable [weak self] automaticallyCheckForUpdates in
+      if automaticallyCheckForUpdates {
+        self?.checkForUpdatesContinously()
+      } else {
+        self?.stopCheckingForUpdates()
+      }
+    }.store(in: &cancellables)
+  }
 
   private func startCheckingForUpdates() {
     updateTask?.cancel()
@@ -86,7 +108,7 @@ final class UpdateChecker: NSObject, Sendable {
       guard state.continuation == nil else {
         return false
       }
-      self.continuation = continuation
+      state.continuation = continuation
       return true
     }
     if !canContinue {
@@ -318,10 +340,10 @@ final class BackgroundUserDriver: NSObject, SPUUserDriver, Sendable {
 
 // MARK: - Dependency Injection
 
-extension BaseProviding {
+extension BaseProviding where Self: SettingsServiceProviding {
   public var appUpdateService: AppUpdateService {
     shared {
-      DefaultAppUpdateService()
+      DefaultAppUpdateService(settingsService: settingsService)
     }
   }
 }

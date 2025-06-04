@@ -100,7 +100,9 @@ public struct SettingsView: View {
           showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease)
 
       case .about:
-        AboutSettingsView(allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics)
+        AboutSettingsView(
+          allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics,
+          automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates)
 
       case .landing:
         EmptyView()
