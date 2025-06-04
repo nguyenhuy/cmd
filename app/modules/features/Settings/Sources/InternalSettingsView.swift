@@ -9,6 +9,7 @@ struct InternalSettingsView: View {
   @Binding var repeatLastLLMInteraction: Bool
   @Binding var showOnboardingScreenAgain: Bool
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
+  @Binding var showCheckForUpdateButton: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
@@ -46,6 +47,15 @@ struct InternalSettingsView: View {
           }
           Spacer()
           Toggle("", isOn: $pointReleaseXcodeExtensionToDebugApp)
+            .toggleStyle(.switch)
+        }
+
+        HStack {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Show update button (wip)")
+          }
+          Spacer()
+          Toggle("", isOn: $showCheckForUpdateButton)
             .toggleStyle(.switch)
         }
       }

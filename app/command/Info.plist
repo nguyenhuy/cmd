@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>SUFeedURL</key>
-	<string></string>
+	<string>https://raw.githubusercontent.com/gsabran/test/refs/heads/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>oIUy9brsbVznI5y2tOrX59KVITPCxYltusDhv4z9byE=</string>
 	<key>APP_BUNDLE_IDENTIFIER</key>

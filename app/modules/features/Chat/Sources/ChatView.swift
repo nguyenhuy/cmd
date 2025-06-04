@@ -5,6 +5,7 @@ import Combine
 import ConcurrencyFoundation
 import Dependencies
 import DLS
+import FoundationInterfaces
 import SwiftUI
 import XcodeObserverServiceInterface
 
@@ -42,6 +43,9 @@ public struct ChatView: View {
       VStack(spacing: 0) {
         quickActionsRow
         secondaryActionRow
+        if showCheckForUpdatesButton {
+          AppUpdaterView { }
+        }
         if let selectedTab = viewModel.selectedTab {
           ChatMessageList(viewModel: selectedTab)
             .id("ChatMessageList-\(selectedTab.id)")
@@ -79,12 +83,17 @@ public struct ChatView: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
+  @Dependency(\.userDefaults) private var userDefaults
   private let SettingsView: (@escaping @MainActor () -> Void) -> AnyView
   private let AppUpdaterView: (@escaping @MainActor () -> Void) -> AnyView
 
   @Bindable private var viewModel: ChatViewModel
 
   private let iconSizes: CGFloat = 22
+
+  private var showCheckForUpdatesButton: Bool {
+    userDefaults.bool(forKey: "showCheckForUpdateButton")
+  }
 
   @ViewBuilder
   private var quickActionsRow: some View {

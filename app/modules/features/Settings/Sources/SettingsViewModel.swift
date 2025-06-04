@@ -25,6 +25,7 @@ public final class SettingsViewModel {
 
     providerSettings = settings.llmProviderSettings
     repeatLastLLMInteraction = userDefaults.bool(forKey: "llmService.isRepeating")
+    showCheckForUpdateButton = userDefaults.bool(forKey: "showCheckForUpdateButton")
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
 
     settingsService.liveValues()
@@ -79,6 +80,13 @@ public final class SettingsViewModel {
     }
   }
 
+  var showCheckForUpdateButton: Bool {
+    didSet {
+      didSetShowCheckForUpdateButton()
+//            userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
+    }
+  }
+
   /// For each available model, the associated provider.
   var providerForModels: [LLMModel: LLMProvider] {
     get {
@@ -127,6 +135,11 @@ public final class SettingsViewModel {
 
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
+
+  private func didSetShowCheckForUpdateButton() {
+    userDefaults.set(showCheckForUpdateButton, forKey: "showCheckForUpdateButton")
+  }
+
 }
 
 public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]

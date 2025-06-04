@@ -67,8 +67,9 @@ platform :mac do
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
   end
 
-  desc "Build and archive the app for Mac App Store distribution"
-  lane :distribute_release do
+  desc "Build, archive and sign the app for distribution"
+  lane :create_and_sign_release do |options|
+    remove_zip = options.fetch(:remove_zip, true)
     setup_ci if ENV['CI']
 
     personal_github_access_token =  load_secret("FASTLANE_MACH_REPO_GITHUB_ACCESS_TOKEN")
@@ -101,7 +102,7 @@ platform :mac do
     sh("../tools/release/configure_xcodeproj_for_release_build.sh")
 
     build_path = File.absolute_path("../build")
-    release_path = "#{build_path}/release/"
+    release_path = "#{build_path}/release"
     app_name = "command"
     app_path = "#{release_path}/#{app_name}.app"
     build_mac_app(
@@ -129,6 +130,8 @@ platform :mac do
       xcodebuild_formatter: "xcbeautify",
     )
 
+    sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
+
     # Notarize the app
     app_store_connect_api_key(
       key_id: load_secret("NOTARY_KEY_ID"),
@@ -144,16 +147,18 @@ platform :mac do
     )
 
     # Create metadata for the new release
-    zip_path = zip(path: app_path)
+    zip_path = zip(path: app_path, symlinks: true)
     sparkle_path = "#{build_path}/derived_data/SourcePackages/artifacts/sparkle/Sparkle"
 
     sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
 
     sparkle_output = sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
     app_config_path = File.absolute_path("../command.shared.xcconfig")
-    version = sh("cat #{app_config_path} | grep APP_VERSION").split("=").last.strip
+    version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
 
     puts "version: #{version}"
+
+    puts "Notarization completed successfully. app_path: #{app_path}"
 
     appcast_template_path = File.absolute_path("./appcast.template.xml")
     appcast_path = File.absolute_path("./appcast.xml")
@@ -163,25 +168,12 @@ platform :mac do
     appcast_content.gsub!("REPLACE_SPARKLE_SIGN_UPDATE", sparkle_output)
     File.write(appcast_path, appcast_content)
 
-    # # Upload the new release to github
-    # require 'base64'
-    # base64_content = Base64.encode64(appcast_content)
+    sh("rm -rf #{build_path}") if remove_zip
+  end
 
-    # get_file = github_api(
-    #   api_token: load_secret("GITHUB_TOKEN"),
-    #   http_method: "GET",
-    #   server_url: "https://api.github.com",
-    #   path: "/repos/gsabran/cmd/app/appcast.xml",
-    # )
-    # sha = JSON.parse(get_file[:body])["sha"]
-
-    # github_api(
-    #   api_token: load_secret("GITHUB_TOKEN"),
-    #   http_method: "PUT",
-    #   server_url: "https://api.github.com",
-    #   path: "/repos/gsabran/cmd/app/appcast.xml",
-    #   body: { message: "Update #{version}", content: base64_content, sha: sha }
-    # )
+  desc "Build, archive, sign and publish the app for distribution"
+  lane :distribute_release do
+    create_and_sign_release(remove_zip: false)
 
     set_github_release(
       api_token: load_secret("GITHUB_TOKEN"),
@@ -195,8 +187,6 @@ platform :mac do
     )
 
     sh("rm -rf #{build_path}")
-
-    sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
 
     puts "👉 Don't forget to push the changes to appcast.xml"
   end
