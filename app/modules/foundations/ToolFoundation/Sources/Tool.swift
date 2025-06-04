@@ -75,6 +75,8 @@ public protocol ToolUse: Sendable {
   /// Start the execution of the tool use. The execution should not start before this method is called.
   /// Note: the tool can expect this to be called after all the input has been received, and to not receive later calls to `receive(inputUpdate:)`.
   func startExecuting()
+  /// Reject the tool use with an optional reason.
+  func reject(reason: String?)
 }
 
 extension ToolUse {
@@ -89,9 +91,15 @@ extension ToolUse {
       if case .completed(let result) = status.value {
         return try result.get()
       }
+      if case .rejected(let reason) = status.value {
+        throw AppError(message: reason ?? "Tool use was rejected")
+      }
       for await value in status {
         if case .completed(let result) = value {
           return try result.get()
+        }
+        if case .rejected(let reason) = value {
+          throw AppError(message: reason ?? "Tool use was rejected")
         }
       }
       throw AppError(message: "The tool use completed with no result.")
@@ -152,6 +160,8 @@ public struct ToolExecutionContext: Sendable {
 // MARK: - ToolUseExecutionStatus
 
 public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
+  case pendingApproval
+  case rejected(reason: String?)
   case notStarted
   case running
   case completed(Result<Output, Error>)
