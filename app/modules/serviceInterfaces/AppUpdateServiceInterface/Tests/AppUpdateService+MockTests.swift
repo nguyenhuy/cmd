@@ -84,22 +84,22 @@ struct MockAppUpdateServiceTests {
   }
 
   @Test
-  func test_skipUpdateCallsCallback() async throws {
+  func test_ignoreUpdateCallsCallback() async throws {
     let sut = MockAppUpdateService()
-    let exp = expectation(description: "Skip update called")
+    let exp = expectation(description: "Ignore update called")
     let updateInfo = AppUpdateInfo(version: "1.5.0", fileURL: nil, releaseNotesURL: nil)
 
-    sut.onSkipUpdate = { version in
+    sut.onIgnoreUpdate = { version in
       #expect(version?.version == "1.5.0")
       exp.fulfill()
     }
 
-    sut.skip(update: updateInfo)
+    sut.ignore(update: updateInfo)
     try await fulfillment(of: exp)
   }
 
   @Test
-  func test_skipUpdateSetsNoUpdateAvailable() async throws {
+  func test_ignoreUpdateSetsNoUpdateAvailable() async throws {
     let updateInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
     let sut = MockAppUpdateService(hasUpdateAvailable: .updateAvailable(info: updateInfo))
 
@@ -117,8 +117,8 @@ struct MockAppUpdateServiceTests {
       }
     }
 
-    let skipInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
-    sut.skip(update: skipInfo)
+    let ignoreInfo = AppUpdateInfo(version: "1.0.0", fileURL: nil, releaseNotesURL: nil)
+    sut.ignore(update: ignoreInfo)
     try await fulfillment(of: exp)
 
     #expect(sut.hasUpdateAvailable.currentValue == .noUpdateAvailable)
@@ -126,16 +126,16 @@ struct MockAppUpdateServiceTests {
   }
 
   @Test
-  func test_skipUpdateWithNilVersion() async throws {
+  func test_ignoreUpdateWithNilVersion() async throws {
     let sut = MockAppUpdateService()
-    let exp = expectation(description: "Skip update called with nil")
+    let exp = expectation(description: "Ignore update called with nil")
 
-    sut.onSkipUpdate = { version in
+    sut.onIgnoreUpdate = { version in
       #expect(version == nil)
       exp.fulfill()
     }
 
-    sut.skip(update: nil)
+    sut.ignore(update: nil)
     try await fulfillment(of: exp)
   }
 }

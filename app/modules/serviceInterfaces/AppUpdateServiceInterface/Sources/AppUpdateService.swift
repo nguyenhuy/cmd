@@ -36,10 +36,10 @@ public protocol AppUpdateService: Sendable {
   func checkForUpdatesContinously()
   /// Whether there an app update has been installed.
   var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult, Never> { get }
-  /// Skip the current update
-  func skip(update: AppUpdateInfo?)
-  /// Return whether a given update is skipped.
-  func isUpdateSkipped(_ update: AppUpdateInfo?) -> Bool
+  /// Ignore the current update and don't show info about it again (the update might still be installed at the next launch)
+  func ignore(update: AppUpdateInfo?)
+  /// Return whether a given update is ignored.
+  func isUpdateIgnored(_ update: AppUpdateInfo?) -> Bool
 }
 
 // MARK: - AppUpdateServiceProviding

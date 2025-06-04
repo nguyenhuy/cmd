@@ -13,6 +13,6 @@ private let appUpdateInfo = AppUpdateInfo(
   AppUpdateBanner(
     appUpdateInfo: appUpdateInfo,
     onRelaunchTapped: { },
-    onSkipTapped: { })
+    onIgnoreTapped: { })
 }
 #endif

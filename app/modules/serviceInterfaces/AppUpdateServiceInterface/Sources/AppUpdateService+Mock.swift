@@ -17,8 +17,8 @@ public final class MockAppUpdateService: AppUpdateService {
   public var onRelaunch: (@Sendable () -> Void)?
   public var onStopCheckingForUpdates: (@Sendable () -> Void)?
   public var onCheckForUpdatesContinuously: (@Sendable () -> Void)?
-  public var onSkipUpdate: (@Sendable (AppUpdateInfo?) -> Void)?
-  public var onIsUpdateSkipped: (@Sendable (AppUpdateInfo?) -> Bool)?
+  public var onIgnoreUpdate: (@Sendable (AppUpdateInfo?) -> Void)?
+  public var onIsUpdateIgnored: (@Sendable (AppUpdateInfo?) -> Bool)?
 
   public var hasUpdateAvailable: ReadonlyCurrentValueSubject<AppUpdateResult, Never> {
     _hasUpdateAvailable.readonly()
@@ -36,12 +36,12 @@ public final class MockAppUpdateService: AppUpdateService {
     onCheckForUpdatesContinuously?()
   }
 
-  public func skip(update: AppUpdateInfo?) {
-    onSkipUpdate?(update)
+  public func ignore(update: AppUpdateInfo?) {
+    onIgnoreUpdate?(update)
   }
 
-  public func isUpdateSkipped(_ update: AppUpdateInfo?) -> Bool {
-    onIsUpdateSkipped?(update) ?? false
+  public func isUpdateIgnored(_ update: AppUpdateInfo?) -> Bool {
+    onIsUpdateIgnored?(update) ?? false
   }
 
   public func setUpdateAvailable(_ result: AppUpdateResult) {

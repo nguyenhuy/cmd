@@ -9,16 +9,16 @@ struct AppUpdateBanner: View {
   init(
     appUpdateInfo: AppUpdateInfo?,
     onRelaunchTapped: @escaping () -> Void,
-    onSkipTapped: @escaping () -> Void)
+    onIgnoreTapped: @escaping () -> Void)
   {
     self.appUpdateInfo = appUpdateInfo
     self.onRelaunchTapped = onRelaunchTapped
-    self.onSkipTapped = onSkipTapped
+    self.onIgnoreTapped = onIgnoreTapped
     currentAppVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
   }
 
   var body: some View {
-    if hasSkippedUpdate {
+    if hasIgnoredUpdate {
       EmptyView()
     } else {
       VStack(alignment: .leading) {
@@ -28,8 +28,8 @@ struct AppUpdateBanner: View {
             .padding(.bottom, 2)
           Spacer()
           IconButton(action: {
-            onSkipTapped()
-            hasSkippedUpdate = true
+            onIgnoreTapped()
+            hasIgnoredUpdate = true
           }, systemName: "xmark")
             .frame(width: 12, height: 12)
         }
@@ -61,12 +61,12 @@ struct AppUpdateBanner: View {
     }
   }
 
-  @State private var hasSkippedUpdate = false
+  @State private var hasIgnoredUpdate = false
   @Environment(\.colorScheme) private var colorScheme
 
   private let appUpdateInfo: AppUpdateInfo?
   private let onRelaunchTapped: () -> Void
-  private let onSkipTapped: () -> Void
+  private let onIgnoreTapped: () -> Void
   private let currentAppVersion: String?
 
 }

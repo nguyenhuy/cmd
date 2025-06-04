@@ -35,12 +35,12 @@ struct ChatMessageList: View {
     ScrollView {
       if
         case .updateAvailable(let appUpdateInfo) = appUpdateService.hasUpdateAvailable.currentValue,
-        !appUpdateService.isUpdateSkipped(appUpdateInfo)
+        !appUpdateService.isUpdateIgnored(appUpdateInfo)
       {
         AppUpdateBanner(
           appUpdateInfo: appUpdateInfo,
           onRelaunchTapped: { appUpdateService.relaunch() },
-          onSkipTapped: { appUpdateService.skip(update: appUpdateInfo) })
+          onIgnoreTapped: { appUpdateService.ignore(update: appUpdateInfo) })
       }
       LazyVStack(spacing: 0) {
         ForEach(events) { event in

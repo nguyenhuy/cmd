@@ -27,8 +27,8 @@ watch("./src/server/schemas", { recursive: true }, function (evt, name) {
 	}
 })
 
-watch("../app/modules", { recursive: true }, function (evt, name) {
-	const fileName = name.split("/").pop()
+watch("../app/modules", { recursive: true }, function (evt, filePath) {
+	const fileName = filePath.split("/").pop()
 	if (
 		fileName === "Package.swift" ||
 		fileName === "Module.swift" ||
@@ -37,7 +37,16 @@ watch("../app/modules", { recursive: true }, function (evt, name) {
 	) {
 		return
 	}
-	console.log("changed.", name)
+	// Ignore gitignored files.
+
+	try {
+		execSync(`git check-ignore ${filePath}`)
+		return
+	} catch {
+		// The command fails when the file is not ignored.
+	}
+	console.log("changed.", filePath)
+
 	const appPath = import.meta.resolve("../../app").replace("file://", "").replace("index.json", "")
 
 	// Look for Package.swift files in the modules directory that are not checked in. Their presence indicates that they need to be updated.

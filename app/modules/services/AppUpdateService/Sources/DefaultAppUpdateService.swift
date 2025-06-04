@@ -57,24 +57,24 @@ final class DefaultAppUpdateService: AppUpdateService {
     exit(0)
   }
 
-  func isUpdateSkipped(_ update: AppUpdateInfo?) -> Bool {
+  func isUpdateIgnored(_ update: AppUpdateInfo?) -> Bool {
     guard let update else { return false }
-    return skippedUpdateVersions.contains(update.version)
+    return ignoredUpdateVersions.contains(update.version)
   }
 
-  func skip(update: AppUpdateInfo?) {
+  func ignore(update: AppUpdateInfo?) {
     guard let update else {
-      updateLogger.error("No version provided to skip update.")
+      updateLogger.error("No version provided to ignore update.")
       return
     }
 
-    let skippedVersions = skippedUpdateVersions + [update.version]
-    let newSkippedVersions = (try? JSONEncoder().encode(skippedVersions)).map { String(data: $0, encoding: .utf8) } ?? "[]"
+    let ignoredVersions = ignoredUpdateVersions + [update.version]
+    let newIgnoredVersions = (try? JSONEncoder().encode(ignoredVersions)).map { String(data: $0, encoding: .utf8) } ?? "[]"
 
-    userDefaults.set(newSkippedVersions ?? "[]", forKey: Self.skippedVersionKey)
+    userDefaults.set(newIgnoredVersions ?? "[]", forKey: Self.ignoredVersionKey)
   }
 
-  fileprivate static let skippedVersionKey = "AppUpdateService.skippedVersion"
+  fileprivate static let ignoredVersionKey = "AppUpdateService.ignoredVersion"
 
   private let userDefaults: UserDefaultsI
 
@@ -87,9 +87,9 @@ final class DefaultAppUpdateService: AppUpdateService {
   private var canCheckForUpdates = false
   private var updateTask: Task<Void, Error>?
 
-  private var skippedUpdateVersions: [String] {
-    let skippedVersions = userDefaults.string(forKey: Self.skippedVersionKey) ?? "[]"
-    return (try? JSONDecoder().decode([String].self, from: Data(skippedVersions.utf8))) ?? []
+  private var ignoredUpdateVersions: [String] {
+    let ignoredVersions = userDefaults.string(forKey: Self.ignoredVersionKey) ?? "[]"
+    return (try? JSONDecoder().decode([String].self, from: Data(ignoredVersions.utf8))) ?? []
   }
 
   private func monitorSettingChanges() {
