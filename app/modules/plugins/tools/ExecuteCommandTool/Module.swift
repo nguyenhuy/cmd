@@ -1,18 +1,18 @@
 Target.module(
   name: "ExecuteCommandTool",
   dependencies: [
-"AppFoundation",
-"CodePreview",
-"ConcurrencyFoundation",
-"DLS",
-"JSONFoundation",
-"ServerServiceInterface",
-"ShellServiceInterface",
-"ToolFoundation",
-],
+    "AppFoundation",
+    "CodePreview",
+    "ConcurrencyFoundation",
+    "DLS",
+    "JSONFoundation",
+    "ServerServiceInterface",
+    "ShellServiceInterface",
+    "ToolFoundation",
+  ],
   testDependencies: [
-"LLMServiceInterface",
-"ServerServiceInterface",
-"ShellServiceInterface",
-"SwiftTesting",
-])
+    "LLMServiceInterface",
+    "ServerServiceInterface",
+    "ShellServiceInterface",
+    "SwiftTesting",
+  ])

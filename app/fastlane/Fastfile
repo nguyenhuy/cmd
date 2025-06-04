@@ -106,30 +106,30 @@ platform :mac do
     release_path = "#{build_path}/release"
     app_name = "command"
     app_path = "#{release_path}/#{app_name}.app"
-    # build_mac_app(
-    #   xcargs: "-allowProvisioningUpdates",
-    #   export_method: "developer-id",
-    #   export_options: {
-    #     method: "developer-id",
-    #     signingStyle: "manual",
-    #     signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
-    #     teamID: "GP78T2GNXD",
-    #     # provisioningProfiles: {
-    #     #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
-    #     # }
-    #   },
-    #   skip_profile_detection: "true",
+    build_mac_app(
+      xcargs: "-allowProvisioningUpdates",
+      export_method: "developer-id",
+      export_options: {
+        method: "developer-id",
+        signingStyle: "manual",
+        signingCertificate: "Developer ID Application: Papero Inc (GP78T2GNXD)",
+        teamID: "GP78T2GNXD",
+        # provisioningProfiles: {
+        #   "dev.getcmd.command" => "match DeveloperID dev.getcmd.command macos"  # Add this line
+        # }
+      },
+      skip_profile_detection: "true",
       
-    #   project: "./command.xcodeproj",
-    #   configuration: "Release",
-    #   output_directory: release_path,
-    #   derived_data_path: "#{build_path}/derived_data",
-    #   output_name: app_name,
-    #   scheme: "command",
-    #   silent: true,
-    #   skip_archive: false,
-    #   xcodebuild_formatter: "xcbeautify",
-    # )
+      project: "./command.xcodeproj",
+      configuration: "Release",
+      output_directory: release_path,
+      derived_data_path: "#{build_path}/derived_data",
+      output_name: app_name,
+      scheme: "command",
+      silent: true,
+      skip_archive: false,
+      xcodebuild_formatter: "xcbeautify",
+    )
 
     sh("../tools/release/cleanup_xcodeproj_after_release_build.sh")
 
@@ -212,7 +212,7 @@ platform :mac do
       upload_assets: app_zip_path
     )
 
-    # sh("rm -rf #{build_path}")
+    sh("rm -rf #{build_path}")
 
     puts "👉 Don't forget to push the changes to appcast.xml"
   end

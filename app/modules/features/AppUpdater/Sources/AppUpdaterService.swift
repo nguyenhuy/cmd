@@ -182,7 +182,7 @@ final class SilentUserDriver: NSObject, SPUUserDriver {
     defaultLogger.log("[AppUpdater] Update in focus")
   }
 
-  func showUserInitiatedUpdateCheck(cancellation completion: @escaping () -> Void) {
+  func showUserInitiatedUpdateCheck(cancellation _: @escaping () -> Void) {
     defaultLogger.log("[AppUpdater] User initiated update check")
 //    completion()
   }
