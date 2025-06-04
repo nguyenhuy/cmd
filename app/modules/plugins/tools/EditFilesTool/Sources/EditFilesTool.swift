@@ -37,7 +37,7 @@ public final class EditFilesTool: Tool {
       let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
       _input = Atomic(input)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -114,6 +114,8 @@ public final class EditFilesTool: Tool {
     }
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
       guard isInputComplete.value else {
         updateStatus.yield(.completed(.failure(AppError("Started executing before the input was entirely received"))))
@@ -153,6 +155,10 @@ public final class EditFilesTool: Tool {
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
     private let context: ToolExecutionContext
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
 
   }
 

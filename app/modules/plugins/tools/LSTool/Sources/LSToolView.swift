@@ -23,14 +23,18 @@ struct ToolUseView: View {
 
   var body: some View {
     switch toolUse.status {
+    case .notStarted:
+      VStack { }
+    case .pendingApproval:
+      pendingApprovalView
+    case .rejected:
+      rejectedView
     case .running:
       runningView
     case .completed(.success(let files)):
       successView(files: files)
     case .completed(.failure(let error)):
       errorView(error: error)
-    default:
-      VStack { }
     }
   }
 
@@ -38,6 +42,28 @@ struct ToolUseView: View {
   @State private var isHovered = false
 
   @Environment(\.colorScheme) private var colorScheme
+
+  @ViewBuilder
+  private var pendingApprovalView: some View {
+    HStack {
+      Icon(systemName: "folder")
+        .frame(width: 14, height: 14)
+        .foregroundColor(foregroundColor)
+      Text("Waiting for approval: List \(toolUse.directoryPath.lastPathComponent)")
+        .foregroundColor(foregroundColor)
+    }
+  }
+
+  @ViewBuilder
+  private var rejectedView: some View {
+    HStack {
+      Icon(systemName: "folder")
+        .frame(width: 14, height: 14)
+        .foregroundColor(foregroundColor)
+      Text("Rejected: List \(toolUse.directoryPath.lastPathComponent)")
+        .foregroundColor(foregroundColor)
+    }
+  }
 
   @ViewBuilder
   private var runningView: some View {

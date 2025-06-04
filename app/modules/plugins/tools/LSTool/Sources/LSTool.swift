@@ -27,7 +27,7 @@ public final class LSTool: NonStreamableTool {
         recursive: input.recursive)
       directoryPath = URL(fileURLWithPath: self.input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -60,6 +60,8 @@ public final class LSTool: NonStreamableTool {
     public let status: Status
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
 
       guard let projectRoot = context.projectRoot else {
@@ -88,6 +90,10 @@ public final class LSTool: NonStreamableTool {
     private let context: ToolExecutionContext
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
 
   }
 

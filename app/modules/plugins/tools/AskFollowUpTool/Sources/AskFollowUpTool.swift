@@ -22,7 +22,7 @@ public final class AskFollowUpTool: NonStreamableTool {
       self.toolUseId = toolUseId
       self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -45,11 +45,17 @@ public final class AskFollowUpTool: NonStreamableTool {
     public let status: Status
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
     }
 
     func select(followUp: String) {
       updateStatus.yield(.completed(.success(.init(response: followUp))))
+    }
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
     }
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation

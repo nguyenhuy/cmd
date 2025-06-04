@@ -26,28 +26,59 @@ struct ToolUseView: View {
   @Bindable var toolUse: ToolUseViewModel
 
   var body: some View {
-    ScrollView {
-      VStack(spacing: 12) {
-        ForEach(toolUse.changes, id: \.path) { fileChange in
-          FileChangeView(
-            change: fileChange.change,
-            editState: fileChange.state,
-            handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
-            handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
-            handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
+    switch toolUse.status {
+    case .notStarted:
+      VStack { }
+    case .pendingApproval:
+      pendingApprovalView
+    case .rejected:
+      rejectedView
+    case .running, .completed:
+      ScrollView {
+        VStack(spacing: 12) {
+          ForEach(toolUse.changes, id: \.path) { fileChange in
+            FileChangeView(
+              change: fileChange.change,
+              editState: fileChange.state,
+              handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
+              handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
+              handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
+          }
+          #if DEBUG
+          // TODO: remove this
+          if toolUse.changes.isEmpty {
+            Text("no change found???")
+          }
+          #endif
         }
-        #if DEBUG
-        // TODO: remove this
-        if toolUse.changes.isEmpty {
-          Text("no change found???")
-        }
-        #endif
+        .padding(.vertical)
       }
-      .padding(.vertical)
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
+
+  @ViewBuilder
+  private var pendingApprovalView: some View {
+    HStack {
+      Icon(systemName: "pencil")
+        .frame(width: 14, height: 14)
+        .foregroundColor(colorScheme.toolUseForeground)
+      Text("Waiting for approval: Edit files")
+        .foregroundColor(colorScheme.toolUseForeground)
+    }
+  }
+
+  @ViewBuilder
+  private var rejectedView: some View {
+    HStack {
+      Icon(systemName: "pencil")
+        .frame(width: 14, height: 14)
+        .foregroundColor(colorScheme.toolUseForeground)
+      Text("Rejected: Edit files")
+        .foregroundColor(colorScheme.toolUseForeground)
+    }
+  }
 }
 
 // MARK: - FileDiffViewModel Extensions

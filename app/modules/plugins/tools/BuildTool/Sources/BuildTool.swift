@@ -28,7 +28,7 @@ public final class BuildTool: NonStreamableTool {
       self.context = context
       self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -56,6 +56,8 @@ public final class BuildTool: NonStreamableTool {
     public let status: Status
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
 
       guard let project = context.project else {
@@ -80,6 +82,10 @@ public final class BuildTool: NonStreamableTool {
 
     private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
   }
 
   public let name = "build"

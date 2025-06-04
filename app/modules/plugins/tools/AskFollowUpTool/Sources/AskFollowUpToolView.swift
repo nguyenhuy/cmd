@@ -25,16 +25,36 @@ struct ToolUseView: View {
 
   var body: some View {
     switch toolUse.status {
+    case .notStarted:
+      VStack { }
+    case .pendingApproval:
+      pendingApprovalView
+    case .rejected:
+      rejectedView
     case .running:
       followUpView(selection: nil)
     case .completed(.success(let output)):
       followUpView(selection: output.response)
-    default:
+    case .completed(.failure):
       VStack { }
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
+
+  @ViewBuilder
+  private var pendingApprovalView: some View {
+    Text("Waiting for approval: Ask follow up question")
+      .foregroundColor(colorScheme.toolUseForeground)
+      .padding(.vertical, 8)
+  }
+
+  @ViewBuilder
+  private var rejectedView: some View {
+    Text("Rejected: Ask follow up question")
+      .foregroundColor(colorScheme.toolUseForeground)
+      .padding(.vertical, 8)
+  }
 
   @ViewBuilder
   private func followUpView(selection: String?) -> some View {

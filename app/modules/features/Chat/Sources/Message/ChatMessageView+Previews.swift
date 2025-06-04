@@ -34,6 +34,8 @@ struct TestTool: NonStreamableTool {
 
     func startExecuting() { }
 
+    func reject(reason: String?) { }
+
   }
 
   var inputSchema = JSON.object([:])
