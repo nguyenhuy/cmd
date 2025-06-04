@@ -23,8 +23,9 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : false,
-        "llmProviderSettings" : {},
+        "customInstructions" : {},
         "inactiveModels" : [],
+        "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic",
@@ -52,6 +53,8 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "customInstructions" : {},
+        "inactiveModels" : [],
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "test-api-key",
@@ -60,8 +63,7 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {},
-        "inactiveModels" : []
+        "preferedProviders" : {}
       }
       """
 
@@ -92,6 +94,7 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "customInstructions" : {},
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "anthropic-key",
@@ -221,6 +224,7 @@ struct SettingsCodableTests {
     let json = """
       {
         "allowAnonymousAnalytics" : true,
+        "customInstructions" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
