@@ -40,21 +40,25 @@ final class DefaultAppUpdateService: AppUpdateService {
     return
     #else
     canCheckForUpdates = true
-    startCheckingForUpdates()
+    Task { @MainActor in
+      startCheckingForUpdates()
+    }
     #endif
   }
 
   func relaunch() {
-    guard let bundlePath = Bundle.main.resourcePath else {
-      return
+    Task { @MainActor in
+      guard let bundlePath = Bundle.main.resourcePath else {
+        return
+      }
+      let url = URL(fileURLWithPath: bundlePath)
+      let path = url.deletingLastPathComponent().deletingLastPathComponent().absoluteString
+      let task = Process()
+      task.launchPath = "/usr/bin/open"
+      task.arguments = [path]
+      task.launch()
+      exit(0)
     }
-    let url = URL(fileURLWithPath: bundlePath)
-    let path = url.deletingLastPathComponent().deletingLastPathComponent().absoluteString
-    let task = Process()
-    task.launchPath = "/usr/bin/open"
-    task.arguments = [path]
-    task.launch()
-    exit(0)
   }
 
   func isUpdateIgnored(_ update: AppUpdateInfo?) -> Bool {
@@ -95,20 +99,26 @@ final class DefaultAppUpdateService: AppUpdateService {
   private func monitorSettingChanges() {
     settingsService.liveValue(for: \.automaticallyCheckForUpdates).sink { @Sendable [weak self] automaticallyCheckForUpdates in
       if automaticallyCheckForUpdates {
-        self?.checkForUpdatesContinously()
+        Task { @MainActor in
+          self?.checkForUpdatesContinously()
+        }
       } else {
-        self?.stopCheckingForUpdates()
+        Task { @MainActor in
+          self?.stopCheckingForUpdates()
+        }
       }
     }.store(in: &cancellables)
   }
 
   private func startCheckingForUpdates() {
     updateTask?.cancel()
-    updateTask = Task { [weak self] in
+    updateTask = Task { @MainActor [weak self] in
       while let self, canCheckForUpdates {
         try Task.checkCancellation()
         let updater = UpdateChecker()
-        try await _hasUpdateAvailable.send(updater.checkForUpdates())
+        try await Task { @MainActor in
+          try await _hasUpdateAvailable.send(updater.checkForUpdates())
+        }.value
         try await Task.sleep(for: delayBetweenChecks)
       }
     }
@@ -122,6 +132,7 @@ final class DefaultAppUpdateService: AppUpdateService {
 @ThreadSafe
 final class UpdateChecker: NSObject, Sendable {
 
+  @MainActor
   override init() {
     super.init()
 
@@ -130,6 +141,7 @@ final class UpdateChecker: NSObject, Sendable {
     setupUpdater()
   }
 
+  @MainActor
   func checkForUpdates() async throws -> AppUpdateResult {
     if updater?.sessionInProgress == true {
       throw AppError("Update already in progress")
@@ -152,7 +164,7 @@ final class UpdateChecker: NSObject, Sendable {
 
     try? updater?.start()
     updater?.resetUpdateCycle()
-    updater?.checkForUpdatesInBackground()
+    updater?.checkForUpdates()
 
     return try await future.value
   }
@@ -163,6 +175,7 @@ final class UpdateChecker: NSObject, Sendable {
   private var continuation: (@Sendable (Result<AppUpdateResult, Error>) -> Void)?
 
   /// Ideally this would be part of the initializer, but Swift has issues with type checking some initializers when using macros.
+  @MainActor
   private func setupUpdater() {
     let hostBundle = Bundle.main
     let applicationBundle = Bundle.main
