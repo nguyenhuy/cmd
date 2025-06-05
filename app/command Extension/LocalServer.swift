@@ -9,20 +9,49 @@ import SharedValuesFoundation
 
 // MARK: - LocalServer
 
+/// A class that communicates with the local server running in the host app.
+///
+/// As the extension is loaded by Xcode when it launches and will be disable if its code changes while Xcode is running,
+/// it is hard to work with the extension when iterating on its code - usually in Debug mode.
+/// To mitigate this issue, there is an internal setting that makes the Debug app communicate with the Release app's extension.
+/// This is allows to iterate on the Debug app and still have a stable extension to communicate to and is a good workflow unless you are actively developping the extension itself.
 final class LocalServer {
 
+  /// Sends a command to the local server and returns the response.
+  /// - Parameters:
+  ///   - command: The command to send to the local server.
+  ///   - input: The input to send to the local server.
+  ///   - Returns: The decoded response from the local server.
   func send<Response: Decodable>(command: String, input: some Codable) async throws -> Response {
     try await send(command: command, input: input, retryCount: 0)
   }
 
-  private func send<Response: Decodable>(command: String, input: some Codable, retryCount: Int) async throws -> Response {
-    #if DEBUG
-    let userDefaults = try UserDefaults.shared(bundle: Bundle.main)
-    #else
-    let userDefaults = AppExtensionScope.shared.sharedUserDefaults.bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+  /// Sends a command to the local server and returns the response.
+  /// - Parameters:
+  ///   - command: The command to send to the local server.
+  ///   - input: The input to send to the local server.
+  ///   - retryCount: The number of times we already sent the request.
+  ///   - ignoreDebugAppCheck: For Release, whether to communicate with the Release host's app's local server regardless of the setting.
+  /// - Returns: The decoded response from the local server.
+  private func send<Response: Decodable>(
+    command: String,
+    input: some Codable,
+    retryCount: Int,
+    ignoreDebugAppCheck: Bool = false)
+    async throws -> Response
+  {
+    let isReleaseExtensionCommunicatingWithDebugAppFromRelease = {
+      #if DEBUG
+      return false
+      #else
+      return AppExtensionScope.shared.sharedUserDefaults
+        .bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp) && !ignoreDebugAppCheck
+      #endif
+    }()
+    let userDefaults = isReleaseExtensionCommunicatingWithDebugAppFromRelease
       ? try UserDefaults.debugShared(bundle: Bundle.main)
       : try UserDefaults.shared(bundle: Bundle.main)
-    #endif
+
     guard let port = userDefaults?.integer(forKey: UserDefaultKeys.localServerPort) else {
       defaultLogger.error("Could not find a port to connect to the local server.")
       throw XcodeExtensionError(message: "Failed to run.")
@@ -46,12 +75,17 @@ final class LocalServer {
     } catch {
       if
         (error as? URLError)?.code == .cannotConnectToHost,
-        retryCount == 0,
-        !AppExtensionScope.shared.sharedUserDefaults.bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
+        retryCount == 0
       {
-        // If we could not connect to the host app, try to open it and retry once.
-        try OpenHostApp.openHostApp()
-        return try await send(command: command, input: input, retryCount: retryCount + 1)
+        // We could not connect to the local server.
+        if isReleaseExtensionCommunicatingWithDebugAppFromRelease {
+          // Most likely the Debug app is not running and we can't reach its server. We don't try to open it and instead retry with the Release app.
+          return try await send(command: command, input: input, retryCount: retryCount, ignoreDebugAppCheck: true)
+        } else {
+          // If we could not connect to the host app, try to open it and retry once.
+          try OpenHostApp.openHostApp()
+          return try await send(command: command, input: input, retryCount: retryCount + 1)
+        }
       }
       defaultLogger.error("Failed to send command to the local server: \(error)")
       throw XcodeExtensionError(message: "Failed to run.")
