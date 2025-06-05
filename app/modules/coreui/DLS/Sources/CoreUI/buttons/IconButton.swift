@@ -8,7 +8,7 @@ import SwiftUI
 public struct IconButton: View {
 
   public init(
-    action: @escaping () -> Void,
+    action: @escaping () async -> Void,
     systemName: String,
     onHoverColor: Color = .clear,
     padding: CGFloat = 0,
@@ -26,29 +26,45 @@ public struct IconButton: View {
   public var body: some View {
     HoveredButton(
       action: {
-        action()
-        hasTapped = true
+        isRunning = true
         Task {
-          try await Task.sleep(nanoseconds: 1_000_000_000)
-          hasTapped = false
+          try await action()
+          hasTapped = true
+          Task {
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            hasTapped = false
+          }
         }
       },
       onHoverColor: onHoverColor,
       padding: padding,
       cornerRadius: cornerRadius)
     {
-      Icon(systemName: hasTapped && withCheckMark ? "checkmark" : systemName)
+      Icon(systemName: iconSystemName)
     }
   }
 
-  let action: () -> Void
   let systemName: String
   let onHoverColor: Color
   let padding: CGFloat
   let cornerRadius: CGFloat
   let withCheckMark: Bool
 
+  @State private var isRunning = false
   @State private var hasTapped = false
+
+  private let action: () async -> Void
+
+  private var iconSystemName: String {
+    if isRunning {
+      "progress.indicator"
+    }
+    if hasTapped, withCheckMark {
+      "checkmark"
+    }
+    return systemName
+  }
+
 }
 
 #if DEBUG

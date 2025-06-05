@@ -8,6 +8,7 @@ Target.module(
     "JSONFoundation",
     "ServerServiceInterface",
     "ShellServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [

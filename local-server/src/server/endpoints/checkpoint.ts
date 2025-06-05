@@ -8,6 +8,7 @@ import {
 	RestoreCheckpointRequestParams,
 	RestoreCheckpointResponseParams,
 } from "../schemas/checkpointSchema"
+import { homedir } from "os"
 
 const checkpointServices: { [key: string]: RepoPerTaskCheckpointService } = {}
 
@@ -26,7 +27,7 @@ const getCheckpointService = async ({
 	const service = RepoPerTaskCheckpointService.create({
 		taskId,
 		workspaceDir,
-		shadowDir: "/tmp/command/checkpoints/",
+		shadowDir: `${homedir()}/.cmd/command/checkpoints/`,
 		log: (message) => {
 			logInfo(message)
 		},

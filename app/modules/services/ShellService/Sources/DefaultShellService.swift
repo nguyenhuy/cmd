@@ -6,6 +6,7 @@ import DependencyFoundation
 import Foundation
 import LoggingServiceInterface
 import ShellServiceInterface
+import Subprocess
 
 // MARK: - DefaultShellService
 
@@ -25,8 +26,7 @@ final class DefaultShellService: ShellService {
     _ command: String,
     cwd: String?,
     useInteractiveShell: Bool,
-    handleStdoutStream: (@Sendable (AsyncStream<Data>) -> Void)? = nil,
-    handleSterrStream: (@Sendable (AsyncStream<Data>) -> Void)? = nil)
+    body: SubprocessHandle? = nil)
     async throws -> CommandExecutionResult
   {
     let process = Process()
@@ -39,95 +39,58 @@ final class DefaultShellService: ShellService {
       process.currentDirectoryPath = cwd
     }
 
-    let stdin = Pipe()
-    let stdout = Pipe()
-    let stderr = Pipe()
-    process.standardInput = stdin
-    process.standardOutput = stdout
-    process.standardError = stderr
-
     let stdoutData = Atomic(Data())
     let stderrData = Atomic(Data())
+    let mergedData = Atomic(Data())
 
-    let (stdoutStream, stdoutContinuation) = AsyncStream<Data>.makeStream()
-    handleStdoutStream?(stdoutStream)
-    let (stderrStream, stderrContinuation) = AsyncStream<Data>.makeStream()
-    handleSterrStream?(stderrStream)
+    let result = try await Subprocess.run(
+      .path("/bin/zsh"),
+      arguments: Arguments(["-c"] + [command]),
+      environment: useInteractiveShell ? Environment.custom(env) : .inherit,
+      workingDirectory: cwd.map { .init($0) })
+    { execution, inputIO, outputIO, errorIO in
+      let outputStream = outputIO.toDataStream
+      let errorStream = errorIO.toDataStream
+      body?(execution, inputIO, outputStream.updates, errorStream.updates)
 
-    Task {
-      for await data in stdout.fileHandleForReading.dataStream {
-        stdoutData.mutate { $0.append(data) }
-        stdoutContinuation.yield(data)
-      }
-      stdoutContinuation.finish()
-    }
-
-    Task {
-      for await data in stderr.fileHandleForReading.dataStream {
-        stderrData.mutate { $0.append(data) }
-        stderrContinuation.yield(data)
-      }
-      stderrContinuation.finish()
-    }
-
-    return try await withCheckedThrowingContinuation { continuation in
-      process.terminationHandler = { process in
-        let terminationStatus = process.terminationStatus
-
-        let result = CommandExecutionResult(
-          exitCode: terminationStatus,
-          stdout: String(data: stdoutData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-          stderr: String(data: stderrData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
-
-        if terminationStatus != 0 {
-          defaultLogger
-            .error(
-              "Error running `\(command)`: exit code: \(terminationStatus).\nstderr: \(result.stderr ?? "")\nstdout: \(result.stdout ?? "")")
+      Task {
+        for await data in outputStream {
+          stdoutData.mutate { $0.append(data) }
+          mergedData.mutate { $0.append(data) }
         }
-        continuation.resume(returning: result)
       }
-
-      do {
-        try process.run()
-      } catch {
-        defaultLogger.error("Error running `\(command)`: \(error)")
-        continuation.resume(throwing: error)
-        return
+      Task {
+        for await data in errorStream {
+          stderrData.mutate { $0.append(data) }
+          mergedData.mutate { $0.append(data) }
+        }
       }
     }
+
+    return CommandExecutionResult(
+      exitCode: result.terminationStatus.code,
+      stdout: String(data: stdoutData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+      stderr: String(data: stderrData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+      mergedOutput: String(data: mergedData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
   }
 
   private var env: [String: String] = [:]
 
-  private static func loadZshEnvironment(userEnv: [String: String]? = nil) throws -> [String: String] {
-    // Load shell environment as base
-    let shellProcess = Process()
-    shellProcess.executableURL = URL(filePath: "/bin/zsh")
-
-    // Set process environment - either use userEnv if it exists and isn't empty, or use system environment
-    if let env = userEnv, !env.isEmpty {
-      shellProcess.environment = env
-    } else {
-      shellProcess.environment = ProcessInfo.processInfo.environment
+  private static func loadZshEnvironment(userEnv: [String: String]? = nil) async throws -> [String: String] {
+    let result = try await Subprocess.run(
+      .path("/bin/zsh"),
+      arguments: Arguments(["-ilc", "printenv"]),
+      environment: userEnv?.isEmpty == false ? Environment.custom(userEnv!) : .inherit)
+    { _, _, outputIO, _ in
+      var contents = ""
+      for try await chunk in outputIO {
+        let string = chunk.withUnsafeBytes { String(decoding: $0, as: UTF8.self) }
+        contents += string
+      }
+      return contents
     }
 
-    shellProcess.arguments = ["-ilc", "printenv"]
-
-    let outputPipe = Pipe()
-    shellProcess.standardOutput = outputPipe
-    shellProcess.standardError = Pipe()
-
-    try shellProcess.run()
-    shellProcess.waitUntilExit()
-
-    let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
-    guard let outputString = String(data: data, encoding: .utf8) else {
-      defaultLogger.error("Failed to read environment from shell.")
-      return ProcessInfo.processInfo.environment
-    }
-
-    // Parse shell environment
-    return outputString
+    return result.value
       .split(separator: "\n")
       .reduce(into: [String: String]()) { result, line in
         let components = line.split(separator: "=", maxSplits: 1)
@@ -139,7 +102,7 @@ final class DefaultShellService: ShellService {
   /// This can be moved to the initializer once https://github.com/swiftlang/swift/issues/80050 is fixed.
   private func loadZshEnvironmentInBackground() {
     Task.detached { [weak self] in
-      self?.env = try Self.loadZshEnvironment()
+      self?.env = try await Self.loadZshEnvironment()
     }
   }
 
@@ -170,5 +133,53 @@ extension FileHandle {
     }
 
     return stream
+  }
+}
+
+// Conform Subprocess types to ShellServiceInterface protocols,
+// which are similar but allow to limit imports to consuming modules
+
+extension Subprocess.StandardInputWriter: ShellServiceInterface.StandardInputWriter {
+  public func write(_ string: String) async throws {
+    _ = try await write(string, using: UTF8.self)
+  }
+
+}
+
+extension Subprocess.Execution: ShellServiceInterface.Execution {
+  public func tearDown() async {
+    await teardown(using: [])
+  }
+}
+
+extension AsyncBufferSequence {
+  var toDataStream: BroadcastedStream<Data> {
+    let (stream, continuation) = AsyncStream<Data>.makeStream()
+
+    Task {
+      do {
+        for try await bytes in self {
+          let data = bytes.withUnsafeBytes { buffer in Data(buffer) }
+          continuation.yield(data)
+        }
+        continuation.finish()
+      } catch {
+        defaultLogger.error("Error processing process' output", error)
+        continuation.finish()
+      }
+    }
+
+    return BroadcastedStream(stream)
+  }
+}
+
+extension TerminationStatus {
+  var code: Int32 {
+    switch self {
+    case .exited(let code):
+      code
+    case .unhandledException(let code):
+      code
+    }
   }
 }

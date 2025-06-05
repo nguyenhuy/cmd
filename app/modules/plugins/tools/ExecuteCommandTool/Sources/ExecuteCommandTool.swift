@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ShellServiceInterface
+import ThreadSafe
 import ToolFoundation
 
 // MARK: - ExecuteCommandTool
@@ -16,6 +17,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
+  @ThreadSafe
   public final class Use: ToolUse, @unchecked Sendable {
 
     init(callingTool: ExecuteCommandTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
@@ -48,8 +50,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
     }
 
     public struct Output: Codable, Sendable {
-      public let stdout: String?
-      public let stderr: String?
+      public let output: String?
       public let exitCode: Int32
     }
 
@@ -70,13 +71,15 @@ public final class ExecuteCommandTool: NonStreamableTool {
           let shellResult = try await shellService.run(
             input.command,
             cwd: input.cwd ?? context.projectRoot?.path(),
-            useInteractiveShell: true,
-            handleStdoutStream: { stream in self.setStdoutStream(.init(stream)) },
-            handleSterrStream: { stream in self.setStderrStream(.init(stream)) })
+            useInteractiveShell: true)
+          { execution, _, stdout, stderr in
+            self.runningProcess = execution
+            self.setStdoutStream(.init(stdout))
+            self.setStderrStream(.init(stderr))
+          }
           if shellResult.exitCode == 0 {
             updateStatus.yield(.completed(.success(Output(
-              stdout: shellResult.stdout,
-              stderr: shellResult.stderr,
+              output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
               exitCode: shellResult.exitCode))))
           } else {
             try updateStatus
@@ -84,11 +87,12 @@ public final class ExecuteCommandTool: NonStreamableTool {
                 .completed(
                   .failure(
                     AppError(
-                      "The command failed.\(String(data: JSONEncoder().encode(shellResult), encoding: .utf8) ?? "")"))))
+                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(shellResult), encoding: .utf8) ?? "")"))))
           }
         } catch {
           updateStatus.yield(.completed(.failure(error)))
         }
+        runningProcess = nil
       }
     }
 
@@ -97,6 +101,14 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     let setStdoutStream: (BroadcastedStream<Data>) -> Void
     let setStderrStream: (BroadcastedStream<Data>) -> Void
+
+    func killRunningProcess() async {
+      commandWasManuallyInterrupted = true
+      await runningProcess?.tearDown()
+    }
+
+    private var commandWasManuallyInterrupted = false
+    private var runningProcess: (any Execution)?
 
     @Dependency(\.shellService) private var shellService
 
@@ -110,6 +122,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
   public let description = """
     Request to execute a CLI command on the system. Use this when you need to perform system operations or run specific commands to accomplish any step in the user's task. You must tailor your command to the user's system and provide a clear explanation of what the command does. For command chaining, use the appropriate chaining syntax for the user's shell. Prefer to execute complex CLI commands over creating executable scripts, as they are more flexible and easier to run. Prefer relative commands and paths that avoid location sensitivity for terminal consistency, e.g: `touch ./testdata/example.file`, `dir ./examples/model1/data/yaml`, or `swift test ./cmd/package`. If directed by the user, you may open a terminal in a different directory by using the `cwd` parameter.
     DO NOT use this to create or update files. Instead describe them as code suggestions, and wait for the users to approve the changes.
+
+    If the output exceeds \(truncationLimit) characters, output will be truncated in the middle before being returned to you.
     """
 
   public var displayName: String {
@@ -154,6 +168,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
     Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
+  static let truncationLimit = 30000
+
 }
 
 // MARK: - ToolUseViewModel
@@ -166,10 +182,12 @@ final class ToolUseViewModel {
     command: String,
     status: ExecuteCommandTool.Use.Status,
     stdout: Future<BroadcastedStream<Data>, Never>,
-    stderr: Future<BroadcastedStream<Data>, Never>)
+    stderr: Future<BroadcastedStream<Data>, Never>,
+    kill: @escaping () async -> Void)
   {
     self.command = command
     self.status = status.value
+    self.kill = kill
     Task {
       for await status in status {
         self.status = status
@@ -195,4 +213,17 @@ final class ToolUseViewModel {
   var status: ToolUseExecutionStatus<ExecuteCommandTool.Use.Output>
   var std: String?
   var stdData = Data()
+  let kill: () async -> Void
+}
+
+extension String {
+  /// Truncate the string to a specified limit, removing from the middle if needed.
+  func trimmed(toNotExceed limit: Int) -> String {
+    if count <= limit {
+      return self
+    }
+    let i = index(startIndex, offsetBy: limit / 2)
+    let j = index(endIndex, offsetBy: -limit / 2)
+    return String(self[startIndex..<i]) + "... [\(count - limit) characters truncated] ..." + String(self[j..<endIndex])
+  }
 }

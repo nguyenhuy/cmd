@@ -4,26 +4,36 @@
 import AppFoundation
 import ConcurrencyFoundation
 import SwiftUI
+import ToolFoundation
 
 #if DEBUG
+extension ToolUseViewModel {
+  convenience init(
+    command: String,
+    status: ExecuteCommandTool.Use.Status)
+  {
+    self.init(
+      command: command,
+      status: status,
+      stdout: .Just(.Just(Data())),
+      stderr: .Just(.Just(Data())),
+      kill: { try? await Task.sleep(for: .seconds(1)) })
+  }
+}
+
 #Preview {
   ScrollView {
     VStack(alignment: .leading, spacing: 10) {
       ToolUseView(toolUse: ToolUseViewModel(
         command: "ls",
-        status: .Just(.running),
-        stdout: .Just(.Just(Data())),
-        stderr: .Just(.Just(Data()))))
+        status: .Just(.running)))
       ToolUseView(toolUse: ToolUseViewModel(
         command: "ls",
-        status: .Just(.notStarted),
-        stdout: .Just(.Just(Data())),
-        stderr: .Just(.Just(Data()))))
+        status: .Just(.notStarted)))
       ToolUseView(toolUse: ToolUseViewModel(
         command: "ls",
         status: .Just(.completed(.success(.init(
-          stdout: "filePath",
-          stderr: nil,
+          output: "filePath",
           exitCode: 0)))),
         stdout: .Just(.Just(String("""
           total 0
@@ -34,7 +44,8 @@ import SwiftUI
           drwxr-xr-x@ 7 me  staff   224B Mar 27 15:01 ReadFileTool/
           drwxr-xr-x@ 7 me  staff   224B Mar 27 15:01 SearchFilesTool/
           """).utf8Data)),
-        stderr: .Just(.Just(Data()))))
+        stderr: .Just(.Just(Data())),
+        kill: { }))
     }
   }
   .frame(minWidth: 200, minHeight: 500)
