@@ -70,6 +70,11 @@ final class SidePanel: XcodeWindow {
     contentView = hostingView
 
     if let contentView {
+      // Add custom border to contentView, useful to highlight the sides of the windows as we are not drawing the shadow.
+      contentView.wantsLayer = true
+      contentView.layer?.borderWidth = 2
+      contentView.layer?.borderColor = NSColor.separatorColor.cgColor
+
       NSLayoutConstraint.activate([
         hostingView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
         hostingView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
