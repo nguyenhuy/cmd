@@ -4,16 +4,18 @@
 import SwiftUI
 import ToolFoundation
 
+// MARK: - ToolsConfigurationView
+
 struct ToolsConfigurationView: View {
-  
+
   @Bindable var viewModel: ToolConfigurationViewModel
-  
+
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Tool Permissions")
         .font(.headline)
         .padding(.bottom, 8)
-      
+
       if viewModel.availableTools.isEmpty {
         Text("No tools available")
           .foregroundColor(.secondary)
@@ -27,8 +29,7 @@ struct ToolsConfigurationView: View {
                 isAlwaysApproved: viewModel.isAlwaysApproved(toolName: tool.name),
                 onToggle: { isEnabled in
                   viewModel.setAlwaysApprove(toolName: tool.name, alwaysApprove: isEnabled)
-                }
-              )
+                })
             }
           }
           .padding(.vertical, 4)
@@ -39,12 +40,14 @@ struct ToolsConfigurationView: View {
   }
 }
 
+// MARK: - ToolRow
+
 private struct ToolRow: View {
-  
+
   let tool: any Tool
   let isAlwaysApproved: Bool
   let onToggle: (Bool) -> Void
-  
+
   var body: some View {
     HStack(spacing: 12) {
       VStack(alignment: .leading, spacing: 4) {
@@ -60,7 +63,7 @@ private struct ToolRow: View {
       Spacer()
       Toggle("", isOn: Binding(
         get: { isAlwaysApproved },
-        set: { onToggle($0) }
+        set: { onToggle($0) },
       ))
       .toggleStyle(SwitchToggleStyle(tint: .accentColor))
       .labelsHidden()

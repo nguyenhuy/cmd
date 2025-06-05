@@ -205,7 +205,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   @ObservationIgnored
   @Dependency(\.toolsPlugin) private var toolsPlugin: ToolsPlugin
-  
+
   @ObservationIgnored
   @Dependency(\.settingsService) private var settingsService: SettingsService
 

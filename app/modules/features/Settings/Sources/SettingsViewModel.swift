@@ -35,8 +35,7 @@ public final class SettingsViewModel {
 
     toolConfigurationViewModel = ToolConfigurationViewModel(
       settingsService: settingsService,
-      toolsPlugin: toolsPlugin
-    )
+      toolsPlugin: toolsPlugin)
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -45,6 +44,8 @@ public final class SettingsViewModel {
       }
       .store(in: &cancellables)
   }
+
+  public let toolConfigurationViewModel: ToolConfigurationViewModel
 
   // MARK: - Initialization
 
@@ -159,8 +160,6 @@ public final class SettingsViewModel {
   var availableProviders: [LLMProvider] {
     Array(settings.llmProviderSettings.keys)
   }
-
-  public let toolConfigurationViewModel: ToolConfigurationViewModel
 
   private var cancellables = Set<AnyCancellable>()
 

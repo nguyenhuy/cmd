@@ -12,21 +12,33 @@ import ToolFoundation
 @MainActor
 @Observable
 public final class ToolConfigurationViewModel {
-  private(set) var availableTools: [any Tool] = []
-  private(set) var toolPreferences: [Settings.ToolPreference] = []
-  
-  private let settingsService: SettingsService
-  private let toolsPlugin: ToolsPlugin
-  private var cancellables = Set<AnyCancellable>()
-  
   init(settingsService: SettingsService, toolsPlugin: ToolsPlugin) {
     self.settingsService = settingsService
     self.toolsPlugin = toolsPlugin
-    
+
     loadTools()
     observeSettings()
   }
-  
+
+  private(set) var availableTools: [any Tool] = []
+  private(set) var toolPreferences: [Settings.ToolPreference] = []
+
+  /// Returns whether a tool is configured to always be approved.
+  func isAlwaysApproved(toolName: String) -> Bool {
+    toolPreferences.first { $0.toolName == toolName }?.alwaysApprove ?? false
+  }
+
+  /// Updates the approval preference for a specific tool.
+  func setAlwaysApprove(toolName: String, alwaysApprove: Bool) {
+    var currentSettings = settingsService.values()
+    currentSettings.setToolPreference(toolName: toolName, alwaysApprove: alwaysApprove)
+    settingsService.update(to: currentSettings)
+  }
+
+  private let settingsService: SettingsService
+  private let toolsPlugin: ToolsPlugin
+  private var cancellables = Set<AnyCancellable>()
+
   private func observeSettings() {
     settingsService.liveValue(for: \.toolPreferences)
       .receive(on: RunLoop.main)
@@ -35,20 +47,9 @@ public final class ToolConfigurationViewModel {
       }
       .store(in: &cancellables)
   }
-  
+
   private func loadTools() {
     availableTools = toolsPlugin.tools.sorted { $0.displayName < $1.displayName }
   }
-  
-  /// Returns whether a tool is configured to always be approved.
-  func isAlwaysApproved(toolName: String) -> Bool {
-    toolPreferences.first { $0.toolName == toolName }?.alwaysApprove ?? false
-  }
-  
-  /// Updates the approval preference for a specific tool.
-  func setAlwaysApprove(toolName: String, alwaysApprove: Bool) {
-    var currentSettings = settingsService.values()
-    currentSettings.setToolPreference(toolName: toolName, alwaysApprove: alwaysApprove)
-    settingsService.update(to: currentSettings)
-  }
+
 }

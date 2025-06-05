@@ -88,7 +88,7 @@ extension Settings {
   public func toolPreference(for toolName: String) -> ToolPreference? {
     toolPreferences.first { $0.toolName == toolName }
   }
-  
+
   public mutating func setToolPreference(toolName: String, alwaysApprove: Bool) {
     if let index = toolPreferences.firstIndex(where: { $0.toolName == toolName }) {
       toolPreferences[index].alwaysApprove = alwaysApprove
@@ -96,7 +96,7 @@ extension Settings {
       toolPreferences.append(ToolPreference(toolName: toolName, alwaysApprove: alwaysApprove))
     }
   }
-  
+
   public func shouldAlwaysApprove(toolName: String) -> Bool {
     toolPreferences.first { $0.toolName == toolName }?.alwaysApprove ?? false
   }
