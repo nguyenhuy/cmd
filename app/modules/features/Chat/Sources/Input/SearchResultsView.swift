@@ -43,7 +43,7 @@ struct SearchResultsView: View {
                 selectedRowIndex: $selectedRowIndex)
                 .frame(height: Self.searchInputHeight)
             }
-            ForEach(Array(zip(results.indices, results)), id: \.0) { index, result in
+            ForEach(Array(zip(results.indices, results)), id: \.1.id) { index, result in
               HStack(alignment: .center, spacing: 0) {
                 FileIcon(filePath: result.path)
                   .frame(width: 10, height: 10)

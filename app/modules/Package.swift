@@ -318,6 +318,7 @@ targets.append(contentsOf: Target.module(
   name: "SettingsFeature",
   dependencies: [
     "AppUpdateServiceInterface",
+    "ChatFoundation",
     "ConcurrencyFoundation",
     "DLS",
     "FoundationInterfaces",
