@@ -62,4 +62,22 @@ extension String {
     }
     return base + "/" + self
   }
+
+  public func update(
+    url: URL,
+    atomically: Bool = true,
+    encoding: String.Encoding = .utf8)
+    throws
+  {
+    if !FileManager.default.fileExists(atPath: url.path) {
+      try write(to: url, atomically: atomically, encoding: encoding)
+      return
+    }
+    let currentContent = try String(contentsOf: url, encoding: encoding)
+    // Ignore spaces to mitigate differences caused by the linter after the file is written.
+    guard currentContent.replacing(/\s/, with: "") != replacing(/\s/, with: "") else {
+      return
+    }
+    try write(to: url, atomically: atomically, encoding: encoding)
+  }
 }

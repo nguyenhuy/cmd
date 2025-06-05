@@ -5,6 +5,7 @@ import Combine
 import ConcurrencyFoundation
 import Dependencies
 import DLS
+import FoundationInterfaces
 import SwiftUI
 import XcodeObserverServiceInterface
 
@@ -29,12 +30,10 @@ public struct ChatView: View {
 
   public init(
     viewModel: ChatViewModel,
-    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) },
-    AppUpdaterView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
+    SettingsView: @escaping @MainActor (@escaping @MainActor () -> Void) -> AnyView = { _ in AnyView(EmptyView()) })
   {
     self.viewModel = viewModel
     self.SettingsView = SettingsView
-    self.AppUpdaterView = AppUpdaterView
   }
 
   public var body: some View {
@@ -79,8 +78,8 @@ public struct ChatView: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
+  @Dependency(\.userDefaults) private var userDefaults
   private let SettingsView: (@escaping @MainActor () -> Void) -> AnyView
-  private let AppUpdaterView: (@escaping @MainActor () -> Void) -> AnyView
 
   @Bindable private var viewModel: ChatViewModel
 

@@ -4,7 +4,7 @@ import * as childProcess from "child_process"
 import * as path from "path"
 import * as readline from "readline"
 import { SearchFilesToolOutput, SearchFileResult as SearchFileResultSchema } from "../../../schemas/searchFileSchema"
-import { logError, logInfo } from "../../../../logger"
+import { logError } from "../../../../logger"
 import { UserFacingError } from "../../../errors"
 
 /*

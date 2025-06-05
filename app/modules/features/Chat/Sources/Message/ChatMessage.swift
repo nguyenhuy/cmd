@@ -57,11 +57,29 @@ enum ChatMessageContent: Identifiable {
 // MARK: - ChatMessageContentWithRole
 
 struct ChatMessageContentWithRole: Identifiable {
+  init(
+    content: ChatMessageContent,
+    role: MessageRole,
+    failureReason: String? = nil)
+  {
+    self.content = content
+    self.role = role
+    self.failureReason = failureReason
+  }
+
   let content: ChatMessageContent
   let role: MessageRole
+  let failureReason: String?
 
   var id: UUID {
     content.id
+  }
+
+  func with(failureReason: String) -> ChatMessageContentWithRole {
+    ChatMessageContentWithRole(
+      content: content,
+      role: role,
+      failureReason: failureReason)
   }
 }
 

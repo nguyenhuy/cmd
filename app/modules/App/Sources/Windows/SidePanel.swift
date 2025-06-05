@@ -4,7 +4,6 @@
 import AccessibilityFoundation
 import AccessibilityObjCFoundation
 import AppKit
-import AppUpdater
 import Chat
 import Dependencies
 import LoggingServiceInterface
@@ -34,11 +33,6 @@ final class SidePanel: XcodeWindow {
     toolbar.autosavesConfiguration = false
     self.toolbar = toolbar
 
-    // Set fixed title bar height, same as Xcode's.
-    if let titlebarContainer = standardWindowButton(.closeButton)?.superview?.superview {
-      titlebarContainer.heightAnchor.constraint(equalToConstant: 20).isActive = true
-    }
-
     collectionBehavior = [
       .fullScreenAuxiliary,
       .fullScreenPrimary,
@@ -63,9 +57,6 @@ final class SidePanel: XcodeWindow {
         AnyView(SettingsView(
           viewModel: SettingsViewModel(),
           onDismiss: onDismiss))
-      },
-      AppUpdaterView: { _ in
-        AppUpdaterBuilder.build()
       })
       .frame(maxWidth: .infinity, maxHeight: .infinity)
 

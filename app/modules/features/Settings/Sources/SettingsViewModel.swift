@@ -19,6 +19,8 @@ public final class SettingsViewModel {
     self.settingsService = settingsService
     @Dependency(\.userDefaults) var userDefaults
     self.userDefaults = userDefaults
+    // This one is not dependency injected. That should be ok.
+    releaseUserDefaults = try? UserDefaults.releaseShared(bundle: .main)
 
     let settings = settingsService.values()
     self.settings = settings
@@ -26,6 +28,7 @@ public final class SettingsViewModel {
     providerSettings = settings.llmProviderSettings
     repeatLastLLMInteraction = userDefaults.bool(forKey: "llmService.isRepeating")
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
+    showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -56,6 +59,16 @@ public final class SettingsViewModel {
     }
   }
 
+  var automaticallyCheckForUpdates: Bool {
+    get {
+      settings.automaticallyCheckForUpdates
+    }
+    set {
+      settings.automaticallyCheckForUpdates = newValue
+      settingsService.update(setting: \.automaticallyCheckForUpdates, to: newValue)
+    }
+  }
+
   // MARK: - Internal settings
   var repeatLastLLMInteraction: Bool {
     didSet {
@@ -66,6 +79,12 @@ public final class SettingsViewModel {
   var showOnboardingScreenAgain: Bool {
     didSet {
       userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
+    }
+  }
+
+  var showInternalSettingsInRelease: Bool {
+    didSet {
+      releaseUserDefaults?.set(showInternalSettingsInRelease, forKey: .showInternalSettingsInRelease)
     }
   }
 
@@ -137,6 +156,8 @@ public final class SettingsViewModel {
 
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
+  private let releaseUserDefaults: UserDefaultsI?
+
 }
 
 public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]

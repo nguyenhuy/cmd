@@ -4,7 +4,7 @@ default_platform(:mac)
 require 'base64'
 
 def load_secret(env_key)
-  return ENV[env_key] if ENV[env_key]# && store_secret_to_keychain(env_key, ENV[env_key])
+  return ENV[env_key] if ENV[env_key] && store_secret_to_keychain(env_key, ENV[env_key])
   puts "Loading secret from keychain: #{env_key}"
   encoded = `security find-generic-password -s 'dev.getcmd.#{env_key}' -w 2>/dev/null`.strip
   return nil if encoded.empty?
@@ -15,6 +15,7 @@ end
 
 # Store a secret to the keychain if it is not already stored or if it has changed.
 def store_secret_to_keychain(key, value)
+  return if ENV['CI']
   encoded_value = Base64.strict_encode64(value)
   existing_encoded = `security find-generic-password -s 'dev.getcmd.#{key}' -w 2>/dev/null`.strip
   return if existing_encoded == encoded_value
@@ -147,12 +148,22 @@ platform :mac do
     )
 
     # Create metadata for the new release
-    zip_path = zip(path: app_path, symlinks: true)
+
+    # we need to re-package after notarization and stapling.
+    # we have to use `ditto --sequesterRsrc` rather than zip
+    # because the default strategy stores resource forks as
+    # ._Foo but codesigning doesn't like that, and instead
+    # wants them in __MACOSX.
+    app_zip_path = "#{app_path}.zip"
+    sh(
+      "ditto", "-c", "-k", "--keepParent", "--sequesterRsrc",
+      app_path, app_zip_path,
+    )
     sparkle_path = "#{build_path}/derived_data/SourcePackages/artifacts/sparkle/Sparkle"
 
     sparkle_secret_key = load_secret("SPARKLE_SECRET_KEY")
 
-    sparkle_output = sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{zip_path} --ed-key-file -")
+    sparkle_output = sh("echo '#{sparkle_secret_key}' | #{sparkle_path}/bin/sign_update #{app_zip_path} --ed-key-file -")
     app_config_path = File.absolute_path("../command.shared.xcconfig")
     version = sh("cat #{app_config_path} | grep APP_VERSION=").split("APP_VERSION=").last.strip
 
@@ -169,11 +180,15 @@ platform :mac do
     File.write(appcast_path, appcast_content)
 
     sh("rm -rf #{build_path}") if remove_zip
+    { version: version, app_zip_path: app_zip_path, build_path: build_path }
   end
 
   desc "Build, archive, sign and publish the app for distribution"
   lane :distribute_release do
-    create_and_sign_release(remove_zip: false)
+    result = create_and_sign_release(remove_zip: false)
+    version = result[:version]
+    app_zip_path = result[:app_zip_path]
+    build_path = result[:build_path]
 
     set_github_release(
       api_token: load_secret("GITHUB_TOKEN"),
@@ -183,7 +198,18 @@ platform :mac do
       tag_name: "v#{version}",
       description: "test release",
       commitish: "main",
-      upload_assets: zip_path
+      upload_assets: app_zip_path
+    )
+
+    set_github_release(
+      api_token: load_secret("GITHUB_TEST_TOKEN"),
+      server_url: "https://api.github.com",
+      repository_name: "gsabran/test",
+      name: "v#{version}",
+      tag_name: "v#{version}",
+      description: "test release",
+      commitish: "main",
+      upload_assets: app_zip_path
     )
 
     sh("rm -rf #{build_path}")

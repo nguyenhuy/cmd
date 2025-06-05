@@ -119,6 +119,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
   let isReadonly: Bool
   let isAvailableInChatMode: @Sendable (ChatMode) -> Bool
 
+  var displayName: String { name }
+
   var description: String { "tool for testing" }
   var inputSchema: JSON { .object([:]) }
 
@@ -198,6 +200,8 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
   let isReadonly: Bool
   let isAvailableInChatMode: @Sendable (ChatMode) -> Bool
 
+  var displayName: String { name }
+
   var description: String { "tool for testing" }
   var inputSchema: JSON { .object([:]) }
 
@@ -241,18 +245,21 @@ let okServerResponse = Data()
 // MARK: - TestChatContext
 
 struct TestChatContext: ChatContext {
-
   init(
     project: URL? = nil,
     projectRoot: URL,
     chatMode: ChatMode = .ask,
-    prepareForWriteToolUse: @escaping @Sendable () async -> Void = { })
+    prepareForWriteToolUse: @escaping @Sendable () async -> Void = { },
+    requestToolApproval: @escaping @Sendable (any ToolFoundation.ToolUse) async throws -> Void = { _ in })
   {
     self.project = project
     self.projectRoot = projectRoot
     self.chatMode = chatMode
     self.prepareForWriteToolUse = prepareForWriteToolUse
+    self.requestToolApproval = requestToolApproval
   }
+
+  let requestToolApproval: @Sendable (any ToolFoundation.ToolUse) async throws -> Void
 
   let project: URL?
   let projectRoot: URL?

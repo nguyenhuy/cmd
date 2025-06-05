@@ -77,7 +77,8 @@ targets.append(contentsOf: Target.module(
     "AccessibilityObjCFoundation",
     "AppEventService",
     "AppEventServiceInterface",
-    "AppUpdater",
+    "AppUpdateService",
+    "AppUpdateServiceInterface",
     "AskFollowUpTool",
     "BuildTool",
     "Chat",
@@ -316,6 +317,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "SettingsFeature",
   dependencies: [
+    "AppUpdateServiceInterface",
     "ConcurrencyFoundation",
     "DLS",
     "FoundationInterfaces",
@@ -338,6 +340,7 @@ targets.append(contentsOf: Target.module(
     .product(name: "HighlightSwift", package: "highlightswift"),
     "AppEventServiceInterface",
     "AppFoundation",
+    "AppUpdateServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",
     "CheckpointServiceInterface",
@@ -395,13 +398,6 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./features/Onboarding"))
-
-targets.append(contentsOf: Target.module(
-  name: "AppUpdater",
-  dependencies: [
-    .product(name: "Sparkle", package: "Sparkle"),
-  ],
-  path: "./features/AppUpdater"))
 
 targets.append(contentsOf: Target.module(
   name: "AppExtension",
@@ -563,6 +559,17 @@ targets.append(contentsOf: Target.macroModule(
     "ThreadSafeMacro",
   ],
   path: "./macros/ThreadSafe"))
+
+targets.append(contentsOf: Target.module(
+  name: "AppUpdateServiceInterface",
+  dependencies: [
+    "ConcurrencyFoundation",
+    "ThreadSafe",
+  ],
+  testDependencies: [
+    "SwiftTesting",
+  ],
+  path: "./serviceInterfaces/AppUpdateServiceInterface"))
 
 targets.append(contentsOf: Target.module(
   name: "FileSuggestionServiceInterface",
@@ -913,6 +920,21 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   path: "./services/LLMService"))
+
+targets.append(contentsOf: Target.module(
+  name: "AppUpdateService",
+  dependencies: [
+    .product(name: "Sparkle", package: "Sparkle"),
+    "AppFoundation",
+    "AppUpdateServiceInterface",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LoggingServiceInterface",
+    "SettingsServiceInterface",
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./services/AppUpdateService"))
 
 let package = Package(
   name: "Packages",

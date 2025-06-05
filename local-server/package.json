@@ -15,7 +15,7 @@
 		"lint:fix": "eslint --fix",
 		"lint:show-config": "eslint --print-config",
 		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-		"test:debug": "node --experimental-vm-modules --inspect node_modules/jest/bin/jest.js",
+		"test:debug": "node --experimental-vm-modules --inspect-brk node_modules/jest/bin/jest.js",
 		"test:watch": "yarn test --watch",
 		"test:coverage": "yarn test --coverage",
 		"clean": "rm -rf dist build package",

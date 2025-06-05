@@ -6,6 +6,7 @@ Target.module(
     .product(name: "HighlightSwift", package: "highlightswift"),
     "AppEventServiceInterface",
     "AppFoundation",
+    "AppUpdateServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",
     "CheckpointServiceInterface",

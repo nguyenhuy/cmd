@@ -8,7 +8,6 @@ import ExtensionCommandHandler
 import Foundation
 import LoggingServiceInterface
 import SwiftUI
-import XcodeObserverServiceInterface
 
 var machTaskSelf: mach_port_t {
   mach_task_self_
@@ -38,11 +37,7 @@ public struct commandApp: App {
     }
     xcodeKeyboardShortcutsManager = XcodeKeyboardShortcutsManager(appsActivationState: appsActivationState)
     registerColdStartPlugins()
-    Task {
-      // Initialize the local server on launch
-      @Dependency(\.server) var server
-      _ = try? await server.getRequest(path: "launch")
-    }
+    postLaunchActions()
 
     #if DEBUG
     timer = Timer(timeInterval: 1, repeats: true, block: { _ in

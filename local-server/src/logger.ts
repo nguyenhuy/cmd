@@ -3,6 +3,8 @@ import { join } from "path"
 // Define log levels
 type LogLevel = "ERROR" | "INFO"
 
+const isRunningTest = process.env.NODE_ENV === "test"
+
 // Get the directory where this file is located
 const LOG_FILE = join(
 	__dirname,
@@ -10,10 +12,14 @@ const LOG_FILE = join(
 	`${new Date().toISOString().replace("T", "__").replace(/:/g, "-").replace(/Z$/, "")}.node-server.txt`,
 )
 const SHARED_LOG_FILE = join(__dirname, "logs", `all-sessions.txt`)
-try {
-	mkdirSync(join(__dirname, "logs"), { recursive: true })
-} catch (err) {
-	console.error("Failed to create logs directory:", err)
+if (isRunningTest) {
+	// don't log to file in tests
+} else {
+	try {
+		mkdirSync(join(__dirname, "logs"), { recursive: true })
+	} catch (err) {
+		console.error("Failed to create logs directory:", err)
+	}
 }
 
 export const startNewLogSession = ({ lineSpacing }: { lineSpacing: number } = { lineSpacing: 5 }) => {
@@ -25,6 +31,9 @@ export const startNewLogSession = ({ lineSpacing }: { lineSpacing: number } = { 
 const writeToLog = (level: LogLevel, message: unknown) => {
 	const timestamp = new Date().toISOString()
 	const logMessage = `[${timestamp}] [${level}] ${message instanceof Error ? message.stack || message.message : (message as string)}\n`
+	if (isRunningTest) {
+		return
+	}
 
 	// Write to file
 	try {

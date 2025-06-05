@@ -2,6 +2,11 @@ import { startNewLogSession, logError, logInfo } from "./logger"
 import { startServer } from "./server/server"
 import { spawn } from "child_process"
 
+process.on("unhandledRejection", (reason, promise) => {
+	// Log the error and prevent crash
+	logError(`Unhandled Rejection at: ${promise}, reason: ${reason}`)
+})
+
 startNewLogSession()
 
 // If we should attach to a process, we need to monitor it and exit when it dies.

@@ -10,7 +10,7 @@ import SyncPackageDependencies
 
 @main
 struct SyncDependencies: ParsableCommand {
-  static var configuration = CommandConfiguration(
+  static let configuration = CommandConfiguration(
     commandName: "syncDependencies",
     abstract: "Sync package dependencies between source and target paths",
     version: "1.0.0",
@@ -20,7 +20,7 @@ struct SyncDependencies: ParsableCommand {
 // MARK: - SyncCommand
 
 struct SyncCommand: ParsableCommand {
-  static var configuration = CommandConfiguration(
+  static let configuration = CommandConfiguration(
     commandName: "sync",
     abstract: "Sync package dependencies from source to target")
 
@@ -38,7 +38,7 @@ struct SyncCommand: ParsableCommand {
 // MARK: - FocusCommand
 
 struct FocusCommand: ParsableCommand {
-  static var configuration = CommandConfiguration(
+  static let configuration = CommandConfiguration(
     commandName: "focus",
     abstract: "Create a Package.swift focussed on the specified packages and their dependencies")
 

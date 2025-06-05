@@ -46,8 +46,8 @@ public final class GenerateEntirePackage {
   }
 
   func run() throws {
-    try generateSource().write(
-      to: packageDirPath.appending(path: "/Package.swift"),
+    try generateSource().update(
+      url: packageDirPath.appending(path: "/Package.swift"),
       atomically: true,
       encoding: .utf8)
   }

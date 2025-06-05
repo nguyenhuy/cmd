@@ -21,7 +21,8 @@ public struct SettingsView: View {
             currentView = section
           },
           onDismiss: onDismiss,
-          hasAvailableLLMModels: !viewModel.availableModels.isEmpty)
+          hasAvailableLLMModels: !viewModel.availableModels.isEmpty,
+          showInternalSettingsInRelease: viewModel.showInternalSettingsInRelease)
       }
 
       if currentView != .landing {
@@ -98,10 +99,13 @@ public struct SettingsView: View {
         InternalSettingsView(
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
           showOnboardingScreenAgain: $viewModel.showOnboardingScreenAgain,
-          pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp)
+          pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
+          showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease)
 
       case .about:
-        AboutSettingsView(allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics)
+        AboutSettingsView(
+          allowAnonymousAnalytics: $viewModel.allowAnonymousAnalytics,
+          automaticallyCheckForUpdates: $viewModel.automaticallyCheckForUpdates)
 
       case .landing:
         EmptyView()
@@ -164,6 +168,7 @@ private struct SettingsLandingView: View {
   let onNavigate: (SettingsSection) -> Void
   let onDismiss: () -> Void
   let hasAvailableLLMModels: Bool
+  let showInternalSettingsInRelease: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
@@ -225,6 +230,13 @@ private struct SettingsLandingView: View {
             section: .internalSettings,
             description: "Custom application settings",
             action: onNavigate)
+          #else
+          if showInternalSettingsInRelease {
+            SettingsCard(
+              section: .internalSettings,
+              description: "Custom application settings",
+              action: onNavigate)
+          }
           #endif
         }
       }

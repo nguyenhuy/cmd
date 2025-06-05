@@ -184,6 +184,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
       // TODO: add error message to the UI.
       defaultLogger.error("Error sending message", error)
       streamingTask = nil
+
+      if case .message(let lastEvent) = events.last {
+        events[events.count - 1] = .message(lastEvent.with(failureReason: "Error sending message: \(error.localizedDescription)"))
+      }
     }
   }
 

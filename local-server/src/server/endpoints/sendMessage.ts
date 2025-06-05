@@ -5,6 +5,7 @@ import {
 	Message,
 	MessageContent,
 	Ping,
+	ResponseError,
 	SendMessageRequestParams,
 	StreamedResponseChunk,
 	TextMessage,
@@ -82,12 +83,14 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					},
 					{} as Record<string, MappedTool>,
 				),
-				messages: addProviderOptionsToMessages && addProviderOptionsToMessages(messages.map(mapMessage)),
+				messages: addProviderOptionsToMessages
+					? addProviderOptionsToMessages(messages.map(mapMessage))
+					: messages.map(mapMessage),
 				toolCallStreaming: true,
 				providerOptions: generalProviderOptions,
 			})
 
-			processResponseStream(fullStream, res)
+			await processResponseStream(fullStream, res)
 		} catch (error) {
 			logInfo("Request body that led to error:\n\n" + JSON.stringify(req.body, null, 2))
 			logError(error)
@@ -104,11 +107,12 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
  * @throws {UserFacingError} If an error occurs while processing the stream or sending the response.
  */
 async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>, res: Response) {
+	let interval: NodeJS.Timeout | undefined
 	try {
 		const chunks: Array<StreamedResponseChunk> = []
 
 		let i = 0
-		const interval = setInterval(() => {
+		interval = setInterval(() => {
 			if (res.getHeader("Content-Type") === undefined) {
 				res.setHeader("Content-Type", "text/event-stream")
 				res.setHeader("Cache-Control", "no-cache")
@@ -118,7 +122,6 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 		}, 1000)
 
 		for await (const chunk of stream) {
-			logInfo(`Received chunk #${i}: ${JSON.stringify(chunk)}`)
 			const transformChunk = (
 				chunk: TextStreamPart<Record<string, MappedTool>>,
 			): StreamedResponseChunk | undefined => {
@@ -146,10 +149,7 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 							idx: i++,
 						}
 					case "error":
-						throw new UserFacingError({
-							message: chunk.error as string,
-							statusCode: 500,
-						})
+						return mapResponseError(chunk.error, () => i++)
 					default:
 						logInfo(`skipping chunk: ${chunk.type}`)
 						return undefined
@@ -167,18 +167,25 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 			}
 			res.write(JSON.stringify(newChunk))
 		}
-		clearInterval(interval)
+		logInfo("Stream ended")
+		if (interval) {
+			clearInterval(interval)
+		}
 		res.end()
 
 		if (process.env.NODE_ENV === "development") {
-			debugLogReceivedMessage(chunks)
+			debugLogSendingResponseMessageToApp(chunks)
 		}
 	} catch (error) {
+		if (interval) {
+			clearInterval(interval)
+		}
+		console.log({ error })
 		throw addUserFacingError(error, "Failed to send message.")
 	}
 }
 
-const debugLogReceivedMessage = (chunks: Array<StreamedResponseChunk>) => {
+const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk>) => {
 	let messageType: "error" | "text_delta" | "tool_call" | "tool_call_delta" | "ping" | undefined
 	let text: string | undefined
 
@@ -355,4 +362,83 @@ const isToolUseRequestMessage = (message: MessageContent): message is ToolUseReq
 
 const isDefined = <T>(value: T | undefined): value is T => {
 	return value !== undefined
+}
+
+/**
+ * Maps an unknown error to a ResponseError. Deal with different error formats from supported providers.
+ * @param err - The error to map.
+ * @param idx - A function that returns the current index of the chunk.
+ * @returns A ResponseError.
+ */
+const mapResponseError = (err: unknown, idx: () => number): ResponseError => {
+	const error = err as UnknownError
+	if (!error) {
+		return {
+			type: "error",
+			message: "Error sending message",
+			statusCode: 500,
+			idx: idx(),
+		}
+	} else if (typeof error === "string") {
+		return {
+			type: "error",
+			message: error as string,
+			statusCode: 500,
+			idx: idx(),
+		}
+	} else if (typeof error === "object" && error !== null) {
+		const responseBody = error.responseBody
+		if (typeof responseBody === "string") {
+			try {
+				const info = JSON.parse(responseBody) as ResponseBody
+				return {
+					type: "error",
+					message: info.message || info.error?.message || "Error sending message",
+					statusCode: info.statusCode || info.code || info.error?.statusCode || info.error?.code || 500,
+					idx: idx(),
+				}
+			} catch {
+				return {
+					type: "error",
+					message: responseBody,
+					statusCode: 500,
+					idx: idx(),
+				}
+			}
+		} else {
+			return {
+				type: "error",
+				message: error.message || "Error sending message",
+				statusCode: error.statusCode || 500,
+				idx: idx(),
+			}
+		}
+	} else {
+		return {
+			type: "error",
+			message: "Error sending message",
+			statusCode: 500,
+			idx: idx(),
+		}
+	}
+}
+
+type UnknownError =
+	| undefined
+	| string
+	| {
+			responseBody: string | unknown | undefined
+			message: string | undefined
+			statusCode: number | undefined
+	  }
+
+type ResponseBody = {
+	error?: {
+		message?: string
+		statusCode?: number
+		code?: number
+	}
+	message?: string
+	statusCode?: number
+	code?: number
 }

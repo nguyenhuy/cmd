@@ -27,18 +27,39 @@ watch("./src/server/schemas", { recursive: true }, function (evt, name) {
 	}
 })
 
-watch("../app/modules", { recursive: true }, function (evt, name) {
-	const fileName = name.split("/").pop()
-	if (fileName === "Package.swift" || fileName === "Module.swift" || !fileName?.endsWith(".swift")) {
+watch("../app/modules", { recursive: true }, function (evt, filePath) {
+	const fileName = filePath.split("/").pop()
+	if (
+		fileName === "Package.swift" ||
+		fileName === "Module.swift" ||
+		!fileName?.endsWith(".swift") ||
+		fileName.includes(".generated.")
+	) {
 		return
 	}
+	// Ignore gitignored files.
+
+	try {
+		execSync(`git check-ignore ${filePath}`)
+		return
+	} catch {
+		// The command fails when the file is not ignored.
+	}
+	console.log("changed.", filePath)
+
 	const appPath = import.meta.resolve("../../app").replace("file://", "").replace("index.json", "")
 
 	// Look for Package.swift files in the modules directory that are not checked in. Their presence indicates that they need to be updated.
-	const ignoredSwiftPackage = execSync(
-		`find ${appPath}/modules -not -path './.git/*' -name Package.swift 2>/dev/null | git check-ignore --stdin`,
-	)
-	const generateAllPackages = `${ignoredSwiftPackage}`.includes("Package.swift")
+	const ignoredSwiftPackage = () => {
+		try {
+			return execSync(
+				`find ${appPath}/modules -not -path './.git/*' -name Package.swift 2>/dev/null | git check-ignore --stdin`,
+			)
+		} catch {
+			return ""
+		}
+	}
+	const generateAllPackages = `${ignoredSwiftPackage()}`.includes("Package.swift")
 
 	execSync(`${appPath}/cmd.sh sync:dependencies ${generateAllPackages ? "--all" : ""}`)
 })

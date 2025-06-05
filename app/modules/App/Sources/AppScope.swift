@@ -1,7 +1,6 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
-import AppUpdater
 @preconcurrency import Combine
 import DependencyFoundation
 import LoggingService
