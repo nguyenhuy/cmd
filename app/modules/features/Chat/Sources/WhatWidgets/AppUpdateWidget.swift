@@ -48,9 +48,7 @@ struct VisibleAppUpdateWidget: View {
   }
 
   var body: some View {
-    if hasIgnoredUpdate {
-      EmptyView()
-    } else {
+    if !hasIgnoredUpdate {
       VStack(alignment: .leading) {
         HStack {
           Text("Update available")
@@ -88,6 +86,7 @@ struct VisibleAppUpdateWidget: View {
       .padding(10)
       .frame(maxWidth: .infinity, alignment: .leading)
       .roundedCornerWithBorder(borderColor: colorScheme.textAreaBorderColor, radius: 6)
+      .padding()
     }
   }
 
