@@ -26,6 +26,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : false,
         "customInstructions" : {},
+        "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
@@ -58,6 +59,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "customInstructions" : {},
+        "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {
           "anthropic" : {
@@ -101,6 +103,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "customInstructions" : {},
+        "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {
           "anthropic" : {
@@ -235,6 +238,7 @@ struct SettingsCodableTests {
         "allowAnonymousAnalytics" : true,
         "automaticallyCheckForUpdates" : true,
         "customInstructions" : {},
+        "toolPreferences" : [],
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
@@ -371,6 +375,7 @@ struct SettingsCodableTests {
         "customInstructions" : {},
         "inactiveModels" : [],
         "llmProviderSettings" : {},
+        "toolPreferences" : [],
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {}
       }
@@ -396,6 +401,7 @@ struct SettingsCodableTests {
       {
         "allowAnonymousAnalytics" : false,
         "automaticallyCheckForUpdates" : true,
+        "toolPreferences" : [],
         "customInstructions" : {
           "agentMode" : "Focus on code quality and best practices",
           "askMode" : "Always be concise and helpful"
@@ -462,6 +468,143 @@ struct SettingsCodableTests {
       customInstructions: Settings.CustomInstructions(
         askModePrompt: nil,
         agentModePrompt: "Prioritize performance and efficiency"))
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Encode and decode settings with tool preferences")
+  func testSettingsWithToolPreferences() throws {
+    let toolPreferences = [
+      Settings.ToolPreference(toolName: "EditFilesTool", alwaysApprove: true),
+      Settings.ToolPreference(toolName: "ExecuteCommandTool", alwaysApprove: false),
+      Settings.ToolPreference(toolName: "ReadFileTool", alwaysApprove: true),
+    ]
+
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      preferedProviders: [.claudeHaiku_3_5: .anthropic],
+      llmProviderSettings: [:],
+      toolPreferences: toolPreferences)
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "automaticallyCheckForUpdates" : true,
+        "customInstructions" : {},
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : true,
+        "preferedProviders" : {
+          "claude-haiku-35" : "anthropic"
+        },
+        "toolPreferences" : [
+          {
+            "alwaysApprove" : true,
+            "toolName" : "EditFilesTool"
+          },
+          {
+            "alwaysApprove" : false,
+            "toolName" : "ExecuteCommandTool"
+          },
+          {
+            "alwaysApprove" : true,
+            "toolName" : "ReadFileTool"
+          }
+        ]
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
+  }
+
+  @Test("Decode settings with empty tool preferences")
+  func testDecodingEmptyToolPreferences() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "toolPreferences" : []
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      preferedProviders: [:],
+      llmProviderSettings: [:],
+      toolPreferences: [])
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Decode settings with single tool preference")
+  func testDecodingSingleToolPreference() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : false,
+        "pointReleaseXcodeExtensionToDebugApp" : true,
+        "toolPreferences" : [
+          {
+            "alwaysApprove" : true,
+            "toolName" : "BuildTool"
+          }
+        ]
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      preferedProviders: [:],
+      llmProviderSettings: [:],
+      toolPreferences: [
+        Settings.ToolPreference(toolName: "BuildTool", alwaysApprove: true),
+      ])
+
+    try testDecoding(expectedSettings, json)
+  }
+
+  @Test("Round-trip with tool preferences preserves data")
+  func testRoundTripWithToolPreferences() throws {
+    let originalSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: false,
+      preferedProviders: [.gpt_4o: .openAI],
+      llmProviderSettings: [
+        .openAI: Settings.LLMProviderSettings(
+          apiKey: "openai-key",
+          baseUrl: nil,
+          createdOrder: 1),
+      ],
+      customInstructions: Settings.CustomInstructions(
+        askModePrompt: "Be concise",
+        agentModePrompt: nil),
+      toolPreferences: [
+        Settings.ToolPreference(toolName: "LSTool", alwaysApprove: true),
+        Settings.ToolPreference(toolName: "SearchFilesTool", alwaysApprove: false),
+      ])
+
+    let jsonData = try JSONEncoder().encode(originalSettings)
+    let decodedSettings = try JSONDecoder().decode(Settings.self, from: jsonData)
+
+    #expect(originalSettings == decodedSettings)
+  }
+
+  @Test("Decode settings without toolPreferences field uses empty array")
+  func testDecodingMissingToolPreferences() throws {
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "pointReleaseXcodeExtensionToDebugApp" : false
+      }
+      """
+
+    let expectedSettings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      allowAnonymousAnalytics: true,
+      preferedProviders: [:],
+      llmProviderSettings: [:],
+      toolPreferences: []) // Should default to empty array
 
     try testDecoding(expectedSettings, json)
   }
