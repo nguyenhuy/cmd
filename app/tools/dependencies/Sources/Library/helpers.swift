@@ -78,7 +78,6 @@ extension String {
     guard currentContent.replacing(/\s/, with: "") != replacing(/\s/, with: "") else {
       return
     }
-    print("Updating \(url.path)")
     try write(to: url, atomically: atomically, encoding: encoding)
   }
 }
