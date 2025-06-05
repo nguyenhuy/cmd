@@ -11,17 +11,34 @@ import Testing
 @testable import ExecuteCommandTool
 
 struct ExecuteCommandToolTests {
+
+  @Test
+  func trimmedToNotExceedReturnsOriginalStringWhenUnderLimit() {
+    let text = "Hello, World!"
+    let result = text.trimmed(toNotExceed: 20)
+    #expect(result == "Hello, World!")
+  }
+
+  @Test
+  func trimmedToNotExceedTruncatesLongString() {
+    let text = "This is a very long string that should be truncated in the middle"
+    let result = text.trimmed(toNotExceed: 30)
+    #expect(result.hasPrefix("This is a very"))
+    #expect(result.hasSuffix("d in the middle"))
+    #expect(result.contains("... [35 characters truncated] ..."))
+    #expect(result.count < text.count) // Should be shorter than original
+  }
+
   @Test
   func completesWithTheExpectedOutcome() async throws {
     let shellService = MockShellService()
-    shellService.onRun = { command, cwd, useInteractiveShell, _, _ in
+    shellService.onRun = { command, cwd, useInteractiveShell, _ in
       #expect(command == "ls -la")
       #expect(cwd == "/path/to/root/path/to/dir")
       #expect(useInteractiveShell == true)
       return CommandExecutionResult(
         exitCode: 0,
-        stdout: "file.txt",
-        stderr: "")
+        mergedOutput: "file.txt")
     }
 
     let llmService = MockLLMService()
@@ -46,14 +63,13 @@ struct ExecuteCommandToolTests {
     }
     let result = try await toolUse.result
     #expect(result.exitCode == 0)
-    #expect(result.stdout == "file.txt")
-    #expect(result.stderr == "")
+    #expect(result.output == "file.txt")
   }
 
   @Test
   func completesWithAFailureWhenSomethingWentWrong() async throws {
     let shellService = MockShellService()
-    shellService.onRun = { _, _, _, _, _ in
+    shellService.onRun = { _, _, _, _ in
       struct ShellError: Error {
         let message: String
       }
