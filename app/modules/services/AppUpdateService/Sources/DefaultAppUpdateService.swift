@@ -114,6 +114,11 @@ final class DefaultAppUpdateService: AppUpdateService {
     updateTask?.cancel()
     updateTask = Task { @MainActor [weak self] in
       while let self, canCheckForUpdates {
+        guard hasUpdateAvailable.currentValue == .noUpdateAvailable else {
+          // Stop checking for updates if an update is already available.
+          // It appears that checking for update when one has been installed for the next launch will unexpectedly quit and relaunch the app.
+          break
+        }
         try Task.checkCancellation()
         let updater = UpdateChecker()
         try await Task { @MainActor in
@@ -229,7 +234,8 @@ extension UpdateChecker: SPUUpdaterDelegate {
     immediateInstallationBlock _: @escaping () -> Void)
     -> Bool
   {
-    true
+    updateLogger.log("updater(willInstallUpdateOnQuit:)")
+    return true
   }
 
   func updater(_: SPUUpdater, mayPerform _: SPUUpdateCheck) throws {

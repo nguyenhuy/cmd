@@ -66,7 +66,7 @@ struct ChatInputView: View {
             inputViewModel.handleApproval(of: pendingApproval, result: .denied)
           },
           onAlwaysApprove: {
-            inputViewModel.handleApproval(of: pendingApproval, result: .alwaysApprove(toolName: pendingApproval.displayName))
+            inputViewModel.handleApproval(of: pendingApproval, result: .alwaysApprove(toolName: pendingApproval.toolName))
           })
           .transition(
             .asymmetric(

@@ -21,8 +21,14 @@ import XcodeObserverServiceInterface
 
 // MARK: - ToolApprovalRequest
 
+/// Represents a request for user approval to execute a tool.
+/// Used to display approval prompts and track pending tool execution requests.
 struct ToolApprovalRequest: Identifiable {
+  /// Unique identifier for the request, automatically generated.
   let id = UUID()
+  /// Internal name of the tool requesting approval.
+  let toolName: String
+  /// User-friendly name of the tool to display in the approval UI.
   let displayName: String
 }
 
@@ -309,6 +315,7 @@ final class ChatInputViewModel {
   func requestApproval(for toolUse: any ToolUse) async -> ToolApprovalResult {
     await withCheckedContinuation { continuation in
       let request = ToolApprovalRequest(
+        toolName: toolUse.toolName,
         displayName: toolUse.toolDisplayName)
       self.toolCallsPendingApproval.append(PendingToolApproval(request: request, continuation: continuation))
     }
