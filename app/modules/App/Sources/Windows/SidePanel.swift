@@ -44,7 +44,10 @@ final class SidePanel: XcodeWindow {
     ]
 
     let idealFrame = trackedWindow.map { self.frame(from: $0) } ?? nil
-    let defaultFrame = CGRect.zero
+    let screen = NSScreen.screens.first?.frame
+    let defaultFrame = defaultChatPositionIsInverted
+      ? CGRect(x: 0, y: 0, width: defaultWidth, height: screen?.size.height ?? 1000)
+      : CGRect(x: screen?.size.width ?? 0 - defaultWidth, y: 0, width: defaultWidth, height: screen?.size.height ?? 1000)
 
     let frame = idealFrame ?? defaultFrame
     if trackedWindow != nil {
@@ -117,7 +120,8 @@ final class SidePanel: XcodeWindow {
     // Ensures Xcode has focus.
     if
       let xcodeApp = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.dt.Xcode").last,
-      let trackedWindow = trackedWindow?.wrappedValue
+      let trackedWindow = trackedWindow?.wrappedValue,
+      isTrackedWindowOnScreen
     {
       WindowActivation.activateAppAndMakeWindowFront(xcodeApp, window: trackedWindow)
     }
