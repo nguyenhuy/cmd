@@ -46,13 +46,13 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
   public static let claudeSonnet_4_0 = LLMModel(
-    name: "claude-4.0-sonnet",
+    name: "claude-4-sonnet",
     id: "claude-sonnet-4",
     contextSize: 200_000,
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
     documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
   public static let claudeOpus_4 = LLMModel(
-    name: "claude-opus-4",
+    name: "claude-4-opus",
     id: "claude-opus-4",
     contextSize: 200_000,
     defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),

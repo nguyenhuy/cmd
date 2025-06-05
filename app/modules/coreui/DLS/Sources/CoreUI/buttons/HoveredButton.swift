@@ -28,12 +28,36 @@ public struct HoveredButton<Content: View>: View {
     self.backgroundColor = backgroundColor
     self.padding = padding
     self.cornerRadius = cornerRadius
+    self.content = { _ in content() }
+  }
+
+  /// Creates a button that changes its appearance when hovered.
+  /// - Parameters:
+  /// - action: The action to perform when the button is tapped.
+  /// - onHoverColor: The color to apply when the button is hovered.
+  /// - backgroundColor: The background color of the button.
+  /// - padding: The amount of padding around the button content.
+  /// - cornerRadius: The corner radius of the button.
+  /// - content: A closure that returns the content of the button.
+  public init(
+    action: @escaping () -> Void,
+    onHoverColor: Color = .clear,
+    backgroundColor: Color = .clear,
+    padding: CGFloat = 0,
+    cornerRadius: CGFloat = 4,
+    @ViewBuilder content: @escaping (Bool) -> Content)
+  {
+    self.action = action
+    self.onHoverColor = onHoverColor
+    self.backgroundColor = backgroundColor
+    self.padding = padding
+    self.cornerRadius = cornerRadius
     self.content = content
   }
 
   public var body: some View {
     Button(action: action, label: {
-      content()
+      content(isHovered)
         .padding(padding)
         .tappableTransparentBackground()
         .background(isHovered ? onHoverColor : backgroundColor)
@@ -54,7 +78,7 @@ public struct HoveredButton<Content: View>: View {
   private let backgroundColor: Color
   private let padding: CGFloat
   private let cornerRadius: CGFloat
-  private let content: () -> Content
+  private let content: (Bool) -> Content
 
 }
 

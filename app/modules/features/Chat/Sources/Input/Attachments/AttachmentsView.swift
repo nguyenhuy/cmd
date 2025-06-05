@@ -35,7 +35,7 @@ struct AttachmentsView: View {
             isSearching.toggle()
             searchAttachment(isSearching)
           }, label: {
-            Image(systemName: "plus")
+            Text("@")
               .font(.system(size: 12, weight: .semibold))
               .frame(width: 14, height: 14)
           })

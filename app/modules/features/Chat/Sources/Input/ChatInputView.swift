@@ -180,9 +180,11 @@ struct ChatInputView: View {
       { model in
         Text(model.name)
       }
-      ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
       HStack(spacing: 10) {
         Spacer()
+
+        ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
+          .frame(width: 14, height: 14)
         if !isStreamingResponse {
           sendButton
         }
@@ -237,7 +239,6 @@ struct ChatInputView: View {
     }) {
       HStack(spacing: 2) {
         Image(systemName: "return")
-        Text("chat")
       }
       .tappableTransparentBackground()
     }
