@@ -4,14 +4,30 @@
 import ChatFoundation
 import Foundation
 
+// MARK: - PromptConfiguration
+
+/// Configuration container for generating LLM prompts.
+///
+/// `PromptConfiguration` encapsulates all the parameters needed to construct
+/// a complete system prompt for the LLM, grouping related configuration values
+/// into a single container.
+struct PromptConfiguration {
+  let projectRoot: URL?
+  let mode: ChatMode
+  let customInstructions: String?
+}
+
+// MARK: - Prompt
+
 enum Prompt {
 
-  static func defaultPrompt(projectRoot: URL?, mode: ChatMode) -> String {
+  static func defaultPrompt(configuration: PromptConfiguration) -> String {
     [
       initialInstructions,
-      agentInstruction(mode: mode),
+      configuration.customInstructions,
+      agentInstruction(mode: configuration.mode),
       coreInstructions,
-      pathFormattingDirection(projectRoot: projectRoot),
+      pathFormattingDirection(projectRoot: configuration.projectRoot),
     ]
     .compactMap(\.self)
     .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }

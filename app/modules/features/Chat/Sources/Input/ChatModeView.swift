@@ -1,6 +1,7 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import ChatFoundation
 import DLS
 import SwiftUI
 
@@ -11,10 +12,10 @@ private let iconSize: CGFloat = 11
 struct AgentModeView: View {
   var body: some View {
     HStack(spacing: 3) {
-      Icon(systemName: "infinity")
+      Icon(systemName: ChatMode.agent.systemImageName)
         .frame(width: iconSize, height: iconSize)
-      Text("Agent")
-      Text("⌘I")
+      Text(ChatMode.agent.name)
+      Text(ChatMode.agent.commandDisplay)
     }
   }
 }
@@ -24,10 +25,10 @@ struct AgentModeView: View {
 struct AskModeView: View {
   var body: some View {
     HStack(spacing: 3) {
-      Icon(systemName: "bubble")
+      Icon(systemName: ChatMode.ask.systemImageName)
         .frame(width: iconSize, height: iconSize)
-      Text("Ask")
-      Text("⌘L")
+      Text(ChatMode.ask.name)
+      Text(ChatMode.ask.commandDisplay)
     }
   }
 }
