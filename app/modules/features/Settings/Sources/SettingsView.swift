@@ -100,7 +100,8 @@ public struct SettingsView: View {
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
           showOnboardingScreenAgain: $viewModel.showOnboardingScreenAgain,
           pointReleaseXcodeExtensionToDebugApp: $viewModel.pointReleaseXcodeExtensionToDebugApp,
-          showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease)
+          showInternalSettingsInRelease: $viewModel.showInternalSettingsInRelease,
+          defaultChatPositionIsInverted: $viewModel.defaultChatPositionIsInverted)
 
       case .about:
         AboutSettingsView(

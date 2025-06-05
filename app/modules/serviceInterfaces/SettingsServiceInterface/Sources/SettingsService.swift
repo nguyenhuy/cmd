@@ -109,4 +109,6 @@ public typealias UserDefaultsKey = String
 extension UserDefaultsKey {
   public static let hasCompletedOnboardingUserDefaultsKey = "hasCompletedOnboarding"
   public static let showInternalSettingsInRelease = "showInternalSettingsInRelease"
+  public static let defaultChatPositionIsInverted = "defaultChatPositionIsInverted"
+  public static let repeatLastLLMInteraction = "llmService.isRepeating"
 }

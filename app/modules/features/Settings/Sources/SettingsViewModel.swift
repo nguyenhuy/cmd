@@ -26,9 +26,10 @@ public final class SettingsViewModel {
     self.settings = settings
 
     providerSettings = settings.llmProviderSettings
-    repeatLastLLMInteraction = userDefaults.bool(forKey: "llmService.isRepeating")
+    repeatLastLLMInteraction = userDefaults.bool(forKey: .repeatLastLLMInteraction)
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
+    defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -72,7 +73,7 @@ public final class SettingsViewModel {
   // MARK: - Internal settings
   var repeatLastLLMInteraction: Bool {
     didSet {
-      userDefaults.set(repeatLastLLMInteraction, forKey: "llmService.isRepeating")
+      userDefaults.set(repeatLastLLMInteraction, forKey: .repeatLastLLMInteraction)
     }
   }
 
@@ -95,6 +96,12 @@ public final class SettingsViewModel {
     set {
       settings.pointReleaseXcodeExtensionToDebugApp = newValue
       settingsService.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: newValue)
+    }
+  }
+
+  var defaultChatPositionIsInverted: Bool {
+    didSet {
+      userDefaults.set(defaultChatPositionIsInverted, forKey: .defaultChatPositionIsInverted)
     }
   }
 

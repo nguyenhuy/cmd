@@ -5,6 +5,7 @@ import AppFoundation
 import Combine
 import Foundation
 import FoundationInterfaces
+import SettingsServiceInterface
 import ThreadSafe
 
 #if DEBUG
@@ -18,7 +19,7 @@ import ThreadSafe
 final class RepeatDebugHelper: Sendable {
   init(userDefaults: UserDefaultsI) {
     self.userDefaults = userDefaults
-    isRepeating = userDefaults.bool(forKey: "llmService.isRepeating")
+    isRepeating = userDefaults.bool(forKey: .repeatLastLLMInteraction)
     startSession()
   }
 

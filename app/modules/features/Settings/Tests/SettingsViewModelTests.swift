@@ -40,7 +40,7 @@ struct SettingsViewModelTests {
     let mockSettingsService = MockSettingsService()
     let mockUserDefaults = MockUserDefaults()
 
-    mockUserDefaults.set(true, forKey: "llmService.isRepeating")
+    mockUserDefaults.set(true, forKey: .repeatLastLLMInteraction)
     mockUserDefaults.set(false, forKey: .hasCompletedOnboardingUserDefaultsKey)
 
     let viewModel = withDependencies {
@@ -123,7 +123,7 @@ struct SettingsViewModelTests {
 
     viewModel.repeatLastLLMInteraction = true
 
-    #expect(mockUserDefaults.bool(forKey: "llmService.isRepeating") == true)
+    #expect(mockUserDefaults.bool(forKey: .repeatLastLLMInteraction) == true)
   }
 
   @Test("showOnboardingScreenAgain setter updates user defaults with inverted logic")

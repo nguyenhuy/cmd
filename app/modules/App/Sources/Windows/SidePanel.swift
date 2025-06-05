@@ -6,16 +6,20 @@ import AccessibilityObjCFoundation
 import AppKit
 import Chat
 import Dependencies
+import FoundationInterfaces
 import LoggingServiceInterface
 import SettingsFeature
+import SettingsServiceInterface
 import SwiftUI
 import XcodeObserverServiceInterface
 
 /// A side panel displayed on the side of Xcode.
 final class SidePanel: XcodeWindow {
-
   init(windowsViewModel: WindowsViewModel) {
     self.windowsViewModel = windowsViewModel
+
+    @Dependency(\.userDefaults) var userDefaults
+    defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
 
     super.init(contentRect: .zero)
 
@@ -75,6 +79,8 @@ final class SidePanel: XcodeWindow {
     }
   }
 
+  let defaultChatPositionIsInverted: Bool
+
   override var canBecomeKey: Bool { true }
 
   override var acceptsFirstResponder: Bool { true }
@@ -117,9 +123,13 @@ final class SidePanel: XcodeWindow {
       let workspaceFrame = trackedWindow.appKitFrame
     else { return }
 
-    var xcodeFrame = CGRect(
-      origin: workspaceFrame.origin,
-      size: CGSize(width: frame.maxX - workspaceFrame.minX, height: workspaceFrame.height))
+    var xcodeFrame = defaultChatPositionIsInverted
+      ? CGRect(
+        origin: CGPoint(x: workspaceFrame.origin.x - frame.width, y: workspaceFrame.origin.y),
+        size: CGSize(width: workspaceFrame.maxX - frame.minX, height: workspaceFrame.height))
+      : CGRect(
+        origin: workspaceFrame.origin,
+        size: CGSize(width: frame.maxX - workspaceFrame.minX, height: workspaceFrame.height))
     // Make sure we're not extending beyond the screen, which could happen if the host app was off screen or on another screen.
     guard let screen = NSScreen.screens.first(where: { $0.frame.contains(workspaceFrame.origin) }) else {
       return
@@ -188,14 +198,20 @@ final class SidePanel: XcodeWindow {
       let frame = CGRect(
         origin: CGPoint(
           // Make sure the frame is within the screen bounds.
-          x: min(workspaceFrame.maxX, (screen?.maxX ?? .infinity) - defaultWidth),
+          x: defaultChatPositionIsInverted
+            ? max(workspaceFrame.minX, (screen?.minX ?? -.infinity))
+            : min(workspaceFrame.maxX, (screen?.maxX ?? .infinity) - defaultWidth),
           y: workspaceFrame.minY),
         size: CGSize(width: defaultWidth, height: workspaceFrame.height))
 
       let xcodeFrame = CGRect(
-        origin: workspaceFrame.origin,
+        origin: defaultChatPositionIsInverted
+          ? CGPoint(x: workspaceFrame.origin.x + defaultWidth, y: workspaceFrame.origin.y)
+          : workspaceFrame.origin,
         size: CGSize(
-          width: frame.minX - workspaceFrame.minX,
+          width: defaultChatPositionIsInverted
+            ? workspaceFrame.maxX - frame.maxX
+            : frame.minX - workspaceFrame.minX,
           height: combinedFrame.height))
       window.set(appKitframe: xcodeFrame)
 
