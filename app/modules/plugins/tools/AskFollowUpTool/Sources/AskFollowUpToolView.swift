@@ -26,7 +26,7 @@ struct ToolUseView: View {
   var body: some View {
     switch toolUse.status {
     case .notStarted:
-      VStack { }
+      EmptyView()
     case .pendingApproval:
       pendingApprovalView
     case .rejected:
@@ -36,7 +36,7 @@ struct ToolUseView: View {
     case .completed(.success(let output)):
       followUpView(selection: output.response)
     case .completed(.failure):
-      VStack { }
+      EmptyView()
     }
   }
 
@@ -44,16 +44,30 @@ struct ToolUseView: View {
 
   @ViewBuilder
   private var pendingApprovalView: some View {
-    Text("Waiting for approval: Ask follow up question")
-      .foregroundColor(colorScheme.toolUseForeground)
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "bubble.left.and.bubble.right")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Waiting for approval: Ask follow up question")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
       .padding(.vertical, 8)
+    }
   }
 
   @ViewBuilder
   private var rejectedView: some View {
-    Text("Rejected: Ask follow up question")
-      .foregroundColor(colorScheme.toolUseForeground)
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "bubble.left.and.bubble.right")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Rejected: Ask follow up question")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
       .padding(.vertical, 8)
+    }
   }
 
   @ViewBuilder

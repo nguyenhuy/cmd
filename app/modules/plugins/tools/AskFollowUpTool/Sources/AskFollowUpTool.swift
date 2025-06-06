@@ -22,7 +22,7 @@ public final class AskFollowUpTool: NonStreamableTool {
       self.toolUseId = toolUseId
       self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
       status = stream
       self.updateStatus = updateStatus
     }

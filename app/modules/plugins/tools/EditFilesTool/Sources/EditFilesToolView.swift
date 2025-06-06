@@ -22,9 +22,9 @@ extension EditFilesTool.Use: DisplayableToolUse {
 // MARK: - ToolUseView
 
 struct ToolUseView: View {
-
+  
   @Bindable var toolUse: ToolUseViewModel
-
+  
   var body: some View {
     switch toolUse.status {
     case .notStarted:
@@ -36,14 +36,7 @@ struct ToolUseView: View {
     case .running, .completed:
       ScrollView {
         VStack(spacing: 12) {
-          ForEach(toolUse.changes, id: \.path) { fileChange in
-            FileChangeView(
-              change: fileChange.change,
-              editState: fileChange.state,
-              handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
-              handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
-              handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
-          }
+          toolUseChanges
           #if DEBUG
           // TODO: remove this
           if toolUse.changes.isEmpty {
@@ -55,28 +48,47 @@ struct ToolUseView: View {
       }
     }
   }
-
+  
   @Environment(\.colorScheme) private var colorScheme
-
-  @ViewBuilder
-  private var pendingApprovalView: some View {
-    HStack {
-      Icon(systemName: "pencil")
-        .frame(width: 14, height: 14)
-        .foregroundColor(colorScheme.toolUseForeground)
-      Text("Waiting for approval: Edit files")
-        .foregroundColor(colorScheme.toolUseForeground)
+  
+  private var toolUseChanges: some View {
+    ForEach(toolUse.changes, id: \.path) { fileChange in
+      FileChangeView(
+        change: fileChange.change,
+        editState: fileChange.state,
+        handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
+        handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
+        handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
     }
   }
-
-  @ViewBuilder
+  
+  private var pendingApprovalView: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "pencil")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Waiting for approval: Edit files")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
+      .padding(.vertical, 8)
+      ScrollView {
+        toolUseChanges
+          .padding(.vertical)
+      }
+    }
+  }
+  
   private var rejectedView: some View {
-    HStack {
-      Icon(systemName: "pencil")
-        .frame(width: 14, height: 14)
-        .foregroundColor(colorScheme.toolUseForeground)
-      Text("Rejected: Edit files")
-        .foregroundColor(colorScheme.toolUseForeground)
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "pencil")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Rejected: Edit files")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
+      .padding(.vertical, 8)
     }
   }
 }
@@ -87,11 +99,11 @@ extension FileDiffViewModel {
   var filename: String {
     filePath.lastPathComponent
   }
-
+  
   var additionCount: Int? {
     formattedDiff?.changes.filter { $0.change.type == .added }.count
   }
-
+  
   var deletionCount: Int? {
     formattedDiff?.changes.filter { $0.change.type == .removed }.count
   }
@@ -105,7 +117,7 @@ struct FileChangeView: View {
   let handleApply: () async -> Void
   let handleReject: () async -> Void
   let handleCopy: () async -> Void
-
+  
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       // Tab-style header when collapsed
@@ -115,7 +127,7 @@ struct FileChangeView: View {
         HStack(spacing: 8) {
           FileIcon(filePath: change.filePath)
             .frame(width: 16, height: 16)
-
+          
           Button(action: {
             openFile()
           }) {
@@ -133,15 +145,15 @@ struct FileChangeView: View {
               Text("+\(additionCount)")
                 .font(.system(size: 10))
                 .foregroundColor(colorScheme.addedLineDiffText)
-
+              
               Text("-\(deletionCount)")
                 .font(.system(size: 10))
                 .foregroundColor(colorScheme.removedLineDiffText)
             }
           }
-
+          
           Spacer()
-
+          
           // Action buttons (visible on hover)
           if isHovering {
             HStack(spacing: 12) {
@@ -191,7 +203,7 @@ struct FileChangeView: View {
               }
             }
           }
-
+          
           if hasAppliedChanges {
             // Apply/Checkmark
             Image(systemName: "checkmark")
@@ -210,7 +222,7 @@ struct FileChangeView: View {
               .foregroundColor(.orange)
               .font(.system(size: 10))
           }
-
+          
           // Expand/collapse button (hidden but keeps the tap area)
           Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
             .foregroundColor(.secondary)
@@ -226,13 +238,13 @@ struct FileChangeView: View {
         }
       }
       .buttonStyle(PlainButtonStyle())
-
+      
       // Main content - only shown when expanded
       if isExpanded {
         if case .error(let error) = editState {
           Text("error: \(error)")
         }
-
+        
         CodePreview(
           fileChange: change,
           collapsedHeight: 250,
@@ -246,37 +258,37 @@ struct FileChangeView: View {
     .padding(.horizontal, 4)
     .padding(.vertical, 2)
   }
-
+  
   private enum Constants {
     static let cornerRadius: CGFloat = 5
     static let spinnerSize: CGFloat = 11
   }
-
+  
   @State private var isExpanded = false
   @State private var isHovering = false
   @State private var isApplyingChanges = false
   @State private var isRejectingChanges = false
-
+  
   @Environment(\.colorScheme) private var colorScheme
-
+  
   @Dependency(\.xcodeController) private var xcodeController
-
+  
   private var hasAppliedChanges: Bool {
     if case .applied = editState { return true }
     return false
   }
-
+  
   private var hasRejectedChanges: Bool {
     if case .rejected = editState { return true }
     return false
   }
-
+  
   private func copyChanges() {
     Task {
       await handleCopy()
     }
   }
-
+  
   private func applyChanges() {
     isApplyingChanges = true
     Task {
@@ -284,7 +296,7 @@ struct FileChangeView: View {
       isApplyingChanges = false
     }
   }
-
+  
   private func rejectChanges() {
     isRejectingChanges = true
     Task {
@@ -292,7 +304,7 @@ struct FileChangeView: View {
       isRejectingChanges = false
     }
   }
-
+  
   private func openFile() {
     Task {
       do {
@@ -302,7 +314,6 @@ struct FileChangeView: View {
       }
     }
   }
-
 }
 
 #if DEBUG
