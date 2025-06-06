@@ -5,6 +5,9 @@ import request from "supertest"
 import { registerEndpoints } from "../checkpoint"
 import { RepoPerTaskCheckpointService } from "@/services/checkpoints"
 import { UserFacingError } from "../../errors"
+import { homedir } from "os"
+
+const home = homedir()
 
 // Create a complete mock service that extends ShadowCheckpointService
 const mockService = {
@@ -77,7 +80,7 @@ describe("Checkpoint Endpoints", () => {
 			expect(RepoPerTaskCheckpointService.create).toHaveBeenCalledWith({
 				taskId: "test-task-id",
 				workspaceDir: "/test/workspace",
-				shadowDir: "/tmp/command/checkpoints/",
+				shadowDir: `${home}/.cmd/command/checkpoints/`,
 				log: expect.any(Function),
 			})
 			expect(mockCheckpointService.initShadowGit).toHaveBeenCalled()
@@ -161,7 +164,7 @@ describe("Checkpoint Endpoints", () => {
 			expect(RepoPerTaskCheckpointService.create).toHaveBeenCalledWith({
 				taskId: "test-task-id-123",
 				workspaceDir: "/test/workspace",
-				shadowDir: "/tmp/command/checkpoints/",
+				shadowDir: `${home}/.cmd/command/checkpoints/`,
 				log: expect.any(Function),
 			})
 			expect(mockCheckpointService.initShadowGit).toHaveBeenCalled()
@@ -191,7 +194,7 @@ describe("Checkpoint Endpoints", () => {
 			expect(RepoPerTaskCheckpointService.create).toHaveBeenCalledWith({
 				taskId: "test-task-id-456",
 				workspaceDir: "/test/workspace",
-				shadowDir: "/tmp/command/checkpoints/",
+				shadowDir: `${home}/.cmd/command/checkpoints/`,
 				log: expect.any(Function),
 			})
 			expect(mockCheckpointService.initShadowGit).toHaveBeenCalled()

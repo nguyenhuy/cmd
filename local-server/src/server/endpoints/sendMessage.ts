@@ -401,7 +401,7 @@ const isDefined = <T>(value: T | undefined): value is T => {
  * @param idx - A function that returns the current index of the chunk.
  * @returns A ResponseError.
  */
-const mapResponseError = (err: unknown, idx: () => number): ResponseError => {
+export const mapResponseError = (err: unknown, idx: () => number): ResponseError => {
 	const error = err as UnknownError
 	if (!error) {
 		return {
@@ -425,7 +425,9 @@ const mapResponseError = (err: unknown, idx: () => number): ResponseError => {
 				return {
 					type: "error",
 					message: info.message || info.error?.message || "Error sending message",
-					statusCode: info.statusCode || info.code || info.error?.statusCode || info.error?.code || 500,
+					statusCode: mapErrorCode(
+						info.statusCode || info.code || info.error?.statusCode || info.error?.code,
+					),
 					idx: idx(),
 				}
 			} catch {
@@ -466,10 +468,26 @@ type UnknownError =
 type ResponseBody = {
 	error?: {
 		message?: string
-		statusCode?: number
-		code?: number
+		statusCode?: number | string
+		code?: number | string
 	}
 	message?: string
-	statusCode?: number
-	code?: number
+	statusCode?: number | string
+	code?: number | string
+}
+
+/**
+ * Maps an error code to a HTTP status code.
+ * @param code - The error code to map. Format might differ between providers.
+ * @returns The mapped HTTP status code.
+ */
+const mapErrorCode = (code: string | number | undefined): number => {
+	if (typeof code === "number") {
+		return code
+	} else if (typeof code === "string") {
+		if (code.includes("not_found")) {
+			return 404
+		}
+	}
+	return 500 // Default to 500 if code is undefined
 }
