@@ -13,9 +13,9 @@ public final class MockShellService: ShellService {
   public init() { }
 
   public var onRun: (
-    @Sendable (String, String?, Bool, ((AsyncStream<Data>) -> Void)?, ((AsyncStream<Data>) -> Void)?) async throws
+    @Sendable (String, String?, Bool, SubprocessHandle?) async throws
       -> CommandExecutionResult) = {
-    _, _, _, _, _ in
+    _, _, _, _ in
     CommandExecutionResult(exitCode: 0)
   }
 
@@ -23,11 +23,10 @@ public final class MockShellService: ShellService {
     _ command: String,
     cwd: String?,
     useInteractiveShell: Bool,
-    handleStdoutStream: (@Sendable (AsyncStream<Data>) -> Void)?,
-    handleSterrStream: (@Sendable (AsyncStream<Data>) -> Void)?)
+    body: SubprocessHandle? = nil)
     async throws -> CommandExecutionResult
   {
-    try await onRun(command, cwd, useInteractiveShell, handleStdoutStream, handleSterrStream)
+    try await onRun(command, cwd, useInteractiveShell, body)
   }
 }
 #endif

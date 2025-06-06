@@ -15,7 +15,8 @@ extension ExecuteCommandTool.Use: DisplayableToolUse {
       command: input.command,
       status: status,
       stdout: stdoutStream,
-      stderr: stderrStream)))
+      stderr: stderrStream,
+      kill: killRunningProcess)))
   }
 }
 
@@ -82,7 +83,7 @@ struct ToolUseView: View {
         Text(statusDescription)
           .font(.system(.body, design: .monospaced))
           .foregroundColor(foregroundColor)
-          .lineLimit(1)
+          .lineLimit(nil)
         if isHovered {
           IconButton(
             action: {
@@ -97,6 +98,18 @@ struct ToolUseView: View {
         } else {
           Spacer(minLength: 0)
             .frame(width: 15)
+        }
+        if case .running = toolUse.status {
+          Spacer(minLength: 0)
+          IconButton(
+            action: {
+              await toolUse.kill()
+            },
+            systemName: "stop.circle",
+            padding: 2,
+            cornerRadius: 0,
+            withCheckMark: false)
+            .frame(width: 15, height: 15)
         }
       }
       .tappableTransparentBackground()

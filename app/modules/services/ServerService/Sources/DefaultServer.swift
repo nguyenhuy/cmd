@@ -186,6 +186,7 @@ final class DefaultServer: Server {
 
       let mainPath = (applicationSupportPath as NSString).appendingPathComponent("launch-server.sh")
 
+      // TODO: move to using the shell service.
       let process = Process()
       process.launchPath = "/bin/zsh"
       #if DEBUG

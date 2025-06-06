@@ -246,6 +246,7 @@ targets.append(contentsOf: Target.module(
     "JSONFoundation",
     "ServerServiceInterface",
     "ShellServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [
@@ -324,6 +325,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMFoundation",
     "SettingsServiceInterface",
+    "ToolFoundation",
   ],
   testDependencies: [
     "FoundationInterfaces",
@@ -788,6 +790,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "ShellService",
   dependencies: [
+    .product(name: "Subprocess", package: "swift-subprocess"),
     "ConcurrencyFoundation",
     "DependencyFoundation",
     "LoggingServiceInterface",
@@ -970,6 +973,7 @@ let package = Package(
     .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.51.1"),
     .package(url: "https://github.com/statsig-io/statsig-kit", from: "1.53.5"),
     .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.7.0"),
+    .package(url: "https://github.com/swiftlang/swift-subprocess", revision: "e62036c30a319787323f6d9297d312f15f92cc12"),
 
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),

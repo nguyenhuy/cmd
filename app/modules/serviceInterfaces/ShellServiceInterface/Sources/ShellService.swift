@@ -10,13 +10,35 @@ public struct CommandExecutionResult: Equatable, Sendable, Encodable {
   public let exitCode: Int32
   public let stdout: String?
   public let stderr: String?
+  public let mergedOutput: String?
 
-  public init(exitCode: Int32, stdout: String? = nil, stderr: String? = nil) {
+  public init(exitCode: Int32, stdout: String? = nil, stderr: String? = nil, mergedOutput: String? = nil) {
     self.exitCode = exitCode
     self.stdout = stdout
     self.stderr = stderr
+    self.mergedOutput = mergedOutput
   }
 }
+
+// MARK: - Execution
+
+public protocol Execution: Sendable {
+  func tearDown() async
+}
+
+// MARK: - StandardInputWriter
+
+public protocol StandardInputWriter: Sendable {
+  func write(_ string: String) async throws
+  func finish() async throws
+}
+
+// MARK: - AsyncStringSequence
+
+public protocol AsyncStringSequence: Sendable { }
+// MARK: - ShellService
+
+public typealias SubprocessHandle = @Sendable (Execution, StandardInputWriter, AsyncStream<Data>, AsyncStream<Data>) -> Void
 
 // MARK: - ShellService
 
@@ -28,8 +50,7 @@ public protocol ShellService: Sendable {
     _ command: String,
     cwd: String?,
     useInteractiveShell: Bool,
-    handleStdoutStream: (@Sendable (AsyncStream<Data>) -> Void)?,
-    handleSterrStream: (@Sendable (AsyncStream<Data>) -> Void)?)
+    body: SubprocessHandle?)
     async throws -> CommandExecutionResult
 }
 
@@ -42,7 +63,7 @@ extension ShellService {
     useInteractiveShell: Bool = false)
     async throws -> CommandExecutionResult
   {
-    try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, handleStdoutStream: nil, handleSterrStream: nil)
+    try await run(command, cwd: cwd, useInteractiveShell: useInteractiveShell, body: nil)
   }
 
   public func stdout(_ command: String, cwd: String? = nil, useInteractiveShell: Bool = false) async throws -> String? {
@@ -50,8 +71,7 @@ extension ShellService {
       command,
       cwd: cwd,
       useInteractiveShell: useInteractiveShell,
-      handleStdoutStream: nil,
-      handleSterrStream: nil)
+      body: nil)
     return result.stdout
   }
 }
