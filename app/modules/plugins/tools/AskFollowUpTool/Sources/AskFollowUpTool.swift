@@ -78,7 +78,7 @@ public final class AskFollowUpTool: NonStreamableTool {
       "properties": .object([
         "question": .object([
           "type": .string("string"),
-          "description": .string("The directory path to list. If the absolute path is known it should be used. Otherwise use a relative path."),
+          "description": .string("A clear question to ask the user for clarification or additional information needed to complete the task."),
         ]),
         "followUp": .object([
           "type": .string("array"),

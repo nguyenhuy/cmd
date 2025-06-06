@@ -17,7 +17,7 @@ extension LLMProvider {
     ],
     idForModel: { model in
       switch model {
-      case .gpt_4_1: return "gpt-4-0314"
+      case .gpt_4_1: return "gpt-4.1"
       case .gpt_4o: return "gpt-4o"
       case .o3: return "o3"
       case .o4_mini: return "o4-mini"

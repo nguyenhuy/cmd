@@ -112,11 +112,11 @@ public final class ReadFileTool: NonStreamableTool {
           "description": .string("The range of lines to read (1-based-indexed). For ex: {\"start\": 1, \"finish\": 10} will read the first 10 lines"),
           "properties": .object([
             "start": .object([
-              "type": .string("string"),
+              "type": .string("integer"),
               "description": .string("The first line to read (1-based-indexed)."),
             ]),
             "end": .object([
-              "type": .string("object"),
+              "type": .string("integer"),
               "description": .string("The last line to read (1-based-indexed). This line is included in the range read."),
             ]),
           ]),

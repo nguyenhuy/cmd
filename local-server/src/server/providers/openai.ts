@@ -9,6 +9,7 @@ export class OpenAIModelProvider implements ModelProvider {
 		const provider = createOpenAI({
 			apiKey: apiKey,
 			baseURL: process.env["OPENAI_LOCAL_SERVER_PROXY"] ?? baseUrl,
+			fetch: openAiFetch,
 		})
 		const providerOptions: OpenAIResponsesProviderOptions = {
 			parallelToolCalls: true,
@@ -25,4 +26,25 @@ export class OpenAIModelProvider implements ModelProvider {
 			},
 		}
 	}
+}
+
+const openAiFetch: typeof fetch = (input, init) => {
+	if (!init?.body) return fetch(input, init)
+
+	const body = JSON.parse(init.body as string)
+
+	// Remove strict from the schema validation
+	body.tools = [
+		...body.tools.map((tool) => ({
+			...tool,
+			function: {
+				...tool.function,
+				strict: false,
+			},
+		})),
+	]
+
+	init.body = JSON.stringify(body)
+
+	return fetch(input, init)
 }

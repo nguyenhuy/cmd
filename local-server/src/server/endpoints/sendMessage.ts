@@ -407,14 +407,14 @@ export const mapResponseError = (err: unknown, idx: () => number): ResponseError
 		return {
 			type: "error",
 			message: "Error sending message",
-			statusCode: 500,
+			statusCode: 400,
 			idx: idx(),
 		}
 	} else if (typeof error === "string") {
 		return {
 			type: "error",
 			message: error as string,
-			statusCode: 500,
+			statusCode: 400,
 			idx: idx(),
 		}
 	} else if (typeof error === "object" && error !== null) {
@@ -434,7 +434,7 @@ export const mapResponseError = (err: unknown, idx: () => number): ResponseError
 				return {
 					type: "error",
 					message: responseBody,
-					statusCode: 500,
+					statusCode: 400,
 					idx: idx(),
 				}
 			}
@@ -442,7 +442,7 @@ export const mapResponseError = (err: unknown, idx: () => number): ResponseError
 			return {
 				type: "error",
 				message: error.message || "Error sending message",
-				statusCode: error.statusCode || 500,
+				statusCode: error.statusCode || 400,
 				idx: idx(),
 			}
 		}
@@ -450,7 +450,7 @@ export const mapResponseError = (err: unknown, idx: () => number): ResponseError
 		return {
 			type: "error",
 			message: "Error sending message",
-			statusCode: 500,
+			statusCode: 400,
 			idx: idx(),
 		}
 	}

@@ -27,5 +27,27 @@ describe("mapResponseError", () => {
 				idx: 42,
 			})
 		})
+		it("should handle invalid_request_error", () => {
+			const result = mapResponseError(
+				{
+					responseBody: JSON.stringify({
+						message:
+							"Invalid schema for function 'list_files': In context=('properties', 'recursive'), schema must have a 'type' key.",
+						type: "invalid_request_error",
+						param: null,
+						code: null,
+					}),
+				},
+				mockIdx,
+			)
+
+			expect(result).toEqual({
+				type: "error",
+				message:
+					"Invalid schema for function 'list_files': In context=('properties', 'recursive'), schema must have a 'type' key.",
+				statusCode: 400,
+				idx: 42,
+			})
+		})
 	})
 })

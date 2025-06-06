@@ -113,11 +113,11 @@ public final class SearchFilesTool: NonStreamableTool {
           "description": .string("The path of the directory to search in (relative to the current working directory ${args.cwd}). This directory will be recursively searched."),
         ]),
         "regex": .object([
-          "type": .string("boolean"),
+          "type": .string("string"),
           "description": .string("The regular expression pattern to search for. Uses Rust regex syntax."),
         ]),
         "filePattern": .object([
-          "type": .string("boolean"),
+          "type": .string("string"),
           "description": .string("Glob pattern to filter files (e.g., '*.ts' for TypeScript files). If not provided, it will search all files (*)"),
         ]),
       ]),
