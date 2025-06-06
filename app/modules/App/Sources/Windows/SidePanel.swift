@@ -114,8 +114,10 @@ final class SidePanel: XcodeWindow {
   override func hide() {
     lastWorkspaceFrame = nil
     lastWorkspaceElement = nil
-    combinedFrame = nil
-    defer { super.hide() }
+    defer {
+      changeMadeToWorkspaceFrame = nil
+      super.hide()
+    }
 
     // Ensures Xcode has focus.
     if
@@ -126,8 +128,10 @@ final class SidePanel: XcodeWindow {
       WindowActivation.activateAppAndMakeWindowFront(xcodeApp, window: trackedWindow)
     }
 
-    // Expand Xcode to take the space of the host app.
+    // Expand Xcode to re-take the space we might have used for the side panel when showing it.
     guard
+      let changeMadeToWorkspaceFrame,
+      changeMadeToWorkspaceFrame != 0,
       let trackedWindow,
       let workspaceFrame = trackedWindow.appKitFrame
     else { return }
@@ -136,26 +140,34 @@ final class SidePanel: XcodeWindow {
     guard let screen = NSScreen.screens.first(where: { $0.frame.contains(workspaceFrame.origin) }) else {
       return
     }
-    let frame = screen.frame.intersection(frame)
-    guard frame.width > 0, frame.height > 0 else {
+    var newWorkspaceFrame =
+      if changeMadeToWorkspaceFrame > 0 {
+        // Expand to the left
+        CGRect(
+          origin: CGPoint(x: workspaceFrame.origin.x - changeMadeToWorkspaceFrame, y: workspaceFrame.origin.y),
+          size: CGSize(width: workspaceFrame.width + changeMadeToWorkspaceFrame, height: workspaceFrame.height))
+      } else {
+        // Expand to the right
+        CGRect(
+          origin: workspaceFrame.origin,
+          size: CGSize(width: workspaceFrame.width - changeMadeToWorkspaceFrame, height: workspaceFrame.height))
+      }
+    newWorkspaceFrame = screen.frame.intersection(newWorkspaceFrame)
+    guard newWorkspaceFrame.width > 0, newWorkspaceFrame.height > 0 else {
       return
     }
 
-    let xcodeFrame = defaultChatPositionIsInverted
-      ? CGRect(
-        origin: CGPoint(x: workspaceFrame.origin.x - frame.width, y: workspaceFrame.origin.y),
-        size: CGSize(width: workspaceFrame.maxX - frame.minX, height: workspaceFrame.height))
-      : CGRect(
-        origin: workspaceFrame.origin,
-        size: CGSize(width: frame.maxX - workspaceFrame.minX, height: workspaceFrame.height))
-    trackedWindow.set(appKitframe: xcodeFrame)
+    trackedWindow.set(appKitframe: newWorkspaceFrame)
   }
 
   private var lastWorkspaceFrame: CGRect?
   private var lastWorkspaceElement: AnyAXUIElement?
   private var lastWindowFrame: CGRect?
 
-  private var combinedFrame: CGRect?
+  /// Change made to the workspace frame to make room for the side panel when showing it.
+  /// When positive, this represents the amount the workspace frame was shrunk from the left side.
+  /// When negative, this represents the amount the workspace frame was shrunk from the right side.
+  private var changeMadeToWorkspaceFrame: CGFloat?
 
   private let windowsViewModel: WindowsViewModel
 
@@ -164,7 +176,6 @@ final class SidePanel: XcodeWindow {
     // TODO: gracefully handle when the screen changes
     // TODO: make the experience moving the window nicer.
     // TODO: prevent the combine frame from extending beyond the screen.
-    let hostAppFrame = frame
     guard let workspaceFrame = window.appKitFrame else {
       // This can happen when there is no screen. For instance the laptop was closed.
       return nil
@@ -173,58 +184,61 @@ final class SidePanel: XcodeWindow {
       lastWorkspaceFrame = workspaceFrame
       lastWorkspaceElement = window
     }
+    if changeMadeToWorkspaceFrame == nil {
+      // only do this once after the side panel is shown (this can happen several times if the side panel is hidden and shown again).
 
-//    if
-//      let lastWorkspaceFrame,
-//      let lastWorkspaceElement,
-//      let lastWindowFrame,
-//      lastWorkspaceElement == window
-//    {
-//      if workspaceFrame.size != lastWorkspaceFrame.size {
-//        // Xcode workspace was resized. Also resize the chat window.
-//        return CGRect(
-//          origin: CGPoint(
-//            x: workspaceFrame.maxX,
-//            y: workspaceFrame.minY),
-//          size: CGSize(
-//            width: lastWindowFrame.maxX - workspaceFrame.maxX,
-//            height: workspaceFrame.height))
-//      } else if workspaceFrame != lastWorkspaceFrame {
-//        // Xcode workspace moved. Also move the chat window.
-//        return CGRect(
-//          origin: CGPoint(
-//            x: workspaceFrame.maxX,
-//            y: workspaceFrame.minY),
-//          size: lastWindowFrame.size)
-//      }
-//    }
-
-    let combinedFrame = workspaceFrame.union(hostAppFrame)
-    if self.combinedFrame == nil {
-      self.combinedFrame = combinedFrame
-
-      let screen = NSScreen.screens.first(where: { $0.frame.contains(workspaceFrame.origin) })?.frame
-      let frame = CGRect(
+      // The desired frame is on the side of Xcode
+      let desiredFrame = CGRect(
         origin: CGPoint(
           // Make sure the frame is within the screen bounds.
           x: defaultChatPositionIsInverted
-            ? max(workspaceFrame.minX, (screen?.minX ?? -.infinity))
-            : min(workspaceFrame.maxX, (screen?.maxX ?? .infinity) - defaultWidth),
+            ? workspaceFrame.minX - defaultWidth
+            : workspaceFrame.maxX,
           y: workspaceFrame.minY),
         size: CGSize(width: defaultWidth, height: workspaceFrame.height))
 
-      let xcodeFrame = CGRect(
-        origin: defaultChatPositionIsInverted
-          ? CGPoint(x: workspaceFrame.origin.x + defaultWidth, y: workspaceFrame.origin.y)
-          : workspaceFrame.origin,
-        size: CGSize(
-          width: defaultChatPositionIsInverted
-            ? workspaceFrame.maxX - frame.maxX
-            : frame.minX - workspaceFrame.minX,
-          height: combinedFrame.height))
+      // Make sure our frame will be within the screen bounds.
+      let screen = NSScreen.screens.first(where: { $0.frame.contains(workspaceFrame.origin) })?.frame
+      let (change, frameWithinScreen): (CGFloat, CGRect) = {
+        guard let screen else {
+          return (0, desiredFrame)
+        }
+        if screen.minX > desiredFrame.minX {
+          return (
+            screen.minX - desiredFrame.minX,
+            CGRect(
+              origin: CGPoint(x: screen.minX, y: desiredFrame.origin.y),
+              size: CGSize(width: desiredFrame.width, height: desiredFrame.height)))
+        }
+        if screen.maxX < desiredFrame.maxX {
+          return (
+            screen.maxX - desiredFrame.maxX,
+            CGRect(
+              origin: CGPoint(x: screen.maxX - desiredFrame.width, y: desiredFrame.origin.y),
+              size: CGSize(width: desiredFrame.width, height: desiredFrame.height)))
+        }
+        return (0, desiredFrame)
+      }()
+
+      changeMadeToWorkspaceFrame = change
+
+      let xcodeFrame: CGRect =
+        if change == 0 {
+          workspaceFrame
+        } else if change > 0 {
+          // Shrink from the left
+          CGRect(
+            origin: CGPoint(x: workspaceFrame.origin.x + change, y: workspaceFrame.origin.y),
+            size: CGSize(width: workspaceFrame.width - change, height: workspaceFrame.height))
+        } else {
+          // Shrink from the right
+          CGRect(
+            origin: CGPoint(x: workspaceFrame.origin.x, y: workspaceFrame.origin.y),
+            size: CGSize(width: workspaceFrame.width + change, height: workspaceFrame.height))
+        }
       window.set(appKitframe: xcodeFrame)
 
-      return frame
+      return frameWithinScreen
     }
     return nil
   }
