@@ -227,15 +227,8 @@ final class RequestStreamingHelper: Sendable {
               toolUse.startExecuting()
             } catch {
               defaultLogger.error("Tool approval denied or cancelled: \(error)")
-              // Replace the tool use with a failed one
-              var updatedContent = result.content
-              if let index = updatedContent.firstIndex(where: { $0.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId }) {
-                updatedContent[index] = .tool(ToolUseMessage(toolUse: FailedToolUse(
-                  toolUseId: toolUse.toolUseId,
-                  toolName: toolUse.toolName,
-                  error: error)))
-                result.update(with: AssistantMessage(content: updatedContent))
-              }
+              // Reject the tool use instead of replacing it
+              toolUse.reject(reason: error.localizedDescription)
             }
           }
         } else {
@@ -299,12 +292,8 @@ final class RequestStreamingHelper: Sendable {
           toolUse.startExecuting()
         } catch {
           defaultLogger.error("Tool approval denied or cancelled: \(error)")
-          // Replace the tool use with a failed one
-          content.removeLast()
-          content.append(toolUse: FailedToolUse(
-            toolUseId: toolUse.toolUseId,
-            toolName: toolUse.toolName,
-            error: error))
+          // Reject the tool use instead of replacing it
+          toolUse.reject(reason: error.localizedDescription)
         }
 
       } catch {

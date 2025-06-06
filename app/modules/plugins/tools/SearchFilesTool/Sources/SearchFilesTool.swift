@@ -29,7 +29,7 @@ public final class SearchFilesTool: NonStreamableTool {
         regex: input.regex,
         filePattern: input.filePattern)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -51,6 +51,8 @@ public final class SearchFilesTool: NonStreamableTool {
     public let status: Status
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
       guard let projectRoot = context.projectRoot else {
         updateStatus.yield(.completed(.failure(AppError("Cannot search files without a project"))))
@@ -81,10 +83,15 @@ public final class SearchFilesTool: NonStreamableTool {
       }
     }
 
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
+
     @Dependency(\.server) private var server
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
     private let context: ToolExecutionContext
+
   }
 
   public let name = "search_files"

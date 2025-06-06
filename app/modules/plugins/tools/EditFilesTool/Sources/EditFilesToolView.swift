@@ -26,28 +26,71 @@ struct ToolUseView: View {
   @Bindable var toolUse: ToolUseViewModel
 
   var body: some View {
-    ScrollView {
-      VStack(spacing: 12) {
-        ForEach(toolUse.changes, id: \.path) { fileChange in
-          FileChangeView(
-            change: fileChange.change,
-            editState: fileChange.state,
-            handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
-            handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
-            handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
+    switch toolUse.status {
+    case .notStarted:
+      VStack { }
+    case .pendingApproval:
+      pendingApprovalView
+    case .rejected:
+      rejectedView
+    case .running, .completed:
+      ScrollView {
+        VStack(spacing: 12) {
+          toolUseChanges
+          #if DEBUG
+          // TODO: remove this
+          if toolUse.changes.isEmpty {
+            Text("no change found???")
+          }
+          #endif
         }
-        #if DEBUG
-        // TODO: remove this
-        if toolUse.changes.isEmpty {
-          Text("no change found???")
-        }
-        #endif
+        .padding(.vertical)
       }
-      .padding(.vertical)
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
+
+  private var toolUseChanges: some View {
+    ForEach(toolUse.changes, id: \.path) { fileChange in
+      FileChangeView(
+        change: fileChange.change,
+        editState: fileChange.state,
+        handleApply: { [weak toolUse] in await toolUse?.applyChanges(to: fileChange.path) },
+        handleReject: { [weak toolUse] in await toolUse?.undoChangesApplied(to: fileChange.path) },
+        handleCopy: { [weak toolUse] in await toolUse?.copyChanges(to: fileChange.path) })
+    }
+  }
+
+  private var pendingApprovalView: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "pencil")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Waiting for approval: Edit files")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
+      .padding(.vertical, 8)
+      ScrollView {
+        toolUseChanges
+          .padding(.vertical)
+      }
+    }
+  }
+
+  private var rejectedView: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "pencil")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Rejected: Edit files")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
+      .padding(.vertical, 8)
+    }
+  }
 }
 
 // MARK: - FileDiffViewModel Extensions
@@ -271,7 +314,6 @@ struct FileChangeView: View {
       }
     }
   }
-
 }
 
 #if DEBUG

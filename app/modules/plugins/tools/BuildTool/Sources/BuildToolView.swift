@@ -26,14 +26,18 @@ struct ToolUseView: View {
 
   var body: some View {
     switch toolUse.status {
+    case .notStarted:
+      EmptyView()
+    case .pendingApproval:
+      pendingApprovalContent
+    case .rejected:
+      rejectedContent
     case .running:
       buildingContent
     case .completed(.success(let buildResult)):
       buildResultsContent(buildResult: buildResult)
     case .completed(.failure(let error)):
       failureContent(error: error)
-    default:
-      VStack { }
     }
   }
 
@@ -47,6 +51,36 @@ struct ToolUseView: View {
       .primary
     } else {
       colorScheme.toolUseForeground
+    }
+  }
+
+  @ViewBuilder
+  private var pendingApprovalContent: some View {
+    HStack {
+      Icon(systemName: "hammer")
+        .frame(width: 14, height: 14)
+        .foregroundColor(foregroundColor)
+        .frame(width: 15)
+      Text("Waiting for approval: Build")
+        .font(.system(.body, design: .monospaced))
+        .foregroundColor(foregroundColor)
+        .lineLimit(1)
+      Spacer(minLength: 0)
+    }
+  }
+
+  @ViewBuilder
+  private var rejectedContent: some View {
+    HStack {
+      Icon(systemName: "hammer")
+        .frame(width: 14, height: 14)
+        .foregroundColor(foregroundColor)
+        .frame(width: 15)
+      Text("Rejected: Build")
+        .font(.system(.body, design: .monospaced))
+        .foregroundColor(foregroundColor)
+        .lineLimit(1)
+      Spacer(minLength: 0)
     }
   }
 

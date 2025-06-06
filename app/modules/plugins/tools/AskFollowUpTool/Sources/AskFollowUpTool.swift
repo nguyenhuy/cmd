@@ -45,7 +45,13 @@ public final class AskFollowUpTool: NonStreamableTool {
     public let status: Status
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
+    }
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
     }
 
     func select(followUp: String) {
