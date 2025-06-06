@@ -31,6 +31,7 @@ final class ChatMessage: EquatableByIdentifier {
 
 enum ChatMessageContent: Identifiable {
   case text(ChatMessageTextContent)
+  case reasoning(ChatMessageReasoningContent)
   /// Messages that are relevant for the LLM but should not be shown to the user.
   case nonUserFacingText(ChatMessageTextContent)
   case toolUse(ChatMessageToolUseContent)
@@ -42,6 +43,8 @@ enum ChatMessageContent: Identifiable {
     case .nonUserFacingText(let content):
       content.id
     case .toolUse(let content):
+      content.id
+    case .reasoning(let content):
       content.id
     }
   }
@@ -90,25 +93,24 @@ struct ChatMessageContentWithRole: Identifiable {
 final class ChatMessageTextContent: EquatableByIdentifier {
 
   #if DEBUG
-  convenience init(text: String, attachments: [Attachment] = []) {
-    self.init(projectRoot: URL(filePath: "/"), text: text, attachments: attachments)
+  convenience init(text: String, attachments: [Attachment] = [], isStreaming: Bool = true) {
+    self.init(projectRoot: URL(filePath: "/"), text: text, attachments: attachments, isStreaming: isStreaming)
   }
 
-  convenience init(deltas: [String], attachments: [Attachment] = []) {
-    self.init(projectRoot: URL(filePath: "/"), deltas: deltas, attachments: attachments)
+  convenience init(deltas: [String], attachments: [Attachment] = [], isStreaming: Bool = true) {
+    self.init(projectRoot: URL(filePath: "/"), deltas: deltas, attachments: attachments, isStreaming: isStreaming)
   }
   #endif
 
-  init(projectRoot: URL?, deltas: [String], attachments: [Attachment] = []) {
+  init(projectRoot: URL?, deltas: [String], attachments: [Attachment] = [], isStreaming: Bool = true) {
     self.attachments = attachments
+    self.isStreaming = isStreaming
     formatter = TextFormatter(projectRoot: projectRoot)
     catchUp(deltas: deltas)
   }
 
-  init(projectRoot: URL?, text: String, attachments: [Attachment] = []) {
-    formatter = TextFormatter(projectRoot: projectRoot)
-    self.attachments = attachments
-    catchUp(deltas: [text])
+  convenience init(projectRoot: URL?, text: String, attachments: [Attachment] = [], isStreaming: Bool = true) {
+    self.init(projectRoot: projectRoot, deltas: [text], attachments: attachments, isStreaming: isStreaming)
   }
 
   let id = UUID()
@@ -118,18 +120,27 @@ final class ChatMessageTextContent: EquatableByIdentifier {
 
   let formatter: TextFormatter
 
+  private(set) var isStreaming: Bool
+
   var text: String {
     formatter.deltas.joined()
   }
 
+  /// Update the content until it has caught up with the all the deltas.
+  /// - Parameter deltas: All the deltas received since the beggining of the content (not just the new ones).
   func catchUp(deltas: [String]) {
     formatter.catchUp(deltas: deltas)
     elements = formatter.elements
   }
 
+  #if DEBUG
   func ingest(delta: String) {
     formatter.ingest(delta: delta)
     elements = formatter.elements
+  }
+  #endif
+  func finishStreaming() {
+    isStreaming = false
   }
 
 }
@@ -145,6 +156,63 @@ final class ChatMessageToolUseContent: EquatableByIdentifier {
 
   let id = UUID()
   let toolUse: any ToolUse
+
+}
+
+// MARK: - ChatMessageReasoningContent
+
+@Observable
+@MainActor
+final class ChatMessageReasoningContent: EquatableByIdentifier {
+
+  #if DEBUG
+  convenience init(text: String, signature: String? = nil, isStreaming: Bool = true) {
+    self.init(deltas: [text], signature: signature, isStreaming: isStreaming)
+  }
+
+  convenience init(deltas: [String], isStreaming: Bool = true) {
+    self.init(deltas: deltas, signature: nil, isStreaming: isStreaming)
+  }
+  #endif
+
+  init(deltas: [String], signature: String?, isStreaming: Bool = true) {
+    self.signature = signature
+    self.isStreaming = isStreaming
+    catchUp(deltas: deltas)
+  }
+
+  let id = UUID()
+
+  private(set) var text = ""
+  var signature: String?
+
+  private(set) var isStreaming: Bool
+  private(set) var reasoningDuration: TimeInterval?
+
+  /// Update the content until it has caught up with the all the deltas.
+  /// - Parameter deltas: All the deltas received since the beggining of the content (not just the new ones).
+  func catchUp(deltas: [String]) {
+    guard deltas.count > self.deltas.count else { return }
+    for delta in deltas.suffix(from: self.deltas.count) {
+      self.deltas.append(delta)
+      text += delta
+    }
+  }
+
+  func finishStreaming() {
+    isStreaming = false
+    reasoningDuration = Date().timeIntervalSince(startedAt)
+  }
+
+  private let startedAt = Date()
+
+  private var deltas: [String] = []
+
+  #if DEBUG
+  private func ingest(delta: String) {
+    text += delta
+  }
+  #endif
 
 }
 

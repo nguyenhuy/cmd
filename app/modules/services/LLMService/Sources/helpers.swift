@@ -22,6 +22,13 @@ extension AssistantMessageContent {
     }
     return nil
   }
+
+  var asReasoning: MutableCurrentValueStream<ReasoningContentMessage>? {
+    if case .reasoning(let message) = self {
+      return message
+    }
+    return nil
+  }
 }
 
 extension AssistantMessage {
@@ -31,10 +38,16 @@ extension AssistantMessage {
         switch content {
         case .text(let text):
           return .textMessage(Schema.TextMessage(text: text.content))
+
         case .tool(let toolUse):
           let toolUse = toolUse.toolUse
           let request = try Schema.ToolUseRequest(name: toolUse.callingTool.name, anyInput: toolUse.input, id: toolUse.toolUseId)
           return .toolUseRequest(request)
+
+        case .reasoning(let reasoning):
+          return .reasoningMessage(Schema.ReasoningMessage(
+            text: reasoning.content,
+            signature: reasoning.signature ?? ""))
         }
       })
     }

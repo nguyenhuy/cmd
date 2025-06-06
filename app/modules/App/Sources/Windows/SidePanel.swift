@@ -132,22 +132,22 @@ final class SidePanel: XcodeWindow {
       let workspaceFrame = trackedWindow.appKitFrame
     else { return }
 
-    var xcodeFrame = defaultChatPositionIsInverted
+    // Make sure we're not extending beyond the screen
+    guard let screen = NSScreen.screens.first(where: { $0.frame.contains(workspaceFrame.origin) }) else {
+      return
+    }
+    let frame = screen.frame.intersection(frame)
+    guard frame.width > 0, frame.height > 0 else {
+      return
+    }
+
+    let xcodeFrame = defaultChatPositionIsInverted
       ? CGRect(
         origin: CGPoint(x: workspaceFrame.origin.x - frame.width, y: workspaceFrame.origin.y),
         size: CGSize(width: workspaceFrame.maxX - frame.minX, height: workspaceFrame.height))
       : CGRect(
         origin: workspaceFrame.origin,
         size: CGSize(width: frame.maxX - workspaceFrame.minX, height: workspaceFrame.height))
-    // Make sure we're not extending beyond the screen, which could happen if the host app was off screen or on another screen.
-    guard let screen = NSScreen.screens.first(where: { $0.frame.contains(workspaceFrame.origin) }) else {
-      return
-    }
-    xcodeFrame = screen.frame.intersection(xcodeFrame)
-    guard xcodeFrame.intersection(workspaceFrame) == workspaceFrame else {
-      // modifying the frame would reduce the current frame. Abort.
-      return
-    }
     trackedWindow.set(appKitframe: xcodeFrame)
   }
 

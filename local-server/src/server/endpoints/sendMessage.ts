@@ -65,10 +65,11 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				})
 			}
 			const modelName = body.model
-			const { model, generalProviderOptions, addProviderOptionsToMessages } = await modelProvider.build(
-				body.provider.settings,
+			const { model, generalProviderOptions, addProviderOptionsToMessages } = await modelProvider.build({
+				...body.provider.settings,
 				modelName,
-			)
+				reasoningBudget: body.enableReasoning ? 12000 : undefined,
+			})
 			if (!model) {
 				throw new UserFacingError({
 					message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
@@ -148,6 +149,18 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 							input: chunk.args,
 							idx: i++,
 						}
+					case "reasoning":
+						return {
+							type: "reasoning_delta",
+							delta: chunk.textDelta,
+							idx: i++,
+						}
+					case "reasoning-signature":
+						return {
+							type: "reasoning_signature",
+							signature: chunk.signature,
+							idx: i++,
+						}
 					case "error":
 						return mapResponseError(chunk.error, () => i++)
 					default:
@@ -186,7 +199,15 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 }
 
 const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk>) => {
-	let messageType: "error" | "text_delta" | "tool_call" | "tool_call_delta" | "ping" | undefined
+	let messageType:
+		| "error"
+		| "text_delta"
+		| "tool_call"
+		| "tool_call_delta"
+		| "ping"
+		| "reasoning_delta"
+		| "reasoning_signature"
+		| undefined
 	let text: string | undefined
 
 	const logLastObject = () => {

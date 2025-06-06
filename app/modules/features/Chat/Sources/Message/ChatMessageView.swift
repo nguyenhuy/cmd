@@ -50,10 +50,16 @@ struct ChatMessageView: View {
 
           case .toolUse(let toolUse):
             ToolUseView(toolUse: toolUse.toolUse)
-              .padding(Constants.toolPadding)
+              .padding(.horizontal, horizontalPadding)
+              .padding(.vertical, Constants.toolPadding)
 
           case .nonUserFacingText:
             EmptyView()
+
+          case .reasoning(let reasoningContent):
+            ReasoningMessageView(reasoning: reasoningContent)
+              .padding(.horizontal, horizontalPadding)
+              .padding(.vertical, Constants.textVerticalPadding)
           }
         }
         Spacer(minLength: 0)
@@ -74,7 +80,7 @@ struct ChatMessageView: View {
 
   @Environment(\.colorScheme) private var colorScheme
 
-  private var textHorizontalPadding: CGFloat {
+  private var horizontalPadding: CGFloat {
     message.role == .user ? Constants.userTextHorizontalPadding : 0
   }
 
@@ -82,9 +88,9 @@ struct ChatMessageView: View {
   private func textElementView(_ element: TextFormatter.Element) -> some View {
     switch element {
     case .text(let text):
-      LongText(markdown(for: text), maxWidth: size.width - 2 * textHorizontalPadding)
+      LongText(markdown(for: text), maxWidth: size.width - 2 * horizontalPadding)
         .textSelection(.enabled)
-        .padding(.horizontal, textHorizontalPadding)
+        .padding(.horizontal, horizontalPadding)
         .padding(.vertical, Constants.textVerticalPadding)
         .cornerRadius(8)
 

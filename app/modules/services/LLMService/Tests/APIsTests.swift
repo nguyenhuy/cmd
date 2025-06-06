@@ -94,6 +94,7 @@ struct APIParamsEncodingTests {
       projectRoot: "/path/to/workspace",
       tools: [],
       model: "claude-3.5-sonnet",
+      enableReasoning: false,
       provider: .init(name: .anthropic, settings: .init()))
 
     try testEncoding(params, """
@@ -101,6 +102,7 @@ struct APIParamsEncodingTests {
         "system" : "Be helpful",
         "tools" : [],
         "model" : "claude-3.5-sonnet",
+        "enableReasoning": false,
         "provider" : {
           "name" : "anthropic",
           "settings" : {}

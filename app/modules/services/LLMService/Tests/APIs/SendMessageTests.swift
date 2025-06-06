@@ -161,6 +161,7 @@ final class SendMessageTests {
               {"role":"tool","content":[{"toolUseId":"123","toolName":"TestTool","type":"tool_result","result":{"type":"tool_result_success","success":"test_result"}}]}
             ],
             "model" : "claude-sonnet-4-20250514",
+            "enableReasoning": true,
             "provider" : {
               "name" : "anthropic",
               "settings" : { "apiKey" : "anthropic-key" }
@@ -232,6 +233,7 @@ final class SendMessageTests {
               {"role":"tool","content":[{"toolUseId":"123","toolName":"UnknownTool","type":"tool_result","result":{"type":"tool_result_failure","failure":"Missing tool UnknownTool"}}]}
             ],
             "model" : "claude-sonnet-4-20250514",
+            "enableReasoning": true,
             "provider" : {
               "name" : "anthropic",
               "settings" : { "apiKey" : "anthropic-key" }
@@ -382,7 +384,7 @@ final class SendMessageTests {
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root"))) { _ in }
       Issue.record("Expected sendMessage to throw error")
     } catch {
-      #expect(error.localizedDescription == "Unsupported model claude-4.0-sonnet")
+      #expect(error.localizedDescription == "Unsupported model claude-4-sonnet")
     }
   }
 }

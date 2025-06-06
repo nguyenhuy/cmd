@@ -35,10 +35,11 @@ final class SendOneMessageTests {
             }
           ],
           "model" : "claude-sonnet-4-20250514",
-            "provider" : {
-              "name" : "anthropic",
-              "settings" : { "apiKey" : "anthropic-key" }
-            },
+          "enableReasoning": true,
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : { "apiKey" : "anthropic-key" }
+          },
           "tools" : [],
           "projectRoot" : "/path/to/root"
         }

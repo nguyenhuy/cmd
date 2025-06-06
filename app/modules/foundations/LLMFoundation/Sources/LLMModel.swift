@@ -3,6 +3,10 @@
 
 import Foundation
 
+// MARK: - LLMReasoning
+
+public struct LLMReasoning: Sendable, Hashable { }
+
 // MARK: - LLMModel
 
 /// An LLM model.
@@ -22,7 +26,8 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     description: String? = nil,
     contextSize: Int,
     defaultPricing: ModelPricing,
-    documentationURL: URL? = nil)
+    documentationURL: URL? = nil,
+    reasoning: LLMReasoning? = nil)
   {
     self.id = id
     self.name = name
@@ -30,6 +35,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     self.contextSize = contextSize
     self.defaultPricing = defaultPricing
     self.documentationURL = documentationURL
+    self.reasoning = reasoning
   }
 
   /// Anthropic
@@ -38,7 +44,8 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     id: "claude-haiku-35",
     contextSize: 200_000,
     defaultPricing: .init(input: 0.8, output: 4, cacheWriteMult: 0.25, cachedInputMult: 0.1),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
   public static let claudeSonnet_3_7 = LLMModel(
     name: "claude-3.7-sonnet",
     id: "claude-sonnet-37",
@@ -50,7 +57,8 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     id: "claude-sonnet-4",
     contextSize: 200_000,
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
   public static let claudeOpus_4 = LLMModel(
     name: "claude-4-opus",
     id: "claude-opus-4",
@@ -104,9 +112,15 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
   public let contextSize: Int
   public let defaultPricing: ModelPricing
   public let documentationURL: URL?
+  public let reasoning: LLMReasoning?
 
   public var rawValue: String {
     id
+  }
+
+  /// Whether this model supports reasoning.
+  public var canReason: Bool {
+    reasoning != nil
   }
 
   public static func ==(lhs: LLMModel, rhs: LLMModel) -> Bool {

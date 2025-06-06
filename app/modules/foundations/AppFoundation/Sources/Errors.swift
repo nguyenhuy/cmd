@@ -46,3 +46,9 @@ extension AppError: CustomDebugStringConvertible {
     _debugDescription ?? ""
   }
 }
+
+extension CancellationError: @retroactive LocalizedError {
+  var localizedDescription: String {
+    "cancelled"
+  }
+}

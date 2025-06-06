@@ -21,8 +21,9 @@ public struct AssistantMessage: Sendable {
 // MARK: - AssistantMessageContent
 
 /// The content representing one part of the message (usually messages have only one part, but they can have more).
-public enum AssistantMessageContent: Sendable {
+public enum AssistantMessageContent: Sendable { // TODO: rename to StreamedAssistantMessageContent for clarity?
   case text(_ message: MutableCurrentValueStream<TextContentMessage>)
+  case reasoning(_ message: MutableCurrentValueStream<ReasoningContentMessage>)
   case tool(_ message: ToolUseMessage)
 }
 
@@ -44,6 +45,30 @@ public struct TextContentMessage: Sendable {
   /// When the message is being streamed, the deltas represent all the changes to the content that have been received.
   public let deltas: [String]
 }
+
+// MARK: - ReasoningContentMessage
+
+/// A message containing text.
+public struct ReasoningContentMessage: Sendable {
+  // MARK: Lifecycle
+
+  public init(content: String, deltas: [String] = [], signature: String? = nil) {
+    self.content = content
+    self.deltas = deltas
+    self.signature = signature
+  }
+
+  // MARK: Public
+
+  /// The content of the message. If the message is being streamed, this content might be incomplete.
+  public let content: String
+  /// When the message is being streamed, the deltas represent all the changes to the content that have been received.
+  public let deltas: [String]
+  /// The reasoning signature, if available.
+  public let signature: String?
+}
+
+// public enum Reasoning
 
 public typealias ToolUseRequestMessage = Schema.ToolUseRequest
 

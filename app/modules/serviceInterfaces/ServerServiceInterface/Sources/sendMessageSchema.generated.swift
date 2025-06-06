@@ -12,6 +12,7 @@ extension Schema {
     public let projectRoot: String?
     public let tools: [Tool]?
     public let model: String
+    public let enableReasoning: Bool
     public let provider: APIProvider
   
     private enum CodingKeys: String, CodingKey {
@@ -20,6 +21,7 @@ extension Schema {
       case projectRoot = "projectRoot"
       case tools = "tools"
       case model = "model"
+      case enableReasoning = "enableReasoning"
       case provider = "provider"
     }
   
@@ -29,6 +31,7 @@ extension Schema {
         projectRoot: String? = nil,
         tools: [Tool]? = nil,
         model: String,
+        enableReasoning: Bool,
         provider: APIProvider
     ) {
       self.messages = messages
@@ -36,6 +39,7 @@ extension Schema {
       self.projectRoot = projectRoot
       self.tools = tools
       self.model = model
+      self.enableReasoning = enableReasoning
       self.provider = provider
     }
   
@@ -46,6 +50,7 @@ extension Schema {
       projectRoot = try container.decodeIfPresent(String?.self, forKey: .projectRoot)
       tools = try container.decodeIfPresent([Tool]?.self, forKey: .tools)
       model = try container.decode(String.self, forKey: .model)
+      enableReasoning = try container.decode(Bool.self, forKey: .enableReasoning)
       provider = try container.decode(APIProvider.self, forKey: .provider)
     }
   
@@ -56,6 +61,7 @@ extension Schema {
       try container.encodeIfPresent(projectRoot, forKey: .projectRoot)
       try container.encodeIfPresent(tools, forKey: .tools)
       try container.encode(model, forKey: .model)
+      try container.encode(enableReasoning, forKey: .enableReasoning)
       try container.encode(provider, forKey: .provider)
     }
   }
@@ -125,6 +131,39 @@ extension Schema {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(text, forKey: .text)
       try container.encodeIfPresent(attachments, forKey: .attachments)
+      try container.encode(type, forKey: .type)
+    }
+  }
+  public struct ReasoningMessage: Codable, Sendable {
+    public let text: String
+    public let signature: String
+    public let type = "reasoning"
+  
+    private enum CodingKeys: String, CodingKey {
+      case text = "text"
+      case signature = "signature"
+      case type = "type"
+    }
+  
+    public init(
+        text: String,
+        signature: String,
+        type: String = "reasoning"
+    ) {
+      self.text = text
+      self.signature = signature
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      text = try container.decode(String.self, forKey: .text)
+      signature = try container.decode(String.self, forKey: .signature)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(text, forKey: .text)
+      try container.encode(signature, forKey: .signature)
       try container.encode(type, forKey: .type)
     }
   }
@@ -326,6 +365,7 @@ extension Schema {
   }
   public enum MessageContent: Codable, Sendable {
     case textMessage(_ value: TextMessage)
+    case reasoningMessage(_ value: ReasoningMessage)
     case toolUseRequest(_ value: ToolUseRequest)
     case toolResultMessage(_ value: ToolResultMessage)
     case internalTextMessage(_ value: InternalTextMessage)
@@ -340,6 +380,8 @@ extension Schema {
       switch type {
         case "text":
           self = .textMessage(try TextMessage(from: decoder))
+        case "reasoning":
+          self = .reasoningMessage(try ReasoningMessage(from: decoder))
         case "tool_call":
           self = .toolUseRequest(try ToolUseRequest(from: decoder))
         case "tool_result":
@@ -354,6 +396,8 @@ extension Schema {
     public func encode(to encoder: Encoder) throws {
       switch self {
         case .textMessage(let value):
+          try value.encode(to: encoder)
+        case .reasoningMessage(let value):
           try value.encode(to: encoder)
         case .toolUseRequest(let value):
           try value.encode(to: encoder)
@@ -776,6 +820,72 @@ extension Schema {
       try container.encode(idx, forKey: .idx)
     }
   }
+  public struct ReasoningDelta: Codable, Sendable {
+    public let type = "reasoning_delta"
+    public let delta: String
+    public let idx: Int
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case delta = "delta"
+      case idx = "idx"
+    }
+  
+    public init(
+        type: String = "reasoning_delta",
+        delta: String,
+        idx: Int
+    ) {
+      self.delta = delta
+      self.idx = idx
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      delta = try container.decode(String.self, forKey: .delta)
+      idx = try container.decode(Int.self, forKey: .idx)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(delta, forKey: .delta)
+      try container.encode(idx, forKey: .idx)
+    }
+  }
+  public struct ReasoningSignature: Codable, Sendable {
+    public let type = "reasoning_signature"
+    public let signature: String
+    public let idx: Int
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case signature = "signature"
+      case idx = "idx"
+    }
+  
+    public init(
+        type: String = "reasoning_signature",
+        signature: String,
+        idx: Int
+    ) {
+      self.signature = signature
+      self.idx = idx
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      signature = try container.decode(String.self, forKey: .signature)
+      idx = try container.decode(Int.self, forKey: .idx)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(signature, forKey: .signature)
+      try container.encode(idx, forKey: .idx)
+    }
+  }
   public struct Ping: Codable, Sendable {
     public let type = "ping"
     public let timestamp: Double
@@ -814,6 +924,8 @@ extension Schema {
     case toolUseRequest(_ value: ToolUseRequest)
     case toolUseDelta(_ value: ToolUseDelta)
     case responseError(_ value: ResponseError)
+    case reasoningDelta(_ value: ReasoningDelta)
+    case reasoningSignature(_ value: ReasoningSignature)
     case ping(_ value: Ping)
   
     private enum CodingKeys: String, CodingKey {
@@ -832,6 +944,10 @@ extension Schema {
           self = .toolUseDelta(try ToolUseDelta(from: decoder))
         case "error":
           self = .responseError(try ResponseError(from: decoder))
+        case "reasoning_delta":
+          self = .reasoningDelta(try ReasoningDelta(from: decoder))
+        case "reasoning_signature":
+          self = .reasoningSignature(try ReasoningSignature(from: decoder))
         case "ping":
           self = .ping(try Ping(from: decoder))
         default:
@@ -848,6 +964,10 @@ extension Schema {
         case .toolUseDelta(let value):
           try value.encode(to: encoder)
         case .responseError(let value):
+          try value.encode(to: encoder)
+        case .reasoningDelta(let value):
+          try value.encode(to: encoder)
+        case .reasoningSignature(let value):
           try value.encode(to: encoder)
         case .ping(let value):
           try value.encode(to: encoder)
