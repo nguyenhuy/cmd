@@ -52,8 +52,9 @@ public struct commandApp: App {
 
   public var body: some Scene {
     MenuBarExtra {
-      Button("Settings…") { print("settings") }
-        .keyboardShortcut(",", modifiers: .command)
+      Button("Show \(windowsViewModel.isOnbardingVisible ? "onboarding" : "chat")") {
+        windowsViewModel.handle(.showApplication)
+      }
       Divider()
       Button("Quit") { NSApplication.shared.terminate(nil) }
         .keyboardShortcut("q")
