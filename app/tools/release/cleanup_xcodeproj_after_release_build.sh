@@ -13,4 +13,7 @@ git checkout -- "./command.debug.xcconfig" || true
 git checkout -- "./command Extension/Extension.debug.xcconfig" || true
 git checkout -- "./command.xcodeproj/project.pbxproj" || true # gets modified when building.
 git checkout -- "$repo_root/local-server/build.sha256" || true
+
+# Re-enable the watcher
+rm -f "$repo_root/.build/disable-watcher"
 cd "$current_dir"

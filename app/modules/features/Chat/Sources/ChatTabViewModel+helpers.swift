@@ -299,7 +299,7 @@ extension AssistantMessageContent {
   func domainFormat(projectRoot: URL?) -> ChatMessageContent {
     switch self {
     case .text(let value):
-      let content = ChatMessageTextContent(projectRoot: projectRoot, text: value.content, attachments: [])
+      let content = ChatMessageTextContent(projectRoot: projectRoot, deltas: value.deltas, attachments: [])
       Task {
         for await update in value.updates {
           content.catchUp(deltas: update.deltas)
@@ -313,7 +313,7 @@ extension AssistantMessageContent {
       return .toolUse(content)
 
     case .reasoning(let value):
-      let content = ChatMessageReasoningContent(text: value.content, signature: value.signature)
+      let content = ChatMessageReasoningContent(deltas: value.deltas, signature: value.signature)
       Task {
         for await update in value.updates {
           content.catchUp(deltas: update.deltas)

@@ -5,6 +5,10 @@ set -euo pipefail
 
 repo_root=$(git rev-parse --show-toplevel)
 
+# Disable the watcher that might interfere with the release build process
+mkdir -p "$repo_root/.build"
+touch "$repo_root/.build/disable-watcher"
+
 if [ -z "$repo_root" ]; then
 	echo "Not a git repository"
 	exit 1

@@ -2,8 +2,17 @@ import watch from "node-watch"
 import { execSync, spawn } from "child_process"
 import { computeAndSaveHash } from "../build.js"
 import generateSwiftSchema from "./generateSwiftSchema.js"
+import { existsSync } from "fs"
+
+const isWatcherDisabled = (): boolean => {
+	// The watcher might be temporarily disabled to avoid interfering with other processes.
+	return existsSync("../.build/disable-watcher")
+}
 
 watch("./dist/main.bundle.js", { recursive: true }, async function (evt, name) {
+	if (isWatcherDisabled()) {
+		return
+	}
 	console.log("changed.", name)
 
 	await computeAndSaveHash()
@@ -19,6 +28,9 @@ watch("./dist/main.bundle.js", { recursive: true }, async function (evt, name) {
 })
 
 watch("./src/server/schemas", { recursive: true }, function (evt, name) {
+	if (isWatcherDisabled()) {
+		return
+	}
 	console.log("changed.", name)
 	try {
 		generateSwiftSchema()
@@ -28,6 +40,9 @@ watch("./src/server/schemas", { recursive: true }, function (evt, name) {
 })
 
 watch("../app/modules", { recursive: true }, function (evt, filePath) {
+	if (isWatcherDisabled()) {
+		return
+	}
 	const fileName = filePath.split("/").pop()
 	if (
 		fileName === "Package.swift" ||
