@@ -8,6 +8,15 @@ import Foundation
 import JSONFoundation
 import LLMFoundation
 
+// MARK: - LLMReasoningSetting
+
+public struct LLMReasoningSetting: Sendable, Equatable {
+  public var isEnabled: Bool
+  public init(isEnabled: Bool) {
+    self.isEnabled = isEnabled
+  }
+}
+
 // MARK: - Settings
 
 public struct Settings: Sendable, Equatable {
@@ -18,6 +27,7 @@ public struct Settings: Sendable, Equatable {
     preferedProviders: [LLMModel: LLMProvider] = [:],
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [],
+    reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions())
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
@@ -26,6 +36,7 @@ public struct Settings: Sendable, Equatable {
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
     self.inactiveModels = inactiveModels
+    self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
   }
 
@@ -63,6 +74,7 @@ public struct Settings: Sendable, Equatable {
   // LLM settings
   public var preferedProviders: [LLMModel: LLMProvider]
   public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
+  public var reasoningModels: [LLMModel: LLMReasoningSetting]
 
   public var inactiveModels: [LLMModel]
   public var customInstructions: CustomInstructions

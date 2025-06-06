@@ -90,7 +90,8 @@ public struct SettingsView: View {
           availableModels: viewModel.availableModels,
           availableProviders: viewModel.availableProviders,
           providerForModels: $viewModel.providerForModels,
-          inactiveModels: $viewModel.inactiveModels)
+          inactiveModels: $viewModel.inactiveModels,
+          reasoningModels: $viewModel.reasoningModels)
 
       case .chatModes:
         ChatModeView(customInstructions: $viewModel.customInstructions)

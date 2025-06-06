@@ -129,6 +129,29 @@ public final class SettingsViewModel {
     }
   }
 
+  /// Reasoning settings for the model that suport reasoning.
+  var reasoningModels: [LLMModel: LLMReasoningSetting] {
+    get {
+      var reasoningModels = [LLMModel: LLMReasoningSetting]()
+      for model in availableModels.filter(\.canReason) {
+        reasoningModels[model] = .init(isEnabled: false) // Default to disabled for all models
+      }
+      for (key, value) in settings.reasoningModels {
+        reasoningModels[key] = value
+      }
+      return reasoningModels
+    }
+    set {
+      let oldValue = reasoningModels
+      for (model, provider) in newValue {
+        if oldValue[model] != provider {
+          settings.reasoningModels[model] = provider
+        }
+      }
+      settingsService.update(setting: \.reasoningModels, to: settings.reasoningModels)
+    }
+  }
+
   var inactiveModels: [LLMModel] {
     get {
       settings.inactiveModels

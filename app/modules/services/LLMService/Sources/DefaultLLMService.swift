@@ -118,7 +118,7 @@ final class DefaultLLMService: LLMService {
       projectRoot: context.projectRoot?.path,
       tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: provider.id(for: model),
-      enableReasoning: model.canReason,
+      enableReasoning: model.canReason && settings.reasoningModels[model]?.isEnabled == true,
       provider: .init(provider: provider, settings: providerSettings))
     let data = try JSONEncoder().encode(params)
 
