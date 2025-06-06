@@ -28,7 +28,8 @@ public struct Settings: Sendable, Equatable {
     llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
     inactiveModels: [LLMModel] = [],
     reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
-    customInstructions: CustomInstructions = CustomInstructions())
+    customInstructions: CustomInstructions = CustomInstructions(),
+    toolPreferences: [ToolPreference] = [])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -38,6 +39,7 @@ public struct Settings: Sendable, Equatable {
     self.inactiveModels = inactiveModels
     self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
+    self.toolPreferences = toolPreferences
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
@@ -68,6 +70,16 @@ public struct Settings: Sendable, Equatable {
     }
   }
 
+  public struct ToolPreference: Sendable, Codable, Equatable {
+    public let toolName: String
+    public var alwaysApprove: Bool
+
+    public init(toolName: String, alwaysApprove: Bool = false) {
+      self.toolName = toolName
+      self.alwaysApprove = alwaysApprove
+    }
+  }
+
   public var allowAnonymousAnalytics: Bool
   public var pointReleaseXcodeExtensionToDebugApp: Bool
   public var automaticallyCheckForUpdates: Bool
@@ -78,7 +90,28 @@ public struct Settings: Sendable, Equatable {
 
   public var inactiveModels: [LLMModel]
   public var customInstructions: CustomInstructions
+  public var toolPreferences: [ToolPreference]
 
+}
+
+// MARK: - Settings + Tool Preferences Helpers
+
+extension Settings {
+  public func toolPreference(for toolName: String) -> ToolPreference? {
+    toolPreferences.first { $0.toolName == toolName }
+  }
+
+  public mutating func setToolPreference(toolName: String, alwaysApprove: Bool) {
+    if let index = toolPreferences.firstIndex(where: { $0.toolName == toolName }) {
+      toolPreferences[index].alwaysApprove = alwaysApprove
+    } else {
+      toolPreferences.append(ToolPreference(toolName: toolName, alwaysApprove: alwaysApprove))
+    }
+  }
+
+  public func shouldAlwaysApprove(toolName: String) -> Bool {
+    toolPreferences.first { $0.toolName == toolName }?.alwaysApprove ?? false
+  }
 }
 
 public typealias LLMProviderSettings = Settings.LLMProviderSettings

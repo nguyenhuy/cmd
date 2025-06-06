@@ -324,6 +324,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMFoundation",
     "SettingsServiceInterface",
+    "ToolFoundation",
   ],
   testDependencies: [
     "FoundationInterfaces",

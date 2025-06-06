@@ -12,6 +12,7 @@ import LLMServiceInterface
 import LoggingServiceInterface
 import Observation
 import ServerServiceInterface
+import SettingsServiceInterface
 import ToolFoundation
 import XcodeObserverServiceInterface
 
@@ -54,7 +55,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
       }
     }
 
-    @Dependency(\.settingsService) var settingsService
     settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
       Task { @MainActor in
         self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
@@ -200,12 +200,13 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
-  private static let userDefaultsAlwaysApproveKey = "alwaysApprove_"
-
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
   @ObservationIgnored
   @Dependency(\.toolsPlugin) private var toolsPlugin: ToolsPlugin
+
+  @ObservationIgnored
+  @Dependency(\.settingsService) private var settingsService: SettingsService
 
   @MainActor @ObservationIgnored @Dependency(\.llmService) private var llmService: LLMService
 
@@ -214,8 +215,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   @ObservationIgnored
   @Dependency(\.fileManager) private var fileManager: FileManagerI
-
-  @ObservationIgnored @Dependency(\.userDefaults) private var userDefaults
 
   @ObservationIgnored
   @Dependency(\.checkpointService) private var checkpointService: CheckpointService
@@ -278,11 +277,13 @@ final class ChatTabViewModel: Identifiable, Equatable {
   }
 
   private func storeAlwaysApprovePreference(for toolName: String) {
-    userDefaults.set(true, forKey: "\(Self.userDefaultsAlwaysApproveKey)\(toolName)")
+    var currentSettings = settingsService.values()
+    currentSettings.setToolPreference(toolName: toolName, alwaysApprove: true)
+    settingsService.update(to: currentSettings)
   }
 
   private func shouldAlwaysApprove(toolName: String) -> Bool {
-    userDefaults.bool(forKey: "\(Self.userDefaultsAlwaysApproveKey)\(toolName)")
+    settingsService.values().shouldAlwaysApprove(toolName: toolName)
   }
 
   private func updateProjectInfo() -> SelectedProjectInfo? {

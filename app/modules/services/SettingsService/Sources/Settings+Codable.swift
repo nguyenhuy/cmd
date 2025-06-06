@@ -36,7 +36,9 @@ extension Settings: Codable {
           acc[provider] = el.value
         } ?? [:],
       customInstructions: container
-        .decodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings.CustomInstructions())
+        .decodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings.CustomInstructions(),
+      toolPreferences: container
+        .decodeIfPresent([Settings.ToolPreference].self, forKey: "toolPreferences") ?? [])
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -55,6 +57,7 @@ extension Settings: Codable {
       acc[el.key.rawValue] = el.value
     }, forKey: "reasoningModels")
     try container.encode(customInstructions, forKey: "customInstructions")
+    try container.encode(toolPreferences, forKey: "toolPreferences")
   }
 }
 

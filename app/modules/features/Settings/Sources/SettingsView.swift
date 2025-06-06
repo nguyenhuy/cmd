@@ -96,6 +96,9 @@ public struct SettingsView: View {
       case .chatModes:
         ChatModeView(customInstructions: $viewModel.customInstructions)
 
+      case .tools:
+        ToolsConfigurationView(viewModel: viewModel.toolConfigurationViewModel)
+
       case .internalSettings:
         InternalSettingsView(
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
@@ -124,6 +127,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
   case providers
   case models
   case chatModes
+  case tools
   case internalSettings
   case about
 
@@ -139,6 +143,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Models"
     case .chatModes:
       "Chat Modes"
+    case .tools:
+      "Tools"
     case .internalSettings:
       "Internal Settings"
     case .about:
@@ -156,6 +162,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "cpu"
     case .chatModes:
       "text.bubble"
+    case .tools:
+      "wrench.and.screwdriver"
     case .internalSettings:
       "slider.horizontal.3"
     case .about:
@@ -220,6 +228,11 @@ private struct SettingsLandingView: View {
           SettingsCard(
             section: .chatModes,
             description: "Configure chat modes (Ask, Agent) and provide specific instructions",
+            action: onNavigate)
+
+          SettingsCard(
+            section: .tools,
+            description: "Manage tool permissions and approval settings",
             action: onNavigate)
 
           SettingsCard(
