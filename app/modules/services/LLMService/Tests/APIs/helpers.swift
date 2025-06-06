@@ -113,8 +113,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
     let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<Output>>
 
     func startExecuting() { }
-    
-    func reject(reason: String?) { }
+
+    func reject(reason _: String?) { }
   }
 
   let name: String
@@ -195,8 +195,8 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
     }
 
     func startExecuting() { }
-    
-    func reject(reason: String?) { }
+
+    func reject(reason _: String?) { }
   }
 
   let canInputBeStreamed = true

@@ -15,7 +15,6 @@ struct TestTool: NonStreamableTool {
   }
 
   struct Use: ToolUse {
-    public let isReadonly = true
     init(input: String = "") {
       self.input = input
       callingTool = TestTool()
@@ -23,6 +22,8 @@ struct TestTool: NonStreamableTool {
         .Just(.completed(.success(input)))
       toolUseId = UUID().uuidString
     }
+
+    public let isReadonly = true
 
     let input: String
 
@@ -34,7 +35,7 @@ struct TestTool: NonStreamableTool {
 
     func startExecuting() { }
 
-    func reject(reason: String?) { }
+    func reject(reason _: String?) { }
 
   }
 

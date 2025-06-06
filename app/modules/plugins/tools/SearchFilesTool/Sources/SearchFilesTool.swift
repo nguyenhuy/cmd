@@ -83,14 +83,15 @@ public final class SearchFilesTool: NonStreamableTool {
       }
     }
 
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
+
     @Dependency(\.server) private var server
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
     private let context: ToolExecutionContext
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.rejected(reason: reason))
-    }
   }
 
   public let name = "search_files"

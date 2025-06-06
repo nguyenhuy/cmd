@@ -133,6 +133,10 @@ public final class EditFilesTool: Tool {
       }
     }
 
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
+
     let isInputComplete: Atomic<Bool>
 
     @MainActor
@@ -155,10 +159,6 @@ public final class EditFilesTool: Tool {
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
     private let context: ToolExecutionContext
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.rejected(reason: reason))
-    }
 
   }
 

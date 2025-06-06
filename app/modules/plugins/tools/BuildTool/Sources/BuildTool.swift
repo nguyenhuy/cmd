@@ -78,14 +78,15 @@ public final class BuildTool: NonStreamableTool {
       }
     }
 
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
+
     @Dependency(\.xcodeController) private var xcodeController
 
     private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.rejected(reason: reason))
-    }
   }
 
   public let name = "build"

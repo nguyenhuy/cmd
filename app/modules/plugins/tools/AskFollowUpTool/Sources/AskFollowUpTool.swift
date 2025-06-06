@@ -50,12 +50,12 @@ public final class AskFollowUpTool: NonStreamableTool {
       updateStatus.yield(.running)
     }
 
-    func select(followUp: String) {
-      updateStatus.yield(.completed(.success(.init(response: followUp))))
-    }
-
     public func reject(reason: String?) {
       updateStatus.yield(.rejected(reason: reason))
+    }
+
+    func select(followUp: String) {
+      updateStatus.yield(.completed(.success(.init(response: followUp))))
     }
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation

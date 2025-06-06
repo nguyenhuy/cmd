@@ -84,16 +84,16 @@ public final class LSTool: NonStreamableTool {
       }
     }
 
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
+
     let directoryPath: URL
 
     @Dependency(\.server) private var server
     private let context: ToolExecutionContext
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.rejected(reason: reason))
-    }
 
   }
 

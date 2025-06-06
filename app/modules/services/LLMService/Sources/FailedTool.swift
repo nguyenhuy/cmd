@@ -34,7 +34,7 @@ struct FailedToolUse: ToolUse {
 
   func startExecuting() { }
 
-  func reject(reason: String?) { }
+  func reject(reason _: String?) { }
 }
 
 // MARK: - FailedTool

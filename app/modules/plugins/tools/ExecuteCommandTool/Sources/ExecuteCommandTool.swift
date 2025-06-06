@@ -94,6 +94,10 @@ public final class ExecuteCommandTool: NonStreamableTool {
       }
     }
 
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
+
     let stdoutStream: Future<BroadcastedStream<Data>, Never>
     let stderrStream: Future<BroadcastedStream<Data>, Never>
 
@@ -105,9 +109,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
     private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.rejected(reason: reason))
-    }
   }
 
   public let name = "execute_command"

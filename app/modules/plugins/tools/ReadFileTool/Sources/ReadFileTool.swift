@@ -72,16 +72,16 @@ public final class ReadFileTool: NonStreamableTool {
       }
     }
 
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
+    }
+
     let filePath: URL
 
     @Dependency(\.server) private var server
     @Dependency(\.fileManager) private var fileManager
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.rejected(reason: reason))
-    }
 
   }
 
