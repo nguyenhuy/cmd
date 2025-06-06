@@ -200,6 +200,7 @@ final class ChatMessageReasoningContent: EquatableByIdentifier {
   }
 
   func finishStreaming() {
+    guard isStreaming else { return }
     isStreaming = false
     reasoningDuration = Date().timeIntervalSince(startedAt)
   }

@@ -5,6 +5,7 @@ import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
+import LLMFoundation
 import LLMServiceInterface
 import ServerServiceInterface
 import SettingsServiceInterface
@@ -386,5 +387,230 @@ final class SendMessageTests {
     } catch {
       #expect(error.localizedDescription == "Unsupported model claude-4-sonnet")
     }
+  }
+
+  @Test("SendMessage receives reasoning chunks")
+  func test_sendMessage_receivesReasoningChunks() async throws {
+    let chunksReceived = expectation(description: "All chunk received")
+    let messagesUpdatesReceived = expectation(description: "All messages update received")
+    let firstMessageUpdatesReceived = expectation(description: "All updates for the first message received")
+    let server = MockServer()
+    let sut = DefaultLLMService(server: server)
+    server.onPostRequest = { _, _, sendChunk in
+      sendChunk?("""
+        {
+          "type": "reasoning_delta",
+          "delta": "hi",
+          "idx": 0
+        }
+        """.utf8Data)
+      sendChunk?("""
+        {
+          "type": "reasoning_delta",
+          "delta": " what can I do?",
+          "idx": 1
+        }
+        """.utf8Data)
+      return okServerResponse
+    }
+    let updatingMessages = try await sut.sendMessage(
+      messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
+      tools: [])
+
+    var messagesUpdateCount = 0
+    var firstMessageUpdateCount = 0
+    var contentUpdateCount = 0
+    Task {
+      for await messages in updatingMessages.updates {
+        messagesUpdateCount += 1
+        if messagesUpdateCount == 1 {
+          // First update has one message
+          #expect(messages.count == 1)
+
+          let updatingMessage = try #require(messages.first)
+
+          for await message in updatingMessage.updates {
+            firstMessageUpdateCount += 1
+            if firstMessageUpdateCount == 1 {
+              // First update has one piece of text content
+              #expect(message.content.count == 1)
+              let updatingTextContent = try #require(message.content.first?.asReasoning)
+
+              for await textContent in updatingTextContent.updates {
+                contentUpdateCount += 1
+                if contentUpdateCount == 1 {
+                  #expect(textContent.content == "hi what can I do?")
+                  #expect(textContent.deltas == ["hi", " what can I do?"])
+                }
+              }
+              chunksReceived.fulfill()
+            }
+          }
+          firstMessageUpdatesReceived.fulfill()
+        }
+      }
+      messagesUpdatesReceived.fulfill()
+    }
+
+    try await fulfillment(of: [messagesUpdatesReceived, firstMessageUpdatesReceived, chunksReceived])
+    #expect(messagesUpdateCount == 1)
+    #expect(firstMessageUpdateCount == 1)
+    #expect(contentUpdateCount == 1)
+  }
+
+  @Test("SendMessage with message history containing reasoning")
+  func test_sendMessage_withReasoningInHistory() async throws {
+    let requestResponded = expectation(description: "The request was responded to")
+    let server = MockServer()
+    let sut = DefaultLLMService(server: server)
+    server.onPostRequest = { _, data, sendChunk in
+      data.expectToMatch(
+        """
+        {
+          "messages":[
+            {"role":"user","content":[{"type":"text","text":"hello"}]},
+            {"role":"assistant","content":[
+              {"type":"reasoning","text":"Let me think about this...","signature":"test-sig"},
+              {"type":"text","text":"Hi there!"}
+            ]},
+            {"role":"user","content":[{"type":"text","text":"follow up"}]}
+          ],
+          "model" : "claude-sonnet-4-20250514",
+          "enableReasoning": true,
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : { "apiKey" : "anthropic-key" }
+          },
+          "tools":[],
+          "projectRoot" : "/path/to/root"
+        }
+        """,
+        ignoring: "system")
+      sendChunk?("""
+        {
+          "type": "text_delta",
+          "text": "Got it!",
+          "idx": 0
+        }
+        """.utf8Data)
+      requestResponded.fulfill()
+      return okServerResponse
+    }
+
+    let messages = try await sut.sendMessage(
+      messageHistory: [
+        .init(role: .user, content: [.textMessage(.init(text: "hello"))]),
+        .init(role: .assistant, content: [
+          .reasoningMessage(.init(text: "Let me think about this...", signature: "test-sig")),
+          .textMessage(.init(text: "Hi there!")),
+        ]),
+        .init(role: .user, content: [.textMessage(.init(text: "follow up"))]),
+      ],
+      tools: []).lastValue
+
+    #expect(messages.count == 1)
+    try await fulfillment(of: [requestResponded])
+  }
+
+  @Test("SendMessage receives text and reasoning chunks")
+  func test_sendMessage_receivesTextAndReasoningChunks() async throws {
+    let messagesUpdatesReceived = expectation(description: "All messages update received")
+    let firstMessageUpdatesReceived = expectation(description: "All updates for the first message received")
+    let firstContentChunksReceived = expectation(description: "All chunk received")
+    let secondContentChunksReceived = expectation(description: "All chunk received")
+    let server = MockServer()
+    let sut = DefaultLLMService(server: server)
+    server.onPostRequest = { _, _, sendChunk in
+      sendChunk?("""
+        {
+          "type": "reasoning_delta",
+          "delta": "let's",
+          "idx": 0
+        }
+        """.utf8Data)
+      sendChunk?("""
+        {
+          "type": "reasoning_delta",
+          "delta": " ultrathink",
+          "idx": 1
+        }
+        """.utf8Data)
+      sendChunk?("""
+        {
+          "type": "text_delta",
+          "text": "the solution",
+          "idx": 3
+        }
+        """.utf8Data)
+      sendChunk?("""
+        {
+          "type": "text_delta",
+          "text": " is obvious",
+          "idx": 4
+        }
+        """.utf8Data)
+      return okServerResponse
+    }
+    let updatingMessages = try await sut.sendMessage(
+      messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
+      tools: [])
+
+    var messagesUpdateCount = 0
+    var firstMessageUpdateCount = 0
+    Task {
+      for await messages in updatingMessages.updates {
+        messagesUpdateCount += 1
+        if messagesUpdateCount == 1 {
+          // First update has one message
+          #expect(messages.count == 1)
+
+          let updatingMessage = try #require(messages.first)
+
+          for await message in updatingMessage.updates {
+            firstMessageUpdateCount += 1
+            if firstMessageUpdateCount == 1 {
+              var contentUpdateCount = 0
+              // First update has one piece of text content
+              #expect(message.content.count == 1)
+              let updatingTextContent = try #require(message.content.first?.asReasoning)
+
+              for await textContent in updatingTextContent.updates {
+                contentUpdateCount += 1
+                if contentUpdateCount == 1 {
+                  #expect(textContent.content == "let's ultrathink")
+                  #expect(textContent.deltas == ["let's", " ultrathink"])
+                }
+              }
+              firstContentChunksReceived.fulfill()
+            } else {
+              var contentUpdateCount = 0
+              // First update has one piece of text content
+              #expect(message.content.count == 2)
+              let updatingTextContent = try #require(message.content.last?.asText)
+
+              for await textContent in updatingTextContent.updates {
+                contentUpdateCount += 1
+                if contentUpdateCount == 1 {
+                  #expect(textContent.content == "the solution is obvious")
+                  #expect(textContent.deltas == ["the solution", " is obvious"])
+                }
+              }
+              secondContentChunksReceived.fulfill()
+            }
+          }
+          firstMessageUpdatesReceived.fulfill()
+        }
+      }
+      messagesUpdatesReceived.fulfill()
+    }
+
+    try await fulfillment(of: [
+      messagesUpdatesReceived,
+      firstMessageUpdatesReceived,
+      firstContentChunksReceived,
+      secondContentChunksReceived,
+    ])
+    #expect(messagesUpdateCount == 1)
+    #expect(firstMessageUpdateCount == 2)
   }
 }
