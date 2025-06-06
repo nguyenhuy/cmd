@@ -47,17 +47,10 @@ final class DefaultAppUpdateService: AppUpdateService {
   }
 
   func relaunch() {
-    Task { @MainActor in
-      guard let bundlePath = Bundle.main.resourcePath else {
-        return
-      }
-      let url = URL(fileURLWithPath: bundlePath)
-      let path = url.deletingLastPathComponent().deletingLastPathComponent().absoluteString
-      let task = Process()
-      task.launchPath = "/usr/bin/open"
-      task.arguments = [path]
-      task.launch()
-      exit(0)
+    Task {
+      /// When an update is available, checking again for an update will make Sparkle quit and relaunch.
+      let updater = await UpdateChecker()
+      _ = try? await updater.checkForUpdates()
     }
   }
 

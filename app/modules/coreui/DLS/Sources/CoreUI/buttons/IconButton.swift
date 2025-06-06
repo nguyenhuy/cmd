@@ -28,7 +28,8 @@ public struct IconButton: View {
       action: {
         isRunning = true
         Task {
-          try await action()
+          await action()
+          isRunning = false
           hasTapped = true
           Task {
             try await Task.sleep(nanoseconds: 1_000_000_000)
