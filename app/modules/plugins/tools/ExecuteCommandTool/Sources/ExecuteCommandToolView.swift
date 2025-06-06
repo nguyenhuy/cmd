@@ -28,14 +28,18 @@ struct ToolUseView: View {
 
   var body: some View {
     switch toolUse.status {
+    case .notStarted:
+      VStack { }
+    case .pendingApproval:
+      content(statusDescription: "Waiting for approval: \(toolUse.command)")
+    case .rejected:
+      content(statusDescription: "Rejected: \(toolUse.command)")
     case .running:
       content(statusDescription: "Running \(toolUse.command)...")
     case .completed(.success):
       content(statusDescription: toolUse.command)
     case .completed(.failure(let error)):
       content(statusDescription: "Running \(toolUse.command) failed: \(error.localizedDescription)")
-    default:
-      VStack { }
     }
   }
 

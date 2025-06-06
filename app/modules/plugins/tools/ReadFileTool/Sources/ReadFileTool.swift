@@ -26,7 +26,7 @@ public final class ReadFileTool: NonStreamableTool {
         lineRange: input.lineRange)
       filePath = URL(fileURLWithPath: self.input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -54,6 +54,8 @@ public final class ReadFileTool: NonStreamableTool {
     public let status: Status
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
 
       do {
@@ -68,6 +70,10 @@ public final class ReadFileTool: NonStreamableTool {
       } catch {
         updateStatus.yield(.completed(.failure(error)))
       }
+    }
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
     }
 
     let filePath: URL

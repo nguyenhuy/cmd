@@ -113,6 +113,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
     let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<Output>>
 
     func startExecuting() { }
+
+    func reject(reason _: String?) { }
   }
 
   let name: String
@@ -123,6 +125,7 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
 
   var description: String { "tool for testing" }
   var inputSchema: JSON { .object([:]) }
+  var displayName: String { name }
 
   func isAvailable(in _: ChatFoundation.ChatMode) -> Bool {
     true
@@ -192,6 +195,8 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
     }
 
     func startExecuting() { }
+
+    func reject(reason _: String?) { }
   }
 
   let canInputBeStreamed = true
@@ -204,6 +209,7 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
 
   var description: String { "tool for testing" }
   var inputSchema: JSON { .object([:]) }
+  var displayName: String { name }
 
   func use(
     toolUseId: String,
@@ -266,4 +272,5 @@ struct TestChatContext: ChatContext {
   let chatMode: ChatMode
 
   let prepareForWriteToolUse: @Sendable () async -> Void
+  let requestToolApproval: @Sendable (any ToolUse) async throws -> Void
 }

@@ -30,7 +30,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
         canModifySourceFiles: input.canModifySourceFiles,
         canModifyDerivedFiles: input.canModifyDerivedFiles)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
 
@@ -64,6 +64,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
     public let status: Status
 
     public func startExecuting() {
+      // Transition from pendingApproval to notStarted to running
+      updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
 
       Task {
@@ -94,6 +96,10 @@ public final class ExecuteCommandTool: NonStreamableTool {
         }
         runningProcess = nil
       }
+    }
+
+    public func reject(reason: String?) {
+      updateStatus.yield(.rejected(reason: reason))
     }
 
     let stdoutStream: Future<BroadcastedStream<Data>, Never>

@@ -25,16 +25,50 @@ struct ToolUseView: View {
 
   var body: some View {
     switch toolUse.status {
+    case .notStarted:
+      EmptyView()
+    case .pendingApproval:
+      pendingApprovalView
+    case .rejected:
+      rejectedView
     case .running:
       followUpView(selection: nil)
     case .completed(.success(let output)):
       followUpView(selection: output.response)
-    default:
-      VStack { }
+    case .completed(.failure):
+      EmptyView()
     }
   }
 
   @Environment(\.colorScheme) private var colorScheme
+
+  @ViewBuilder
+  private var pendingApprovalView: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "bubble.left.and.bubble.right")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Waiting for approval: Ask follow up question")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
+      .padding(.vertical, 8)
+    }
+  }
+
+  @ViewBuilder
+  private var rejectedView: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      HStack {
+        Icon(systemName: "bubble.left.and.bubble.right")
+          .frame(width: 14, height: 14)
+          .foregroundColor(colorScheme.toolUseForeground)
+        Text("Rejected: Ask follow up question")
+          .foregroundColor(colorScheme.toolUseForeground)
+      }
+      .padding(.vertical, 8)
+    }
+  }
 
   @ViewBuilder
   private func followUpView(selection: String?) -> some View {

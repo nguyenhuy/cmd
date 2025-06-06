@@ -33,6 +33,8 @@ struct FailedToolUse: ToolUse {
   var input: Input { Input() }
 
   func startExecuting() { }
+
+  func reject(reason _: String?) { }
 }
 
 // MARK: - FailedTool
