@@ -27,7 +27,7 @@ struct ToolUseView: View {
   var body: some View {
     switch toolUse.status {
     case .notStarted:
-      VStack { }
+      EmptyView()
     case .pendingApproval:
       pendingApprovalContent
     case .rejected:
