@@ -10,7 +10,8 @@ import SwiftUI
     repeatLastLLMInteraction: .constant(true),
     showOnboardingScreenAgain: .constant(true),
     pointReleaseXcodeExtensionToDebugApp: .constant(false),
-    showInternalSettingsInRelease: .constant(false))
+    showInternalSettingsInRelease: .constant(false),
+    defaultChatPositionIsInverted: .constant(false))
     .frame(width: 600, height: 400)
     .padding()
 }
@@ -20,7 +21,8 @@ import SwiftUI
     repeatLastLLMInteraction: .constant(false),
     showOnboardingScreenAgain: .constant(true),
     pointReleaseXcodeExtensionToDebugApp: .constant(true),
-    showInternalSettingsInRelease: .constant(true))
+    showInternalSettingsInRelease: .constant(true),
+    defaultChatPositionIsInverted: .constant(true))
     .frame(width: 600, height: 400)
     .padding()
 }

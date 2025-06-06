@@ -9,18 +9,23 @@ public struct HoveredButton<Content: View>: View {
 
   /// Creates a button that changes its appearance when hovered.
   /// - Parameters:
-  /// - action: The action to perform when the button is tapped.
-  /// - onHoverColor: The color to apply when the button is hovered.
-  /// - backgroundColor: The background color of the button.
-  /// - padding: The amount of padding around the button content.
-  /// - cornerRadius: The corner radius of the button.
-  /// - content: A closure that returns the content of the button.
+  ///   - action: The action to perform when the button is tapped.
+  ///   - onHoverColor: The color to apply when the button is hovered.
+  ///   - backgroundColor: The background color of the button.
+  ///   - padding: The amount of padding around the button content.
+  ///   - cornerRadius: The corner radius of the button.
+  ///   - isEnable: Whether the button is enabled and interactive.
+  ///   - disableClickThrough: Whether to disable click-through behavior.
+  ///   Because it uses an NSHosting view, this might cause issues in some cases with dynamic content size.
+  ///   - content: A closure that returns the content of the button.
   public init(
     action: @escaping () -> Void,
     onHoverColor: Color = .clear,
     backgroundColor: Color = .clear,
     padding: CGFloat = 0,
     cornerRadius: CGFloat = 4,
+    isEnable: Bool = true,
+    disableClickThrough: Bool = false,
     @ViewBuilder content: @escaping () -> Content)
   {
     self.action = action
@@ -28,23 +33,56 @@ public struct HoveredButton<Content: View>: View {
     self.backgroundColor = backgroundColor
     self.padding = padding
     self.cornerRadius = cornerRadius
+    self.isEnable = isEnable
+    self.disableClickThrough = disableClickThrough
+    self.content = { _ in content() }
+  }
+
+  /// Creates a button that changes its appearance when hovered.
+  /// - Parameters:
+  ///   - action: The action to perform when the button is tapped.
+  ///   - onHoverColor: The color to apply when the button is hovered.
+  ///   - backgroundColor: The background color of the button.
+  ///   - padding: The amount of padding around the button content.
+  ///   - cornerRadius: The corner radius of the button.
+  ///   - isEnable: Whether the button is enabled and interactive.
+  ///   - disableClickThrough: Whether to disable click-through behavior.
+  ///   Because it uses an NSHosting view, this might cause issues in some cases with dynamic content size.
+  ///   - content: A closure that returns the content of the button, receiving hover state as parameter.
+  public init(
+    action: @escaping () -> Void,
+    onHoverColor: Color = .clear,
+    backgroundColor: Color = .clear,
+    padding: CGFloat = 0,
+    cornerRadius: CGFloat = 4,
+    isEnable: Bool = true,
+    disableClickThrough: Bool = false,
+    @ViewBuilder content: @escaping (Bool) -> Content)
+  {
+    self.action = action
+    self.onHoverColor = onHoverColor
+    self.backgroundColor = backgroundColor
+    self.padding = padding
+    self.cornerRadius = cornerRadius
     self.content = content
+    self.isEnable = isEnable
+    self.disableClickThrough = disableClickThrough
   }
 
   public var body: some View {
     Button(action: action, label: {
-      content()
+      content(isHovered)
         .padding(padding)
         .tappableTransparentBackground()
-        .background(isHovered ? onHoverColor : backgroundColor)
+        .background((isHovered && isEnable) ? onHoverColor : backgroundColor)
         .cornerRadius(cornerRadius)
     })
     .buttonStyle(.plain)
-    .scaledToFit()
-    .acceptClickThrough()
+    .acceptClickThrough(disabled: disableClickThrough)
     .onHover(perform: { isHovered in
       self.isHovered = isHovered
     })
+    .allowsHitTesting(isEnable)
   }
 
   @State private var isHovered = false
@@ -54,7 +92,9 @@ public struct HoveredButton<Content: View>: View {
   private let backgroundColor: Color
   private let padding: CGFloat
   private let cornerRadius: CGFloat
-  private let content: () -> Content
+  private let content: (Bool) -> Content
+  private let isEnable: Bool
+  private let disableClickThrough: Bool
 
 }
 

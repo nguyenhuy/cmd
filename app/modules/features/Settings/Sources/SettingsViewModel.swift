@@ -8,6 +8,7 @@ import FoundationInterfaces
 import LLMFoundation
 import SettingsServiceInterface
 import SwiftUI
+import ToolFoundation
 
 // MARK: - SettingsViewModel
 
@@ -21,14 +22,21 @@ public final class SettingsViewModel {
     self.userDefaults = userDefaults
     // This one is not dependency injected. That should be ok.
     releaseUserDefaults = try? UserDefaults.releaseShared(bundle: .main)
+    @Dependency(\.toolsPlugin) var toolsPlugin
+    self.toolsPlugin = toolsPlugin
 
     let settings = settingsService.values()
     self.settings = settings
 
     providerSettings = settings.llmProviderSettings
-    repeatLastLLMInteraction = userDefaults.bool(forKey: "llmService.isRepeating")
+    repeatLastLLMInteraction = userDefaults.bool(forKey: .repeatLastLLMInteraction)
     showOnboardingScreenAgain = !userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey)
     showInternalSettingsInRelease = releaseUserDefaults?.bool(forKey: .showInternalSettingsInRelease) == true
+    defaultChatPositionIsInverted = userDefaults.bool(forKey: .defaultChatPositionIsInverted)
+
+    toolConfigurationViewModel = ToolConfigurationViewModel(
+      settingsService: settingsService,
+      toolsPlugin: toolsPlugin)
 
     settingsService.liveValues()
       .receive(on: RunLoop.main)
@@ -37,6 +45,8 @@ public final class SettingsViewModel {
       }
       .store(in: &cancellables)
   }
+
+  public let toolConfigurationViewModel: ToolConfigurationViewModel
 
   // MARK: - Initialization
 
@@ -72,7 +82,7 @@ public final class SettingsViewModel {
   // MARK: - Internal settings
   var repeatLastLLMInteraction: Bool {
     didSet {
-      userDefaults.set(repeatLastLLMInteraction, forKey: "llmService.isRepeating")
+      userDefaults.set(repeatLastLLMInteraction, forKey: .repeatLastLLMInteraction)
     }
   }
 
@@ -95,6 +105,12 @@ public final class SettingsViewModel {
     set {
       settings.pointReleaseXcodeExtensionToDebugApp = newValue
       settingsService.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: newValue)
+    }
+  }
+
+  var defaultChatPositionIsInverted: Bool {
+    didSet {
+      userDefaults.set(defaultChatPositionIsInverted, forKey: .defaultChatPositionIsInverted)
     }
   }
 
@@ -157,7 +173,7 @@ public final class SettingsViewModel {
   private let settingsService: SettingsService
   private let userDefaults: UserDefaultsI
   private let releaseUserDefaults: UserDefaultsI?
-
+  private let toolsPlugin: ToolsPlugin
 }
 
 public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]

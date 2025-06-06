@@ -47,7 +47,8 @@ struct ToolApprovalView: View {
 #Preview {
   ToolApprovalView(
     request: ToolApprovalRequest(
-      displayName: "get_workspace_info"),
+      toolName: "get_workspace_info",
+      displayName: "Get Workspace Info"),
     onApprove: { },
     onDeny: { },
     onAlwaysApprove: { })

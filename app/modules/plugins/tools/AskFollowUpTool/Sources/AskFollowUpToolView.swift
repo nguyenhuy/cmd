@@ -38,28 +38,40 @@ struct ToolUseView: View {
 
   @ViewBuilder
   private func followUpView(selection: String?) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: 8) {
       Text(toolUse.input.question)
+        .textSelection(.enabled)
+        .lineLimit(nil)
+        .fixedSize(horizontal: false, vertical: false)
         .padding(.bottom, 8)
       ForEach(toolUse.input.followUp, id: \.self) { choice in
-        Button(action: { toolUse.selectFollowUp(choice) }) {
+        HoveredButton(
+          action: { toolUse.selectFollowUp(choice) },
+          onHoverColor: colorScheme.tertiarySystemBackground,
+          backgroundColor: selection == choice ? colorScheme.tertiarySystemBackground : colorScheme.secondarySystemBackground,
+          padding: 8,
+          cornerRadius: 5,
+          isEnable: selection == nil,
+          disableClickThrough: true)
+        {
           Text(choice)
+            .textSelection(.enabled)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
-            .roundedCornerWithBorder(borderColor: foregroundColor(for: choice, with: selection), radius: 3)
-        }
-        .buttonStyle(.plain)
-        .allowsHitTesting(selection == nil)
-        .foregroundColor(foregroundColor(for: choice, with: selection))
-        .padding(.vertical, 4)
+            .lineLimit(nil)
+            .foregroundColor(foregroundColor(for: choice, with: selection))
+        }.opacity(opacity(for: choice, with: selection))
       }
     }
-    .padding(.vertical, 8)
   }
 
   private func foregroundColor(for choice: String, with selection: String?) -> Color {
     guard let selection else { return .primary }
     return selection == choice ? .primary : .secondary
   }
+
+  private func opacity(for choice: String, with selection: String?) -> Double {
+    guard let selection else { return 1 }
+    return selection == choice ? 1 : 0.4
+  }
+
 }

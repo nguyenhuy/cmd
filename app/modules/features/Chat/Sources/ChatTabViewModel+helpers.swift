@@ -206,6 +206,9 @@ extension ChatMessageContent {
     case .nonUserFacingText(let message):
       return [(nil, .textMessage(.init(text: message.text)))]
 
+    case .reasoning(let message):
+      return [(nil, .reasoningMessage(.init(text: message.text, signature: message.signature)))]
+
     case .toolUse(let toolUse):
       do {
         let request = try Schema.MessageContent.toolUseRequest(Schema.ToolUseRequest(
@@ -216,7 +219,7 @@ extension ChatMessageContent {
         guard let result = toolUse.toolUse.currentResult else {
           // The tool use has not completed yet.
           // We need to represent a result to be able to continue the conversation.
-          // As sending a new message will cancell any in-flight tool use, we represent it as failed due to cancellation.
+          // As sending a new message will cancel any in-flight tool use, we represent it as failed due to cancellation.
           return [
             (.assistant, request),
             (.tool, .toolResultMessage(.init(
@@ -301,12 +304,24 @@ extension AssistantMessageContent {
         for await update in value.updates {
           content.catchUp(deltas: update.deltas)
         }
+        content.finishStreaming()
       }
       return .text(content)
 
     case .tool(let value):
       let content = ChatMessageToolUseContent(toolUse: value.toolUse)
       return .toolUse(content)
+
+    case .reasoning(let value):
+      let content = ChatMessageReasoningContent(text: value.content, signature: value.signature)
+      Task {
+        for await update in value.updates {
+          content.catchUp(deltas: update.deltas)
+          content.signature = update.signature
+        }
+        content.finishStreaming()
+      }
+      return .reasoning(content)
     }
   }
 }

@@ -4,6 +4,7 @@ export interface SendMessageRequestParams {
 	projectRoot: string | undefined
 	tools?: Tool[]
 	model: string
+	enableReasoning: boolean
 	provider: APIProvider
 }
 
@@ -17,7 +18,14 @@ export interface APIProvider {
 
 export type APIProviderName = "openai" | "anthropic" | "openrouter"
 
-export type StreamedResponseChunk = TextDelta | ToolUseRequest | ToolUseDelta | ResponseError | Ping
+export type StreamedResponseChunk =
+	| TextDelta
+	| ToolUseRequest
+	| ToolUseDelta
+	| ResponseError
+	| ReasoningDelta
+	| ReasoningSignature
+	| Ping
 
 export interface TextDelta {
 	type: "text_delta"
@@ -59,6 +67,23 @@ export interface ToolUseDelta {
 	idx: number
 }
 
+export interface ReasoningDelta {
+	type: "reasoning_delta"
+	delta: string
+	/**
+	 * @format integer
+	 */
+	idx: number
+}
+export interface ReasoningSignature {
+	type: "reasoning_signature"
+	signature: string
+	/**
+	 * @format integer
+	 */
+	idx: number
+}
+
 export interface ResponseError {
 	type: "error"
 	message: string
@@ -72,7 +97,7 @@ export interface ResponseError {
 	idx: number
 }
 
-export type MessageContent = TextMessage | ToolUseRequest | ToolResultMessage | InternalTextMessage
+export type MessageContent = TextMessage | ReasoningMessage | ToolUseRequest | ToolResultMessage | InternalTextMessage
 
 export interface Message {
 	// The role of the message's author. Roles can be: system, user, assistant, function or tool.
@@ -95,6 +120,12 @@ export interface TextMessage {
 	text: string
 	attachments?: MessageAttachment[]
 	type: "text"
+}
+
+export interface ReasoningMessage {
+	text: string
+	signature?: string
+	type: "reasoning"
 }
 
 // This should not be sent to the provider. Can be used to hold internal information.

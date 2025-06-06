@@ -1,22 +1,25 @@
-import { ModelProvider, ModelProviderOutput } from "./provider"
+import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
-import { createAnthropic } from "@ai-sdk/anthropic"
+import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
 import { CoreMessage } from "ai"
 
 export class AnthropicModelProvider implements ModelProvider {
 	name: APIProviderName = "anthropic"
-	build(params: { baseUrl?: string; apiKey?: string }, modelName: string): ModelProviderOutput {
+	build(params: ModelProviderInput): ModelProviderOutput {
+		const { modelName, apiKey, baseUrl, reasoningBudget } = params
 		const provider = createAnthropic({
-			apiKey: params.apiKey,
-			baseURL: process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl,
+			apiKey: apiKey,
+			baseURL: process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? baseUrl,
 		})
+		const providerOptions: AnthropicProviderOptions = {}
+		if (reasoningBudget) {
+			providerOptions.thinking = { type: "enabled", budgetTokens: reasoningBudget }
+		}
 		return {
 			model: provider(modelName),
-			// generalProviderOptions: {
-			// 	anthropic: {
-			// 		thinking: { type: "enabled", budgetTokens: 12000 },
-			// 	} satisfies AnthropicProviderOptions,
-			// },
+			generalProviderOptions: {
+				anthropic: providerOptions,
+			},
 			addProviderOptionsToMessages: (messages) => addCacheControlToMessages(messages, this.name),
 		}
 	}

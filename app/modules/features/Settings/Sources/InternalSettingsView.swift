@@ -12,6 +12,7 @@ struct InternalSettingsView: View {
   @Binding var showOnboardingScreenAgain: Bool
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
   @Binding var showInternalSettingsInRelease: Bool
+  @Binding var defaultChatPositionIsInverted: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
@@ -29,6 +30,10 @@ struct InternalSettingsView: View {
           "Point Release Xcode Extension to Debug App",
           caption: "Use the debug version of the extension for development",
           value: $pointReleaseXcodeExtensionToDebugApp)
+        InternalSettingsRow(
+          "Invert the default chat position",
+          caption: "Useful when using both the Debug and Release apps to avoid overlaps",
+          value: $defaultChatPositionIsInverted)
       }
       .padding(16)
       .background(Color(NSColor.controlBackgroundColor))

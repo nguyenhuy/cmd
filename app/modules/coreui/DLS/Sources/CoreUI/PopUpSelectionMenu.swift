@@ -66,7 +66,7 @@ public struct PopUpSelectionMenu<Item: MenuItem, Content: View>: View {
         } else {
           Text(emptySelectionText)
         }
-        Icon(systemName: isExpanded ? "chevron.up" : "chevron.down")
+        Icon(systemName: isExpanded ? "chevron.down" : "chevron.up")
           .frame(width: 6, height: 6)
       }.tappableTransparentBackground()
     }

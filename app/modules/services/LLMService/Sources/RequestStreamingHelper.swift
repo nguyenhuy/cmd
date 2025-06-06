@@ -104,6 +104,10 @@ final class RequestStreamingHelper: Sendable {
         case .responseError(let error):
           // We received an error from the server.
           err = err ?? AppError(message: error.message)
+        case .reasoningDelta(let reasoningDelta):
+          handle(reasoningDelta: reasoningDelta)
+        case .reasoningSignature(let reasoningSignature):
+          handle(reasoningSignature: reasoningSignature)
         }
       }
       try Task.checkCancellation()
@@ -141,7 +145,7 @@ final class RequestStreamingHelper: Sendable {
 
   /// Wrap up the stream. When the stream is process without failure this is already called.
   private func finish() {
-    endTextContentIfNecesssary()
+    endPreviousContent()
     result.finish()
 
     #if DEBUG
@@ -159,6 +163,7 @@ final class RequestStreamingHelper: Sendable {
       textContent.update(with: newMessage)
     } else {
       // Create a new text content.
+      endPreviousContent()
       let newContent = TextContentMessage(content: textDelta.text, deltas: [textDelta.text])
       var content = result.content
       content.append(.text(MutableCurrentValueStream(newContent)))
@@ -167,7 +172,7 @@ final class RequestStreamingHelper: Sendable {
   }
 
   private func handle(toolUseDelta: Schema.ToolUseDelta) async {
-    endTextContentIfNecesssary()
+    endPreviousContent()
 
     let toolName = toolUseDelta.toolName
     let toolUseId = toolUseDelta.toolUseId
@@ -246,7 +251,7 @@ final class RequestStreamingHelper: Sendable {
   }
 
   private func handle(toolUseRequest: Schema.ToolUseRequest) async {
-    endTextContentIfNecesssary()
+    endPreviousContent()
 
     if let streamingToolUse {
       if streamingToolUse.toolUseId != toolUseRequest.toolUseId {
@@ -338,8 +343,46 @@ final class RequestStreamingHelper: Sendable {
     streamingToolUseInput = ""
   }
 
-  private func endTextContentIfNecesssary() {
+  private func endPreviousContent() {
     result.content.last?.asText?.finish()
+    result.content.last?.asReasoning?.finish()
+  }
+
+  private func handle(reasoningDelta: Schema.ReasoningDelta) {
+    if let reasoningContent = result.content.last?.asReasoning {
+      // We received a new text chunk, we'll append it to the last reasoning content.
+      let lastMessage = reasoningContent.value
+      let newMessage = ReasoningContentMessage(
+        content: lastMessage.content + reasoningDelta.delta,
+        deltas: lastMessage.deltas + [reasoningDelta.delta],
+        signature: lastMessage.signature)
+      reasoningContent.update(with: newMessage)
+    } else {
+      // Create a new reasoning content.
+      endPreviousContent()
+      let newContent = ReasoningContentMessage(content: reasoningDelta.delta, deltas: [reasoningDelta.delta])
+      var content = result.content
+      content.append(.reasoning(MutableCurrentValueStream(newContent)))
+      result.update(with: AssistantMessage(content: content))
+    }
+  }
+
+  private func handle(reasoningSignature: Schema.ReasoningSignature) {
+    if let reasoningContent = result.content.last?.asReasoning {
+      let lastMessage = reasoningContent.value
+      let newMessage = ReasoningContentMessage(
+        content: lastMessage.content,
+        deltas: lastMessage.deltas,
+        signature: reasoningSignature.signature)
+      reasoningContent.update(with: newMessage)
+    } else {
+      // Create a new reasoning content.
+      endPreviousContent()
+      let newContent = ReasoningContentMessage(content: "", deltas: [], signature: reasoningSignature.signature)
+      var content = result.content
+      content.append(.reasoning(MutableCurrentValueStream(newContent)))
+      result.update(with: AssistantMessage(content: content))
+    }
   }
 
 }
@@ -357,6 +400,10 @@ extension Schema.StreamedResponseChunk {
       toolUseRequest.idx
     case .responseError(let error):
       error.idx
+    case .reasoningDelta(let reasoningDelta):
+      reasoningDelta.idx
+    case .reasoningSignature(let reasoningSignature):
+      reasoningSignature.idx
     }
   }
 }

@@ -8,6 +8,7 @@ Target.module(
     "FoundationInterfaces",
     "LLMFoundation",
     "SettingsServiceInterface",
+    "ToolFoundation",
   ],
   testDependencies: [
     "FoundationInterfaces",

@@ -6,7 +6,14 @@ export type ModelProviderOutput = {
 	generalProviderOptions?: Record<string, Record<string, JSONValue>>
 	addProviderOptionsToMessages?: (messages: Array<CoreMessage>) => Array<CoreMessage>
 }
+
+export type ModelProviderInput = {
+	baseUrl?: string
+	apiKey?: string
+	modelName: string
+	reasoningBudget?: number
+}
 export interface ModelProvider {
-	build: (params: { baseUrl?: string; apiKey?: string }, modelName: string) => ModelProviderOutput
+	build: (params: ModelProviderInput) => ModelProviderOutput
 	name: APIProviderName
 }

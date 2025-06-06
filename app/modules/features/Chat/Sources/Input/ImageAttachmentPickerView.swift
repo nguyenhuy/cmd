@@ -11,15 +11,13 @@ struct ImageAttachmentPickerView: View {
   var attachments: Binding<[Attachment]>
 
   var body: some View {
-    Button(action: {
-      selectImage()
-    }) {
-      Image(systemName: "photo")
-        .tappableTransparentBackground()
-    }
-    .acceptClickThrough()
-    .buttonStyle(.plain)
-    .foregroundColor(.primary)
+    IconButton(
+      action: {
+        selectImage()
+      },
+      systemName: "photo",
+      cornerRadius: 0)
+      .foregroundColor(.primary)
   }
 
   private func selectImage() {
