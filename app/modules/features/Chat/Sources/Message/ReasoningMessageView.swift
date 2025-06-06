@@ -46,7 +46,7 @@ struct ReasoningMessageView: View {
 
   private var thinkingDescription: String {
     if reasoning.isStreaming {
-      return "Thinking hard"
+      return "Thinking"
     }
     if let reasoningDuration = reasoning.reasoningDuration {
       return "Thought for \(formatDuration(reasoningDuration))"

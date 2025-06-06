@@ -59,7 +59,7 @@ struct ToolUseView: View {
             .fixedSize(horizontal: false, vertical: true)
             .lineLimit(nil)
             .foregroundColor(foregroundColor(for: choice, with: selection))
-        }
+        }.opacity(opacity(for: choice, with: selection))
       }
     }
   }
@@ -67,6 +67,11 @@ struct ToolUseView: View {
   private func foregroundColor(for choice: String, with selection: String?) -> Color {
     guard let selection else { return .primary }
     return selection == choice ? .primary : .secondary
+  }
+
+  private func opacity(for choice: String, with selection: String?) -> Double {
+    guard let selection else { return 1 }
+    return selection == choice ? 1 : 0.4
   }
 
 }

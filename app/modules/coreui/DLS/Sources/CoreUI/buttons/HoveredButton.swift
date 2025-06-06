@@ -78,7 +78,6 @@ public struct HoveredButton<Content: View>: View {
         .cornerRadius(cornerRadius)
     })
     .buttonStyle(.plain)
-    .scaledToFit()
     .acceptClickThrough(disabled: disableClickThrough)
     .onHover(perform: { isHovered in
       self.isHovered = isHovered

@@ -136,7 +136,7 @@ extension Schema {
   }
   public struct ReasoningMessage: Codable, Sendable {
     public let text: String
-    public let signature: String
+    public let signature: String?
     public let type = "reasoning"
   
     private enum CodingKeys: String, CodingKey {
@@ -147,7 +147,7 @@ extension Schema {
   
     public init(
         text: String,
-        signature: String,
+        signature: String? = nil,
         type: String = "reasoning"
     ) {
       self.text = text
@@ -157,13 +157,13 @@ extension Schema {
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       text = try container.decode(String.self, forKey: .text)
-      signature = try container.decode(String.self, forKey: .signature)
+      signature = try container.decodeIfPresent(String?.self, forKey: .signature)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
       try container.encode(text, forKey: .text)
-      try container.encode(signature, forKey: .signature)
+      try container.encodeIfPresent(signature, forKey: .signature)
       try container.encode(type, forKey: .type)
     }
   }

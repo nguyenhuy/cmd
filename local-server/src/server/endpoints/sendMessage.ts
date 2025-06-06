@@ -5,6 +5,7 @@ import {
 	Message,
 	MessageContent,
 	Ping,
+	ReasoningMessage,
 	ResponseError,
 	SendMessageRequestParams,
 	StreamedResponseChunk,
@@ -328,13 +329,18 @@ const mapMessage = (message: Message): CoreMessage => {
 							// skipping messages with empty text
 							return undefined
 						}
-					}
-					if (isToolUseRequestMessage(content)) {
+					} else if (isToolUseRequestMessage(content)) {
 						return {
 							type: "tool-call",
 							toolCallId: content.toolUseId,
 							toolName: content.toolName,
 							args: content.input,
+						}
+					} else if (isReasoningMessage(content)) {
+						return {
+							type: "reasoning",
+							text: content.text,
+							signature: content.signature,
 						}
 					}
 					throw new Error(`Unsupported content type: ${content.type}`)
@@ -379,6 +385,10 @@ const asToolResultMessage = (message: MessageContent): ToolResultMessage => {
 }
 const isToolUseRequestMessage = (message: MessageContent): message is ToolUseRequest => {
 	return message.type === "tool_call"
+}
+
+const isReasoningMessage = (message: MessageContent): message is ReasoningMessage => {
+	return message.type === "reasoning"
 }
 
 const isDefined = <T>(value: T | undefined): value is T => {

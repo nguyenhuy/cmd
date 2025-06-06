@@ -124,7 +124,7 @@ export interface TextMessage {
 
 export interface ReasoningMessage {
 	text: string
-	signature: string
+	signature?: string
 	type: "reasoning"
 }
 

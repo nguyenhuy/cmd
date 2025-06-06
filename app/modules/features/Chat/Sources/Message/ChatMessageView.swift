@@ -148,7 +148,6 @@ struct ToolUseView: View {
           withCheckMark: true)
           .frame(width: 10, height: 10)
           .font(.system(size: 10))
-          .foregroundColor(.orange)
         #endif
       }
     }

@@ -47,7 +47,7 @@ extension AssistantMessage {
         case .reasoning(let reasoning):
           return .reasoningMessage(Schema.ReasoningMessage(
             text: reasoning.content,
-            signature: reasoning.signature ?? ""))
+            signature: reasoning.signature))
         }
       })
     }

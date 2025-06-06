@@ -207,7 +207,7 @@ extension ChatMessageContent {
       return [(nil, .textMessage(.init(text: message.text)))]
 
     case .reasoning(let message):
-      return [(nil, .reasoningMessage(.init(text: message.text, signature: message.signature ?? "")))]
+      return [(nil, .reasoningMessage(.init(text: message.text, signature: message.signature)))]
 
     case .toolUse(let toolUse):
       do {
