@@ -66,7 +66,7 @@ struct XcodeExtensionPermissionView: View {
     guard let svgPath = Bundle.module.path(forResource: "Xcode", ofType: "svg") else {
       return nil
     }
-    return try? FileIcon.loadSVG(atPath: svgPath)
+    return try? SVGImageLoader.svg(atPath: svgPath)
   }
 
   @ViewBuilder

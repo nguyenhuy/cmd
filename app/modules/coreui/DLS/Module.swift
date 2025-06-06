@@ -8,5 +8,6 @@ Target.module(
   ],
   resources: [
     .process("Resources/fileIcons"),
+    .process("Resources/cmd-logo.svg"),
   ],
   testDependencies: [])

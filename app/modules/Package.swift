@@ -86,6 +86,7 @@ targets.append(contentsOf: Target.module(
     "CheckpointService",
     "CheckpointServiceInterface",
     "DependencyFoundation",
+    "DLS",
     "EditFilesTool",
     "ExecuteCommandTool",
     "ExtensionCommandHandler",
@@ -139,6 +140,7 @@ targets.append(contentsOf: Target.module(
   ],
   resources: [
     .process("Resources/fileIcons"),
+    .process("Resources/cmd-logo.svg"),
   ],
   testDependencies: [],
   path: "./coreui/DLS"))

@@ -4,6 +4,7 @@
 import Combine
 @preconcurrency import Darwin
 import Dependencies
+import DLS
 import ExtensionCommandHandler
 import Foundation
 import LoggingServiceInterface
@@ -58,9 +59,10 @@ public struct commandApp: App {
         .keyboardShortcut("q")
     } label: {
       #if DEBUG
-      Text("??")
+      AppLogo()
+      Text("*")
       #else
-      Text("?")
+      AppLogo()
       #endif
     }.commands {
       CommandGroup(before: .appSettings) {
