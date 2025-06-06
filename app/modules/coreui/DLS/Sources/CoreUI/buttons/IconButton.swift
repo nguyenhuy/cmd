@@ -57,10 +57,10 @@ public struct IconButton: View {
 
   private var iconSystemName: String {
     if isRunning {
-      "progress.indicator"
+      return "progress.indicator"
     }
     if hasTapped, withCheckMark {
-      "checkmark"
+      return "checkmark"
     }
     return systemName
   }
