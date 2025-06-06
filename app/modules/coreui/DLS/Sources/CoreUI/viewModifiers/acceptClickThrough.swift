@@ -42,8 +42,13 @@ extension SwiftUI.View {
   ///     }
   /// }
   /// ```
-  public func acceptClickThrough() -> some View {
-    ClickThroughBackdrop(self)
+  @ViewBuilder
+  public func acceptClickThrough(disabled: Bool = false) -> some View {
+    if disabled {
+      self
+    } else {
+      ClickThroughBackdrop(self)
+    }
   }
 }
 

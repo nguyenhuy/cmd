@@ -1,30 +1,29 @@
-import { ModelProvider, ModelProviderOutput } from "./provider"
+import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
 import { addCacheControlToMessages } from "./anthropic"
 
 export class OpenRouterModelProvider implements ModelProvider {
 	name: APIProviderName = "openrouter"
-	build(params: { baseUrl?: string; apiKey?: string }, modelName: string): ModelProviderOutput {
+	build(params: ModelProviderInput): ModelProviderOutput {
+		const { modelName, apiKey, baseUrl, reasoningBudget } = params
 		const provider = createOpenRouter({
-			apiKey: params.apiKey,
-			baseURL: process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? params.baseUrl,
+			apiKey: apiKey,
+			baseURL: process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? baseUrl,
 			fetch: modelName.startsWith("anthropic/") ? fetchAnthropicResponse : defaultFetch,
 		})
+
+		const providerOptions: OpenRouterProviderOptions = {}
+		if (reasoningBudget) {
+			providerOptions.reasoning = { max_tokens: reasoningBudget }
+		}
 		return {
 			model: provider(modelName, {
 				usage: {
 					include: true,
 				},
-				// reasoning: { effort: "high" }, // Set reasoning effort to high by default
+				reasoning: providerOptions.reasoning,
 			}),
-			generalProviderOptions: {
-				openRouter: {
-					// reasoning: {
-					// 	effort: "high",
-					// },
-				} satisfies OpenRouterProviderOptions,
-			},
 			addProviderOptionsToMessages: modelName.startsWith("anthropic/")
 				? (messages) => addCacheControlToMessages(messages, this.name)
 				: undefined,

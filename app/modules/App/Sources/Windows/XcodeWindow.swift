@@ -52,9 +52,31 @@ class XcodeWindow: NSWindow {
     didSet {
       if trackedWindow != oldValue {
         trackedWindowNumber = nil
+        isTrackedWindowMiniaturized = nil
+        showWhenWindowDeminiaturized = false
         updatePosition(skippingIfUnchanged: true)
       }
     }
+  }
+
+  /// Whether the tracked window is on screen
+  var isTrackedWindowOnScreen: Bool {
+    guard let trackedWindow else { return false }
+    if isTrackedWindowMiniaturized == true {
+      // When the window is miniaturized, the window info's isOnScreen is not reliable, so we track this state separately.
+      return false
+    }
+    if let trackedWindowNumber {
+      return WindowInfo.window(withNumber: trackedWindowNumber)?.isOnScreen ?? false
+    }
+    let windowInfos = WindowInfo.findWindowsMatching(pid: trackedWindow.pid, cgFrame: trackedWindow.cgFrame)
+      .filter(\.isOnScreen)
+
+    if windowInfos.count == 1 {
+      trackedWindowNumber = windowInfos.first?.windowNumber
+    }
+
+    return !windowInfos.isEmpty
   }
 
   // MARK: - Public API
@@ -118,21 +140,8 @@ class XcodeWindow: NSWindow {
   private var isShown = true
   private var shouldBeVisibleWhenAutomaticallyManaged = true
 
-  /// Whether the tracked window is on screen
-  private var isTrackedWindowOnScreen: Bool {
-    guard let trackedWindow else { return false }
-    if let trackedWindowNumber {
-      return WindowInfo.window(withNumber: trackedWindowNumber)?.isOnScreen ?? false
-    }
-    let windowInfos = WindowInfo.findWindowsMatching(pid: trackedWindow.pid, cgFrame: trackedWindow.cgFrame)
-      .filter(\.isOnScreen)
-
-    if windowInfos.count == 1 {
-      trackedWindowNumber = windowInfos.first?.windowNumber
-    }
-
-    return !windowInfos.isEmpty
-  }
+  private var isTrackedWindowMiniaturized: Bool?
+  private var showWhenWindowDeminiaturized = false
 
   /// Whether this window is on screen
   private var isOnScreen: Bool {
@@ -252,12 +261,18 @@ class XcodeWindow: NSWindow {
   private func handle(xcodeNotification: AXNotification) {
     switch xcodeNotification {
     case .windowMiniaturized:
+      isTrackedWindowMiniaturized = true
+      // .windowMiniaturized might be called several time for one action, so we preserve the existing value.
+      showWhenWindowDeminiaturized = showWhenWindowDeminiaturized || isShown
       hideIfManaged()
 
     case .windowDeminiaturized:
-      if isShown {
+      isTrackedWindowMiniaturized = false
+
+      if isShown || showWhenWindowDeminiaturized {
         showIfManaged()
       }
+      showWhenWindowDeminiaturized = false
 
     case .windowMoved:
       updatePosition(skippingIfUnchanged: false)

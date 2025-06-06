@@ -181,7 +181,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
       try await streamingTask?.value
       streamingTask = nil
     } catch {
-      // TODO: add error message to the UI.
       defaultLogger.error("Error sending message", error)
       streamingTask = nil
 

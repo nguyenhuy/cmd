@@ -3,6 +3,10 @@
 
 import Foundation
 
+// MARK: - LLMReasoning
+
+public struct LLMReasoning: Sendable, Hashable { }
+
 // MARK: - LLMModel
 
 /// An LLM model.
@@ -22,7 +26,8 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     description: String? = nil,
     contextSize: Int,
     defaultPricing: ModelPricing,
-    documentationURL: URL? = nil)
+    documentationURL: URL? = nil,
+    reasoning: LLMReasoning? = nil)
   {
     self.id = id
     self.name = name
@@ -30,6 +35,7 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     self.contextSize = contextSize
     self.defaultPricing = defaultPricing
     self.documentationURL = documentationURL
+    self.reasoning = reasoning
   }
 
   /// Anthropic
@@ -44,19 +50,22 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     id: "claude-sonnet-37",
     contextSize: 200_000,
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
   public static let claudeSonnet_4_0 = LLMModel(
-    name: "claude-4.0-sonnet",
+    name: "claude-4-sonnet",
     id: "claude-sonnet-4",
     contextSize: 200_000,
     defaultPricing: .init(input: 3, output: 15, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 4.8),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
   public static let claudeOpus_4 = LLMModel(
-    name: "claude-opus-4",
+    name: "claude-4-opus",
     id: "claude-opus-4",
     contextSize: 200_000,
     defaultPricing: .init(input: 15, output: 75, cacheWriteMult: 0.25, cachedInputMult: 0.1, inputImage: 24),
-    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"))
+    documentationURL: URL(string: "https://www.anthropic.com/pricing#api"),
+    reasoning: LLMReasoning())
 
   /// OpenAI
   public static let gpt_4_1 = LLMModel(
@@ -76,13 +85,15 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
     id: "o3",
     contextSize: 200_000,
     defaultPricing: .init(input: 10, output: 40, cacheWrite: 0, cachedInput: 2.5, inputImage: 10),
-    documentationURL: URL(string: "https://platform.openai.com/docs/models/o3"))
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/o3"),
+    reasoning: LLMReasoning())
   public static let o4_mini = LLMModel(
     name: "o4-mini",
     id: "o4-mini",
     contextSize: 200_000,
     defaultPricing: .init(input: 1.1, output: 4.4, cacheWrite: 0, cachedInput: 0.275, inputImage: 1.1),
-    documentationURL: URL(string: "https://platform.openai.com/docs/models/o4-mini"))
+    documentationURL: URL(string: "https://platform.openai.com/docs/models/o4-mini"),
+    reasoning: LLMReasoning())
 
   public static var allCases: [LLMModel] {
     // Keep them ordered by most likely to be a good default.
@@ -104,9 +115,15 @@ public struct LLMModel: Hashable, Identifiable, CaseIterable, Sendable, RawRepre
   public let contextSize: Int
   public let defaultPricing: ModelPricing
   public let documentationURL: URL?
+  public let reasoning: LLMReasoning?
 
   public var rawValue: String {
     id
+  }
+
+  /// Whether this model supports reasoning.
+  public var canReason: Bool {
+    reasoning != nil
   }
 
   public static func ==(lhs: LLMModel, rhs: LLMModel) -> Bool {

@@ -5,6 +5,7 @@ import {
 	Message,
 	MessageContent,
 	Ping,
+	ReasoningMessage,
 	ResponseError,
 	SendMessageRequestParams,
 	StreamedResponseChunk,
@@ -65,10 +66,11 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 				})
 			}
 			const modelName = body.model
-			const { model, generalProviderOptions, addProviderOptionsToMessages } = await modelProvider.build(
-				body.provider.settings,
+			const { model, generalProviderOptions, addProviderOptionsToMessages } = await modelProvider.build({
+				...body.provider.settings,
 				modelName,
-			)
+				reasoningBudget: body.enableReasoning ? 12000 : undefined,
+			})
 			if (!model) {
 				throw new UserFacingError({
 					message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
@@ -148,6 +150,18 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 							input: chunk.args,
 							idx: i++,
 						}
+					case "reasoning":
+						return {
+							type: "reasoning_delta",
+							delta: chunk.textDelta,
+							idx: i++,
+						}
+					case "reasoning-signature":
+						return {
+							type: "reasoning_signature",
+							signature: chunk.signature,
+							idx: i++,
+						}
 					case "error":
 						return mapResponseError(chunk.error, () => i++)
 					default:
@@ -186,7 +200,15 @@ async function processResponseStream(stream: AsyncIterable<TextStreamPart<Record
 }
 
 const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk>) => {
-	let messageType: "error" | "text_delta" | "tool_call" | "tool_call_delta" | "ping" | undefined
+	let messageType:
+		| "error"
+		| "text_delta"
+		| "tool_call"
+		| "tool_call_delta"
+		| "ping"
+		| "reasoning_delta"
+		| "reasoning_signature"
+		| undefined
 	let text: string | undefined
 
 	const logLastObject = () => {
@@ -307,13 +329,18 @@ const mapMessage = (message: Message): CoreMessage => {
 							// skipping messages with empty text
 							return undefined
 						}
-					}
-					if (isToolUseRequestMessage(content)) {
+					} else if (isToolUseRequestMessage(content)) {
 						return {
 							type: "tool-call",
 							toolCallId: content.toolUseId,
 							toolName: content.toolName,
 							args: content.input,
+						}
+					} else if (isReasoningMessage(content)) {
+						return {
+							type: "reasoning",
+							text: content.text,
+							signature: content.signature,
 						}
 					}
 					throw new Error(`Unsupported content type: ${content.type}`)
@@ -358,6 +385,10 @@ const asToolResultMessage = (message: MessageContent): ToolResultMessage => {
 }
 const isToolUseRequestMessage = (message: MessageContent): message is ToolUseRequest => {
 	return message.type === "tool_call"
+}
+
+const isReasoningMessage = (message: MessageContent): message is ReasoningMessage => {
+	return message.type === "reasoning"
 }
 
 const isDefined = <T>(value: T | undefined): value is T => {
