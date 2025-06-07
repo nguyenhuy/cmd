@@ -4,6 +4,7 @@
 import Combine
 @preconcurrency import Darwin
 import Dependencies
+import DLS
 import ExtensionCommandHandler
 import Foundation
 import LoggingServiceInterface
@@ -51,16 +52,18 @@ public struct commandApp: App {
 
   public var body: some Scene {
     MenuBarExtra {
-      Button("Settings…") { print("settings") }
-        .keyboardShortcut(",", modifiers: .command)
+      Button("Show \(windowsViewModel.isOnbardingVisible ? "onboarding" : "chat")") {
+        windowsViewModel.handle(.showApplication)
+      }
       Divider()
       Button("Quit") { NSApplication.shared.terminate(nil) }
         .keyboardShortcut("q")
     } label: {
       #if DEBUG
-      Text("??")
+      AppLogo()
+      Text("*")
       #else
-      Text("?")
+      AppLogo()
       #endif
     }.commands {
       CommandGroup(before: .appSettings) {

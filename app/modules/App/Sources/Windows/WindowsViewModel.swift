@@ -53,6 +53,20 @@ final class WindowsViewModel {
 
   private(set) var state: State
 
+  /// Whether the onboarding should be visible.
+  var isOnbardingVisible: Bool {
+    if userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey) != true {
+      // Show onboarding at least once
+      return true
+    }
+    if !isAccessibilityPermissionGranted {
+      // Show onboarding if accessibility permission is not granted
+      return true
+    }
+    // If we want to show the onboarding in other conditions, we can add this logic here.
+    return false
+  }
+
   func handle(_ action: WindowsAction) {
     switch action {
     case .showApplication:
@@ -84,19 +98,6 @@ final class WindowsViewModel {
 
   @ObservationIgnored private var isAccessibilityPermissionGranted = true // default to true for initial state
   private var cancellables = Set<AnyCancellable>()
-
-  private var isOnbardingVisible: Bool {
-    if userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey) != true {
-      // Show onboarding at least once
-      return true
-    }
-    if !isAccessibilityPermissionGranted {
-      // Show onboarding if accessibility permission is not granted
-      return true
-    }
-    // If we want to show the onboarding in other conditions, we can add this logic here.
-    return false
-  }
 
   private func handle(appEvent: AppEvent) -> Bool {
     if appEvent is AddCodeToChatEvent {

@@ -17,8 +17,9 @@ struct WelcomeView: View {
           .fill(Color.blue)
           .frame(width: 80, height: 80)
           .overlay(
-            Text("⌘")
-              .font(.system(size: 50))
+            AppLogo()
+              .tint(.white)
+              .frame(square: 60)
               .foregroundColor(colorScheme.primaryForeground))
 
         VStack(spacing: 16) {

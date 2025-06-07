@@ -16,6 +16,7 @@ Target.module(
     "CheckpointService",
     "CheckpointServiceInterface",
     "DependencyFoundation",
+    "DLS",
     "EditFilesTool",
     "ExecuteCommandTool",
     "ExtensionCommandHandler",

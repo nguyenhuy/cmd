@@ -61,19 +61,6 @@ public struct FileIcon: View {
 
 extension FileIcon {
 
-  public static func loadSVG(atPath: String) throws -> NSImage {
-    guard
-      let svgData = FileManager.default.contents(atPath: atPath)
-    else {
-      throw URLError(.badURL)
-    }
-    guard let image = NSImage(data: svgData) else {
-      throw URLError(.cannotDecodeRawData)
-    }
-    cachedImages[atPath] = image
-    return image
-  }
-
   /// Returns the image for the given language, if one was bundled in the app.
   fileprivate static func bundleImage(for language: String) -> NSImage? {
     resourceBundle.image(forResource: "\(language)-preferred")
@@ -102,7 +89,7 @@ extension FileIcon {
     else {
       throw URLError(.badURL)
     }
-    return try loadSVG(atPath: svgPath)
+    return try SVGImageLoader.svg(atPath: svgPath)
   }
 
   @MainActor private static var cachedImages = [String: NSImage]()
