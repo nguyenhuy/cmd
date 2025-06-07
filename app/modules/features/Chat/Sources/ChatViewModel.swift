@@ -4,6 +4,7 @@
 import AppEventServiceInterface
 import ChatAppEvents
 import ChatFoundation
+import ChatHistoryServiceInterface
 import Combine
 import Dependencies
 import Foundation
@@ -61,6 +62,10 @@ public class ChatViewModel {
           self?.focusedWorkspacePath = focusedWorkspacePath
         }
       }.store(in: &cancellables)
+
+    Task {
+      await initializePersistence()
+    }
   }
 
   var tabs: [ChatTabViewModel]
@@ -95,6 +100,49 @@ public class ChatViewModel {
     }
     if tabs.isEmpty {
       addTab()
+    }
+  }
+
+  // MARK: - Persistence Methods
+
+  func initializePersistence() async {
+    @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
+
+    do {
+      try await chatHistoryService.setup()
+      await loadTabsFromDatabase()
+      defaultLogger.log("Chat persistence initialized")
+    } catch {
+      defaultLogger.error("Failed to initialize chat persistence", error)
+    }
+  }
+
+  func loadTabsFromDatabase() async {
+    @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
+
+    do {
+      let persistentTabs = try await chatHistoryService.loadChatTabs()
+
+      if persistentTabs.isEmpty {
+        // Keep the default empty tab if no saved tabs
+        return
+      }
+
+      var loadedTabs: [ChatTabViewModel] = []
+
+      for persistentTab in persistentTabs {
+        let chatTab = await ChatTabViewModel(from: persistentTab)
+        loadedTabs.append(chatTab)
+      }
+
+      if !loadedTabs.isEmpty {
+        tabs = loadedTabs
+        selectedTab = tabs.first
+      }
+
+      defaultLogger.log("Loaded \(loadedTabs.count) chat tabs from database")
+    } catch {
+      defaultLogger.error("Failed to load chat tabs from database", error)
     }
   }
 
@@ -194,6 +242,7 @@ public class ChatViewModel {
     }
     return true
   }
+
 }
 
 extension NSApplication {

@@ -83,6 +83,8 @@ targets.append(contentsOf: Target.module(
     "BuildTool",
     "Chat",
     "ChatAppEvents",
+    "ChatHistoryService",
+    "ChatHistoryServiceInterface",
     "CheckpointService",
     "CheckpointServiceInterface",
     "DependencyFoundation",
@@ -348,6 +350,7 @@ targets.append(contentsOf: Target.module(
     "AppUpdateServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",
+    "ChatHistoryServiceInterface",
     "CheckpointServiceInterface",
     "CodePreview",
     "ConcurrencyFoundation",
@@ -373,6 +376,7 @@ targets.append(contentsOf: Target.module(
     "AppEventServiceInterface",
     "ChatAppEvents",
     "ChatFoundation",
+    "ChatHistoryServiceInterface",
     "CheckpointServiceInterface",
     "ConcurrencyFoundation",
     "FileSuggestionServiceInterface",
@@ -568,6 +572,7 @@ targets.append(contentsOf: Target.macroModule(
 targets.append(contentsOf: Target.module(
   name: "AppUpdateServiceInterface",
   dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
     "ConcurrencyFoundation",
     "ThreadSafe",
   ],
@@ -618,6 +623,15 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
   ],
   path: "./serviceInterfaces/PermissionsServiceInterface"))
+
+targets.append(contentsOf: Target.module(
+  name: "ChatHistoryServiceInterface",
+  dependencies: [
+    .product(name: "Dependencies", package: "swift-dependencies"),
+    "ThreadSafe",
+  ],
+  testDependencies: [],
+  path: "./serviceInterfaces/ChatHistoryServiceInterface"))
 
 targets.append(contentsOf: Target.module(
   name: "LLMServiceInterface",
@@ -947,6 +961,19 @@ targets.append(contentsOf: Target.module(
   testDependencies: [],
   path: "./services/AppUpdateService"))
 
+targets.append(contentsOf: Target.module(
+  name: "ChatHistoryService",
+  dependencies: [
+    .product(name: "GRDB", package: "GRDB.swift"),
+    "ChatHistoryServiceInterface",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "LoggingServiceInterface",
+  ],
+  testDependencies: [],
+  path: "./services/ChatHistoryService"))
+
 let package = Package(
   name: "Packages",
   platforms: [
@@ -979,6 +1006,7 @@ let package = Package(
 
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
+    .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),

@@ -1,10 +1,7 @@
 Target.module(
-  name: "AppUpdateServiceInterface",
+  name: "ChatHistoryServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
-    "ConcurrencyFoundation",
     "ThreadSafe",
   ],
-  testDependencies: [
-    "SwiftTesting",
-  ])
+  testDependencies: [])

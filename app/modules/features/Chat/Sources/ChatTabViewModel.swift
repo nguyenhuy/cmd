@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ChatFoundation
+import ChatHistoryServiceInterface
 import CheckpointServiceInterface
 import Combine
 import Dependencies
@@ -37,11 +38,85 @@ final class ChatTabViewModel: Identifiable, Equatable {
       messages: [])
   }
 
-  private init(id: UUID, name: String, messages: [ChatMessage]) {
+  convenience init(from persistentModel: ChatTabModel) async {
+    @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
+
+    // Load messages and events from database
+    var loadedMessages: [ChatMessage] = []
+    var loadedEvents: [ChatEvent] = []
+
+    do {
+      // Load messages
+      let persistentMessages = try await chatHistoryService.loadChatMessages(for: persistentModel.id)
+
+      for persistentMessage in persistentMessages {
+        // Load contents for each message
+        let persistentContents = try await chatHistoryService.loadChatMessageContents(for: persistentMessage.id)
+        var messageContents: [ChatMessageContent] = []
+
+        for persistentContent in persistentContents {
+          // Load attachments for each content
+          let persistentAttachments = try await chatHistoryService.loadAttachments(for: persistentContent.id)
+          let attachments = persistentAttachments.compactMap { Attachment.from(persistentModel: $0) }
+
+          if let content = ChatMessageContent.from(persistentModel: persistentContent, attachments: attachments) {
+            messageContents.append(content)
+          }
+        }
+
+        let message = ChatMessage.from(persistentModel: persistentMessage, contents: messageContents)
+        loadedMessages.append(message)
+      }
+
+      // Load events
+      let persistentEvents = try await chatHistoryService.loadChatEvents(for: persistentModel.id)
+
+      for persistentEvent in persistentEvents {
+        if let event = ChatEvent.from(persistentModel: persistentEvent, messages: loadedMessages) {
+          loadedEvents.append(event)
+        }
+      }
+
+    } catch {
+      defaultLogger.error("Failed to load chat tab data", error)
+    }
+
+    // Create project info if available
+    let projectInfo: SelectedProjectInfo? =
+      if
+        let projectPath = persistentModel.projectPath,
+        let projectRootPath = persistentModel.projectRootPath
+      {
+        SelectedProjectInfo(
+          path: URL(filePath: projectPath),
+          dirPath: URL(filePath: projectRootPath))
+      } else {
+        nil
+      }
+
+    self.init(
+      id: UUID(uuidString: persistentModel.id) ?? UUID(),
+      name: persistentModel.name,
+      messages: loadedMessages,
+      events: loadedEvents,
+      projectInfo: projectInfo)
+
+    // Reset change tracking since this is loaded data
+    resetChangeTracking()
+  }
+
+  private init(
+    id: UUID,
+    name: String,
+    messages: [ChatMessage],
+    events: [ChatEvent]? = nil,
+    projectInfo: SelectedProjectInfo? = nil)
+  {
     self.id = id
     self.name = name
     self.messages = messages
-    events = messages.flatMap { message in
+    self.projectInfo = projectInfo
+    self.events = events ?? messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
 
@@ -75,7 +150,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
   }
 
   let id: UUID
-  var name: String
   var events: [ChatEvent]
   var input: ChatInputViewModel
   // TODO: look at making this a private(set). It's needed for a finding, that ideally would be readonly
@@ -86,8 +160,22 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   private(set) var projectInfo: SelectedProjectInfo?
 
+  var name: String {
+    didSet {
+      if name != oldValue {
+        markAsModified()
+      }
+    }
+  }
+
   nonisolated static func ==(lhs: ChatTabViewModel, rhs: ChatTabViewModel) -> Bool {
     lhs.id == rhs.id
+  }
+
+  func resetChangeTracking() {
+    lastSavedMessageCount = messages.count
+    lastSavedEventCount = events.count
+    isTabModified = false
   }
 
   @MainActor
@@ -180,6 +268,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
       try await streamingTask?.value
       streamingTask = nil
+
+      // Save the conversation after successful completion
+      await saveToDatabase()
     } catch {
       defaultLogger.error("Error sending message", error)
       streamingTask = nil
@@ -187,6 +278,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
       if case .message(let lastEvent) = events.last {
         events[events.count - 1] = .message(lastEvent.with(failureReason: "Error sending message: \(error.localizedDescription)"))
       }
+
+      // Save even after error to preserve the failure state
+      await saveToDatabase()
     }
   }
 
@@ -199,6 +293,82 @@ final class ChatTabViewModel: Identifiable, Equatable {
       }
     }
   }
+
+  // MARK: - Persistence Methods
+
+  func saveToDatabase() async {
+    @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
+
+    // Check if there are any changes to save
+    let hasNewMessages = messages.count > lastSavedMessageCount
+    let hasNewEvents = events.count > lastSavedEventCount
+
+    if !isTabModified, !hasNewMessages, !hasNewEvents {
+      // No changes to save
+      return
+    }
+
+    do {
+      let persistentTab = persistentModel
+
+      // Collect only new messages since last save
+      let newMessages = Array(messages.suffix(messages.count - lastSavedMessageCount))
+      var messageContents: [ChatMessageContentModel] = []
+      var attachments: [AttachmentModel] = []
+
+      // Process new messages to extract contents and attachments
+      for message in newMessages {
+        let persistentMessage = message.persistentModel(for: persistentTab.id)
+
+        for content in message.content {
+          let persistentContent = content.persistentModel(for: persistentMessage.id)
+          messageContents.append(persistentContent)
+
+          // Collect attachments for text content
+          if let textContent = content.asText {
+            for attachment in textContent.attachments {
+              let persistentAttachment = attachment.persistentModel(for: persistentContent.id)
+              attachments.append(persistentAttachment)
+            }
+          }
+        }
+      }
+
+      // Collect only new events since last save
+      let newEvents = Array(events.suffix(events.count - lastSavedEventCount)).enumerated().map { index, event in
+        event.persistentModel(for: persistentTab.id, orderIndex: lastSavedEventCount + index)
+      }
+
+      // Convert new messages to persistent models
+      let persistentMessages = newMessages.map { message in
+        message.persistentModel(for: persistentTab.id)
+      }
+
+      // Save everything atomically
+      try await chatHistoryService.saveChatTabAtomic(
+        tab: persistentTab,
+        newMessages: persistentMessages,
+        messageContents: messageContents,
+        attachments: attachments,
+        newEvents: newEvents)
+
+      // Update tracking variables
+      lastSavedMessageCount = messages.count
+      lastSavedEventCount = events.count
+      isTabModified = false
+
+      defaultLogger
+        .log("Incrementally saved chat tab: \(name) (\(newMessages.count) new messages, \(newEvents.count) new events)")
+    } catch {
+      defaultLogger.error("Failed to save chat tab: \(name)", error)
+    }
+  }
+
+  // MARK: - Change Tracking
+
+  private var lastSavedMessageCount = 0
+  private var lastSavedEventCount = 0
+  private var isTabModified = true
 
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
@@ -224,6 +394,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
+  }
+
+  private func markAsModified() {
+    isTabModified = true
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {

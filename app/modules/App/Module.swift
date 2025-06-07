@@ -13,6 +13,8 @@ Target.module(
     "BuildTool",
     "Chat",
     "ChatAppEvents",
+    "ChatHistoryService",
+    "ChatHistoryServiceInterface",
     "CheckpointService",
     "CheckpointServiceInterface",
     "DependencyFoundation",
