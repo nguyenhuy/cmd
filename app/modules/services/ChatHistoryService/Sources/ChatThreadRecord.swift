@@ -11,19 +11,19 @@ struct ChatThreadRecord: Codable, Identifiable, Sendable {
     id: String,
     name: String,
     createdAt: Date,
-    rawContentLocation: String)
+    rawContentPath: String)
 
   {
     self.id = id
     self.name = name
     self.createdAt = createdAt
-    self.rawContentLocation = rawContentLocation
+    self.rawContentPath = rawContentPath
   }
 
   let id: String
   let name: String
   let createdAt: Date
-  let rawContentLocation: String
+  let rawContentPath: String
 
 }
 

@@ -5,13 +5,13 @@ import Foundation
 
 // MARK: - Attachment
 
-public enum AttachmentModel: Identifiable, Sendable, Codable {
+public enum AttachmentModel: Identifiable, Sendable {
   case file(FileAttachmentModel)
   case image(ImageAttachmentModel)
   case fileSelection(FileSelectionAttachmentModel)
   case buildError(BuildErrorModel)
 
-  public struct FileAttachmentModel: Identifiable, Sendable, Codable {
+  public struct FileAttachmentModel: Identifiable, Sendable {
     public let id: UUID
     public let path: URL
     public let content: String
@@ -23,7 +23,7 @@ public enum AttachmentModel: Identifiable, Sendable, Codable {
     }
   }
 
-  public struct ImageAttachmentModel: Identifiable, Sendable, Codable {
+  public struct ImageAttachmentModel: Identifiable, Sendable {
 
     public init(id: UUID, imageData: Data, path: URL?) {
       self.id = id
@@ -36,7 +36,7 @@ public enum AttachmentModel: Identifiable, Sendable, Codable {
     public let path: URL?
   }
 
-  public struct FileSelectionAttachmentModel: Identifiable, Sendable, Codable {
+  public struct FileSelectionAttachmentModel: Identifiable, Sendable {
     public let id: UUID
     public let file: FileAttachmentModel
     public let startLine: Int
@@ -50,7 +50,7 @@ public enum AttachmentModel: Identifiable, Sendable, Codable {
     }
   }
 
-  public struct BuildErrorModel: Identifiable, Sendable, Codable {
+  public struct BuildErrorModel: Identifiable, Sendable {
     public let id: UUID
     public let message: String
     public let filePath: URL

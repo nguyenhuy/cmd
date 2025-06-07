@@ -2,7 +2,9 @@ Target.module(
   name: "ChatHistoryService",
   dependencies: [
     .product(name: "GRDB", package: "GRDB.swift"),
+    "ChatFeatureInterface",
     "ChatHistoryServiceInterface",
+    "CheckpointServiceInterface",
     "DependencyFoundation",
     "FoundationInterfaces",
     "LLMServiceInterface",

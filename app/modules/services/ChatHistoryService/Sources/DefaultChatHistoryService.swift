@@ -39,18 +39,32 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
   func save(chatThread thread: ChatThreadModel) async throws {
     let home = fileManager.homeDirectoryForCurrentUser
     let rawContentPath = home
-      .appending(path: ".cmd/chat-history/\(thread.projectInfo?.dirPath.hashValue ?? 0)/\(thread.id.uuidString).json")
+      .appending(
+        path: ".cmd/chat-history/project-\(thread.projectInfo?.dirPath.hashValue ?? 0)-\(thread.projectInfo?.dirPath.lastPathComponent ?? "")/\(thread.createdAt.ISO8601Format())-\(thread.id.uuidString)/content.json")
 
     let threadRecord = ChatThreadRecord(
       id: thread.id.uuidString,
       name: thread.name,
       createdAt: thread.createdAt,
-      rawContentLocation: rawContentPath.path)
+      rawContentPath: rawContentPath.path)
 
     try await dbQueue.write { db in
       // Save or update the thread
       try threadRecord.save(db)
     }
+    try fileManager.createDirectory(
+      at: rawContentPath.deletingLastPathComponent(),
+      withIntermediateDirectories: true,
+      attributes: nil)
+    var encoder = JSONEncoder()
+
+    let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
+    encoder.userInfo[AttachmentSerializer.codingUserInfoKey] = AttachmentSerializer(
+      fileManager: fileManager,
+      objectsDir: objectsDir)
+
+    let data = try encoder.encode(thread)
+    try fileManager.write(data: data, to: rawContentPath, options: .atomic)
   }
 
   func loadLastChatThreads(last _: Int) async throws -> [ChatThreadModelMetadata] {
@@ -58,75 +72,28 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
   }
 
   func loadChatThread(id: String) async throws -> ChatThreadModel? {
-    try await dbQueue.read { db in
+    let threadRecord = try await dbQueue.read { db in
       guard let threadRecord = try ChatThreadRecord.fetchOne(db, id: id) else {
         throw NSError(
           domain: "ChatHistoryService",
           code: 404,
           userInfo: [NSLocalizedDescriptionKey: "Chat thread with ID \(id) not found"])
       }
-
-      // Load messages for this thread
-      let messageRecords = try ChatMessageRecord
-        .filter(Column("chatThreadId") == threadRecord.id)
-        .order(Column("createdAt").asc)
-        .fetchAll(db)
-
-      var messages: [ChatMessageModel] = []
-      for messageRecord in messageRecords {
-        // Load contents for this message
-        let contentRecords = try ChatMessageContentRecord
-          .filter(Column("chatMessageId") == messageRecord.id)
-          .order(Column("createdAt").asc)
-          .fetchAll(db)
-
-        var contents: [ChatMessageContentModel] = []
-        for contentRecord in contentRecords {
-          // Load attachments for this content
-          let attachmentRecords = try AttachmentRecord
-            .filter(Column("chatMessageContentId") == contentRecord.id)
-            .order(Column("createdAt").asc)
-            .fetchAll(db)
-
-          let attachments = attachmentRecords.compactMap { try? AttachmentModel(from: $0, db: db) }
-          let content = ChatMessageContentModel(from: contentRecord, attachments: attachments)
-          contents.append(content)
-        }
-
-        let message = ChatMessageModel(from: messageRecord, contents: contents)
-        messages.append(message)
-      }
-
-      // Load events for this thread
-      let eventRecords = try ChatEventRecord
-        .filter(Column("chatThreadId") == threadRecord.id)
-        .order(Column("orderIndex").asc)
-        .fetchAll(db)
-
-      var events: [ChatEventModel] = []
-      for eventRecord in eventRecords {
-        var messageContent: ChatMessageContentModel?
-
-        // If this event references a message content, find it
-        if let contentId = eventRecord.chatMessageContentId {
-          // Find the content in the already loaded messages
-          for message in messages {
-            for content in message.content {
-              if content.id.uuidString == contentId {
-                messageContent = content
-                break
-              }
-            }
-            if messageContent != nil { break }
-          }
-        }
-
-        let event = ChatEventModel(from: eventRecord, messageContent: messageContent)
-        events.append(event)
-      }
-
-      return ChatThreadModel(from: threadRecord, messages: messages, events: events)
+      return threadRecord
     }
+    let task = Task.detached(priority: .userInitiated) {
+      let rawContentPath = URL(filePath: threadRecord.rawContentPath)
+      let rawContent = try self.fileManager.read(dataFrom: URL(filePath: threadRecord.rawContentPath))
+      var decoder = JSONDecoder()
+
+      let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
+      decoder.userInfo[AttachmentSerializer.codingUserInfoKey] = AttachmentSerializer(
+        fileManager: self.fileManager,
+        objectsDir: objectsDir)
+
+      return try decoder.decode(ChatThreadModel.self, from: rawContent)
+    }
+    return try await task.value
   }
 
   private let fileManager: FileManagerI
@@ -141,88 +108,15 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       t.primaryKey("id", .text)
       t.column("name", .text).notNull()
       t.column("createdAt", .datetime).notNull()
-      t.column("updatedAt", .datetime).notNull()
       t.column("projectPath", .text)
-      t.column("projectRootPath", .text)
-    }
-
-    // Create chat_messages table
-    try db.create(table: ChatMessageRecord.databaseTableName, ifNotExists: true) { t in
-      t.primaryKey("id", .text)
-      t.column("chatThreadId", .text).notNull().references("chat_threads", onDelete: .cascade)
-      t.column("role", .text).notNull()
-      t.column("createdAt", .datetime).notNull()
-      t.column("updatedAt", .datetime).notNull()
-    }
-
-    // Create chat_message_contents table
-    try db.create(table: ChatMessageContentRecord.databaseTableName, ifNotExists: true) { t in
-      t.primaryKey("id", .text)
-      t.column("chatMessageId", .text).notNull().references("chat_messages", onDelete: .cascade)
-      t.column("type", .text).notNull()
-      t.column("text", .text)
-      t.column("projectRoot", .text)
-      t.column("isStreaming", .boolean).notNull().defaults(to: false)
-      t.column("signature", .text)
-      t.column("reasoningDuration", .double)
-      t.column("toolName", .text)
-      t.column("toolInput", .text)
-      t.column("toolResult", .text)
-      t.column("createdAt", .datetime).notNull()
-      t.column("updatedAt", .datetime).notNull()
-    }
-
-    // Create attachments table
-    try db.create(table: AttachmentRecord.databaseTableName, ifNotExists: true) { t in
-      t.primaryKey("id", .text)
-      t.column("chatMessageContentId", .text).notNull().references("chat_message_contents", onDelete: .cascade)
-      t.column("type", .text).notNull()
-      t.column("filePath", .text)
-      t.column("fileContent", .text)
-      t.column("startLine", .integer)
-      t.column("endLine", .integer)
-      t.column("imageData", .blob) // TODO: Handle image data properly
-      t.column("createdAt", .datetime).notNull()
-    }
-
-    // Create chat_events table
-    try db.create(table: ChatEventRecord.databaseTableName, ifNotExists: true) { t in
-      t.primaryKey("id", .text)
-      t.column("chatThreadId", .text).notNull().references("chat_threads", onDelete: .cascade)
-      t.column("type", .text).notNull()
-      t.column("chatMessageContentId", .text).references("chat_message_contents", onDelete: .cascade)
-      t.column("checkpointId", .text)
-      t.column("role", .text)
-      t.column("failureReason", .text)
-      t.column("createdAt", .datetime).notNull()
-      t.column("orderIndex", .integer).notNull()
+      t.column("rawContentPath", .text)
     }
 
     // Create indexes for better performance
     try db.create(
-      index: "idx_chat_messages_thread_id",
-      on: ChatMessageRecord.databaseTableName,
-      columns: ["chatThreadId"],
-      ifNotExists: true)
-    try db.create(
-      index: "idx_chat_message_contents_message_id",
-      on: ChatMessageContentRecord.databaseTableName,
-      columns: ["chatMessageId"],
-      ifNotExists: true)
-    try db.create(
-      index: "idx_attachments_content_id",
-      on: AttachmentRecord.databaseTableName,
-      columns: ["chatMessageContentId"],
-      ifNotExists: true)
-    try db.create(
-      index: "idx_chat_events_thread_id",
-      on: ChatEventRecord.databaseTableName,
-      columns: ["chatThreadId"],
-      ifNotExists: true)
-    try db.create(
-      index: "idx_chat_events_order",
-      on: ChatEventRecord.databaseTableName,
-      columns: ["chatThreadId", "orderIndex"],
+      index: "chat_thread.created_at",
+      on: ChatThreadRecord.databaseTableName,
+      columns: ["createdAt"],
       ifNotExists: true)
   }
 
@@ -231,31 +125,36 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
 extension BaseProviding where Self: FileManagerProviding {
   public var chatHistoryService: ChatHistoryService {
     shared {
-      DefaultChatHistoryService {
-        do {
-          // Create database directory if it doesn't exist
-          let documentsURLs = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-          guard let documentsURL = documentsURLs.first else {
-            throw NSError(
-              domain: "ChatDatabaseService",
-              code: 1,
-              userInfo: [NSLocalizedDescriptionKey: "Could not find documents directory"])
-          }
-          let chatDataURL = documentsURL.appendingPathComponent("ChatData")
+      DefaultChatHistoryService(
+        createDBConnection: {
+          do {
+            // Create database directory if it doesn't exist
+            let documentsURLs = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+            guard let documentsURL = documentsURLs.first else {
+              throw NSError(
+                domain: "ChatDatabaseService",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Could not find documents directory"])
+            }
+            let chatDataURL = documentsURL.appendingPathComponent("ChatData")
 
-          if !fileManager.fileExists(atPath: chatDataURL.path) {
-            try fileManager.createDirectory(at: chatDataURL, withIntermediateDirectories: true, attributes: nil)
-          }
+            if !fileManager.fileExists(atPath: chatDataURL.path) {
+              try fileManager.createDirectory(
+                at: chatDataURL,
+                withIntermediateDirectories: true,
+                attributes: nil)
+            }
 
-          let dbURL = chatDataURL.appendingPathComponent("chat.sqlite")
-          let connection = try DatabaseQueue(path: dbURL.path)
-          logger.log("Database initialized at: \(dbURL.path)")
-          return connection
-        } catch {
-          logger.error("Failed to create database connection", error)
-          return try! DatabaseQueue()
-        }
-      }
+            let dbURL = chatDataURL.appendingPathComponent("chat.sqlite")
+            let connection = try DatabaseQueue(path: dbURL.path)
+            logger.log("Database initialized at: \(dbURL.path)")
+            return connection
+          } catch {
+            logger.error("Failed to create database connection", error)
+            return try! DatabaseQueue()
+          }
+        },
+        fileManager: fileManager)
     }
   }
 }
@@ -276,6 +175,78 @@ extension ChatMessageContentModel {
       content.id
     case .toolUse(let content):
       content.id
+    }
+  }
+}
+
+final class AttachmentSerializer: Sendable {
+  init(fileManager: FileManagerI, objectsDir: URL) {
+    self.fileManager = fileManager
+    self.objectsDir = objectsDir
+  }
+
+  static let codingUserInfoKey = CodingUserInfoKey(rawValue: "attachmentSerializer")!
+
+  func save(_ string: String, for id: UUID) throws {
+    let data = Data(string.utf8)
+    try save(data, for: id)
+  }
+
+  func save(_ data: Data, for id: UUID) throws {
+    let objectPath = objectsDir.appendingPathComponent("\(id).json")
+    try fileManager.createDirectory(
+      at: objectsDir,
+      withIntermediateDirectories: true,
+      attributes: nil)
+    return try fileManager.write(data: data, to: objectPath, options: .atomic)
+  }
+
+  func read(_: String.Type, for id: UUID) throws -> String {
+    let data = try read(Data.self, for: id)
+    guard let string = String(data: data, encoding: .utf8) else {
+      throw DecodingError.dataCorrupted(
+        DecodingError.Context(
+          codingPath: [],
+          debugDescription: "Failed to decode string from data"))
+    }
+    return string
+  }
+
+  func read(_: Data.Type, for id: UUID) throws -> Data {
+    let objectPath = objectsDir.appendingPathComponent("\(id).json")
+    return try fileManager.read(dataFrom: objectPath)
+  }
+
+  private let fileManager: FileManagerI
+  private let objectsDir: URL
+
+}
+
+extension Decoder {
+  var attachmentSerializer: AttachmentSerializer {
+    get throws {
+      guard let loader = userInfo[AttachmentSerializer.codingUserInfoKey] as? AttachmentSerializer else {
+        throw DecodingError.dataCorrupted(
+          DecodingError.Context(
+            codingPath: codingPath,
+            debugDescription: "AttachmentSerializer not found in userInfo"))
+      }
+      return loader
+    }
+  }
+}
+
+extension Encoder {
+  var attachmentSerializer: AttachmentSerializer {
+    get throws {
+      guard let loader = userInfo[AttachmentSerializer.codingUserInfoKey] as? AttachmentSerializer else {
+        throw EncodingError.invalidValue(
+          self,
+          EncodingError.Context(
+            codingPath: codingPath,
+            debugDescription: "AttachmentSerializer not found in userInfo"))
+      }
+      return loader
     }
   }
 }

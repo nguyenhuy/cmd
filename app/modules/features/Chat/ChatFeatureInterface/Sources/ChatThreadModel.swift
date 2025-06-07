@@ -7,14 +7,14 @@ import Foundation
 
 public struct ChatThreadModel: Sendable {
   public init(
-    id: String,
+    id: UUID,
     name: String,
     messages: [ChatMessageModel],
     events: [ChatEventModel],
     projectInfo: SelectedProjectInfo?,
     createdAt: Date)
   {
-    self.id = UUID(uuidString: id) ?? UUID()
+    self.id = id
     self.name = name
     self.messages = messages
     self.events = events

@@ -9,12 +9,12 @@ import LLMServiceInterface
 public struct ChatMessageModel: Sendable {
 
   public init(
-    id: String,
+    id: UUID,
     content: [ChatMessageContentModel],
     role: MessageRole,
     timestamp: Date)
   {
-    self.id = UUID(uuidString: id) ?? UUID()
+    self.id = id
     self.content = content
     self.role = role
     self.timestamp = timestamp
@@ -58,8 +58,8 @@ public enum ChatMessageContentModel: Sendable {
 
 public final class ChatMessageTextContentModel: Identifiable, Sendable {
 
-  public init(id: String, projectRoot: URL?, text: String, attachments: [AttachmentModel]) {
-    self.id = UUID(uuidString: id) ?? UUID()
+  public init(id: UUID, projectRoot: URL?, text: String, attachments: [AttachmentModel]) {
+    self.id = id
     self.projectRoot = projectRoot
     self.text = text
     self.attachments = attachments
@@ -76,8 +76,8 @@ public final class ChatMessageTextContentModel: Identifiable, Sendable {
 
 public final class ChatMessageToolUseContentModel: Identifiable, Sendable {
 
-  public init(id: String, toolUse: String) {
-    self.id = UUID(uuidString: id) ?? UUID()
+  public init(id: UUID, toolUse: String) {
+    self.id = id
     self.toolUse = toolUse
   }
 
@@ -90,8 +90,8 @@ public final class ChatMessageToolUseContentModel: Identifiable, Sendable {
 
 public final class ChatMessageReasoningContentModel: Identifiable, Sendable {
 
-  public init(id: String, text: String, signature: String?, reasoningDuration: TimeInterval?) {
-    self.id = UUID(uuidString: id) ?? UUID()
+  public init(id: UUID, text: String, signature: String?, reasoningDuration: TimeInterval?) {
+    self.id = id
     self.text = text
     self.signature = signature
     self.reasoningDuration = reasoningDuration

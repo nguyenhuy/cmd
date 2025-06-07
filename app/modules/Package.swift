@@ -976,6 +976,7 @@ targets.append(contentsOf: Target.module(
     .product(name: "GRDB", package: "GRDB.swift"),
     "ChatFeatureInterface",
     "ChatHistoryServiceInterface",
+    "CheckpointServiceInterface",
     "DependencyFoundation",
     "FoundationInterfaces",
     "LLMServiceInterface",
