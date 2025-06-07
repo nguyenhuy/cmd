@@ -38,6 +38,17 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
     }
   }
 
+  public convenience init(initial: Value, update: @escaping () async -> Value) {
+    self.init(initial)
+
+    Task { [weak self] in
+      let value = await update()
+      Task { @MainActor [weak self] in
+        self?.value = value
+      }
+    }
+  }
+
   public init(_ initial: Value) {
     value = initial
   }

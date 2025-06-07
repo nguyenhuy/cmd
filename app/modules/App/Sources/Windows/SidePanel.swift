@@ -4,7 +4,7 @@
 import AccessibilityFoundation
 import AccessibilityObjCFoundation
 import AppKit
-import Chat
+import ChatFeature
 import Dependencies
 import FoundationInterfaces
 import LoggingServiceInterface
@@ -99,7 +99,7 @@ final class SidePanel: XcodeWindow {
     guard let trackedWindow else { return nil }
     let frame = frame(from: trackedWindow)
     if frame == .zero {
-      windowsViewModel.handle(.stopChat)
+      windowsViewModel.handle(.closeSidePanel)
     }
     if let frame {
       lastWindowFrame = frame

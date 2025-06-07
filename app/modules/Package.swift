@@ -81,8 +81,8 @@ targets.append(contentsOf: Target.module(
     "AppUpdateServiceInterface",
     "AskFollowUpTool",
     "BuildTool",
-    "Chat",
     "ChatAppEvents",
+    "ChatFeature",
     "ChatHistoryService",
     "ChatHistoryServiceInterface",
     "CheckpointService",
@@ -340,7 +340,7 @@ targets.append(contentsOf: Target.module(
   path: "./features/Settings"))
 
 targets.append(contentsOf: Target.module(
-  name: "Chat",
+  name: "ChatFeature",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     .product(name: "Down", package: "Down"),
@@ -349,6 +349,7 @@ targets.append(contentsOf: Target.module(
     "AppFoundation",
     "AppUpdateServiceInterface",
     "ChatAppEvents",
+    "ChatFeatureInterface",
     "ChatFoundation",
     "ChatHistoryServiceInterface",
     "CheckpointServiceInterface",
@@ -388,7 +389,15 @@ targets.append(contentsOf: Target.module(
     "SwiftTesting",
     "XcodeObserverServiceInterface",
   ],
-  path: "./features/Chat"))
+  path: "./features/Chat/ChatFeature"))
+
+targets.append(contentsOf: Target.module(
+  name: "ChatFeatureInterface",
+  dependencies: [
+    "CheckpointServiceInterface",
+    "LLMServiceInterface",
+  ],
+  path: "./features/Chat/ChatFeatureInterface"))
 
 targets.append(contentsOf: Target.module(
   name: "Onboarding",
@@ -628,7 +637,7 @@ targets.append(contentsOf: Target.module(
   name: "ChatHistoryServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
-    "ThreadSafe",
+    "ChatFeatureInterface",
   ],
   testDependencies: [],
   path: "./serviceInterfaces/ChatHistoryServiceInterface"))
@@ -965,6 +974,7 @@ targets.append(contentsOf: Target.module(
   name: "ChatHistoryService",
   dependencies: [
     .product(name: "GRDB", package: "GRDB.swift"),
+    "ChatFeatureInterface",
     "ChatHistoryServiceInterface",
     "DependencyFoundation",
     "FoundationInterfaces",

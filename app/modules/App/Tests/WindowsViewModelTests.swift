@@ -100,29 +100,6 @@ struct WindowsViewModelTests {
     #expect(viewModel.state.isSidePanelVisible == false)
   }
 
-  @Test("stopChat action hides side panel")
-  func test_handleAction_stopChat() {
-    let mockAppEventRegistry = MockAppEventHandlerRegistry()
-    let mockPermissionsService = MockPermissionsService()
-    let mockUserDefaults = MockUserDefaults()
-
-    let viewModel = withDependencies {
-      $0.appEventHandlerRegistry = mockAppEventRegistry
-      $0.permissionsService = mockPermissionsService
-      $0.userDefaults = mockUserDefaults
-    } operation: {
-      WindowsViewModel()
-    }
-
-    // First show the side panel
-    viewModel.handle(.showApplication)
-    #expect(viewModel.state.isSidePanelVisible == true)
-
-    // Then stop chat
-    viewModel.handle(.stopChat)
-    #expect(viewModel.state.isSidePanelVisible == false)
-  }
-
   @Test("accessibilityPermissionChanged with nil value ignores change")
   func test_handleAction_accessibilityPermissionChanged_nilValue() {
     let mockAppEventRegistry = MockAppEventHandlerRegistry()

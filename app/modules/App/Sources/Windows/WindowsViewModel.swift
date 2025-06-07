@@ -47,7 +47,6 @@ final class WindowsViewModel {
     case onboardingDidComplete
     case showApplication
     case closeSidePanel
-    case stopChat
     case accessibilityPermissionChanged(isGranted: Bool?)
   }
 
@@ -73,9 +72,6 @@ final class WindowsViewModel {
       state = state.with(isSidePanelVisible: true)
 
     case .closeSidePanel:
-      state = state.with(isSidePanelVisible: false)
-
-    case .stopChat:
       state = state.with(isSidePanelVisible: false)
 
     case .accessibilityPermissionChanged(let isGranted):
@@ -106,7 +102,7 @@ final class WindowsViewModel {
       // for instance to add code to the chat
       return false
     } else if appEvent is HideChatEvent {
-      handle(.stopChat)
+      handle(.closeSidePanel)
       // TODO: reset Xcode position
     }
     return false

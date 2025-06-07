@@ -1,0 +1,147 @@
+// Copyright command. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import ChatFeatureInterface
+import ChatHistoryServiceInterface
+import CheckpointServiceInterface
+import FileSuggestionServiceInterface
+import Foundation
+import JSONFoundation
+import LLMServiceInterface
+import ToolFoundation
+
+// MARK: - ChatTabViewModel Extensions
+
+extension ChatTabViewModel {
+  convenience init(from persistentModel: ChatThreadModel) {
+    self.init(
+      id: persistentModel.id,
+      name: persistentModel.name,
+      messages: persistentModel.messages.map { .init(from: $0) },
+      events: persistentModel.events.map { .init(from: $0) },
+      projectInfo: persistentModel.projectInfo)
+  }
+
+  var persistentModel: ChatThreadModel {
+    .init(
+      id: id.uuidString,
+      name: name,
+      messages: messages.map(\.persistentModel),
+      events: events.map(\.persistentModel),
+      projectInfo: projectInfo)
+  }
+
+}
+
+// MARK: - ChatMessage Extensions
+
+extension ChatMessageViewModel {
+  convenience init(from persistentModel: ChatMessageModel) {
+    self.init(
+      id: persistentModel.id,
+      content: persistentModel.content.map { .init(from: $0) },
+      role: persistentModel.role,
+      timestamp: persistentModel.timestamp)
+  }
+
+  var persistentModel: ChatMessageModel {
+    ChatMessageModel(
+      id: id.uuidString,
+      content: content.map(\.persistentModel),
+      role: role,
+      timestamp: timestamp)
+  }
+
+}
+
+// MARK: - ChatMessageContent Extensions
+
+extension ChatMessageContent {
+  @MainActor
+  init(from persistentModel: ChatMessageContentModel) {
+    switch persistentModel {
+    case .text(let text):
+      self = .text(.init(
+        id: text.id,
+        projectRoot: text.projectRoot,
+        deltas: [text.text],
+        attachments: text.attachments,
+        isStreaming: false))
+
+    case .reasoning(let reasoning):
+      self = .reasoning(.init(id: reasoning.id, deltas: [reasoning.text], signature: reasoning.signature, isStreaming: false))
+
+    case .nonUserFacingText(let nonUserFacingText):
+      self = .nonUserFacingText(.init(
+        id: nonUserFacingText.id,
+        projectRoot: nonUserFacingText.projectRoot,
+        deltas: [nonUserFacingText.text],
+        attachments: nonUserFacingText.attachments,
+        isStreaming: false))
+
+    case .toolUse(let toolUse):
+      fatalError()
+    }
+  }
+
+  @MainActor
+  var persistentModel: ChatMessageContentModel {
+    switch self {
+    case .text(let text):
+      .text(.init(id: text.id.uuidString, projectRoot: text.projectRoot, text: text.text, attachments: text.attachments))
+
+    case .reasoning(let reasoning):
+      .reasoning(.init(
+        id: reasoning.id.uuidString,
+        text: reasoning.text,
+        signature: reasoning.signature,
+        reasoningDuration: reasoning.reasoningDuration))
+
+    case .nonUserFacingText(let nonUserFacingText):
+      .nonUserFacingText(.init(
+        id: nonUserFacingText.id.uuidString,
+        projectRoot: nonUserFacingText.projectRoot,
+        text: nonUserFacingText.text,
+        attachments: nonUserFacingText.attachments))
+
+    case .toolUse(let toolUseContent):
+      fatalError()
+    }
+  }
+
+}
+
+// MARK: - ChatEvent Extensions
+
+extension ChatEvent {
+  @MainActor
+  init(from persistentModel: ChatEventModel) {
+    switch persistentModel {
+    case .checkpoint(let checkpoint):
+      self = .checkpoint(.init(
+        id: checkpoint.id,
+        message: checkpoint.message,
+        projectRoot: checkpoint.projectRoot,
+        taskId: checkpoint.taskId))
+
+    case .message(let message):
+      self = .message(.init(content: .init(from: message.content), role: message.role, failureReason: message.failureReason))
+    }
+  }
+
+  @MainActor
+  var persistentModel: ChatEventModel {
+    switch self {
+    case .message(let message):
+      .message(.init(content: message.content.persistentModel, role: message.role, failureReason: message.failureReason))
+
+    case .checkpoint(let checkpoint):
+      .checkpoint(.init(
+        id: checkpoint.id,
+        message: checkpoint.message,
+        projectRoot: checkpoint.projectRoot,
+        taskId: checkpoint.taskId))
+    }
+  }
+
+}

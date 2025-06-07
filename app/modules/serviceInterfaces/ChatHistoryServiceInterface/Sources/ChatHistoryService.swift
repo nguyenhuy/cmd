@@ -1,41 +1,21 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import ChatFeatureInterface
 import Foundation
 
-// MARK: - ChatHistoryServiceInterface
+// MARK: - ChatHistoryService
 
 public protocol ChatHistoryService: Sendable {
-  func setup() async throws
+  func loadLastChatThreads(last: Int) async throws -> [ChatThreadModelMetadata]
+  func loadChatThread(id: String) async throws -> ChatThreadModel?
+  func save(chatThread: ChatThreadModel) async throws
+}
 
-  // Chat Tab Operations
-  func saveChatTab(_ tab: ChatTabModel) async throws
-  func loadChatTabs() async throws -> [ChatTabModel]
-//  func deleteChatTab(id: String) async throws
+// MARK: - ChatThreadModelMetadata
 
-  /// Chat Message Operations
-  ///  func saveChatMessage(_ message: ChatMessageModel) async throws
-  func loadChatMessages(for chatTabId: String) async throws -> [ChatMessageModel]
-
-  /// Chat Message Content Operations
-  ///  func saveChatMessageContent(_ content: ChatMessageContentModel) async throws
-  ///  func updateChatMessageContent(_ content: ChatMessageContentModel) async throws
-  func loadChatMessageContents(for messageId: String) async throws -> [ChatMessageContentModel]
-
-  /// Attachment Operations
-  ///  func saveAttachment(_ attachment: AttachmentModel) async throws
-  func loadAttachments(for contentId: String) async throws -> [AttachmentModel]
-
-  /// Chat Event Operations
-  ///  func saveChatEvent(_ event: ChatEventModel) async throws
-  func loadChatEvents(for chatTabId: String) async throws -> [ChatEventModel]
-
-  /// Atomic Operations
-  func saveChatTabAtomic(
-    tab: ChatTabModel,
-    newMessages: [ChatMessageModel],
-    messageContents: [ChatMessageContentModel],
-    attachments: [AttachmentModel],
-    newEvents: [ChatEventModel])
-    async throws
+public struct ChatThreadModelMetadata: Sendable {
+  public let id: UUID
+  public let name: String
+  public let createdAt: Date
 }

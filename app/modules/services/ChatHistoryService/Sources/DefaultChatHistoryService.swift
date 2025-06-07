@@ -1,11 +1,7 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
-import ChatHistoryServiceInterface
-
-// Copyright command. All rights reserved.
-// Licensed under the XXX License. See License.txt in the project root for license information.
-
+import ChatFeatureInterface
 import ChatHistoryServiceInterface
 import DependencyFoundation
 import Foundation
@@ -19,168 +15,129 @@ let logger = defaultLogger.subLogger(subsystem: "chatHistoryService")
 // MARK: - DefaultChatHistoryService
 
 final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
-  init(createDBConnection: () -> DatabaseQueue) {
+  init(
+    createDBConnection: () -> DatabaseQueue,
+    fileManager: FileManagerI)
+  {
+    self.fileManager = fileManager
     dbQueue = createDBConnection()
-  }
 
-  func setup() async throws {
-    try await dbQueue.write { db in
-      try self.createTables(db)
-    }
-    logger.log("Database tables created successfully")
-  }
-
-  // MARK: - Chat Tab Operations
-
-  func saveChatTab(_ tab: ChatTabModel) async throws {
-    try await dbQueue.write { db in
-      try tab.save(db)
+    Task {
+      do {
+        try await dbQueue.write { db in
+          try self.createTables(db)
+        }
+        logger.log("Database tables created successfully")
+      } catch {
+        logger.error("Database tables could not be created. Chat history will not work", error)
+      }
     }
   }
 
-  func loadChatTabs() async throws -> [ChatTabModel] {
+  // MARK: - Chat Thread Operations
+
+  func save(chatThread thread: ChatThreadModel) async throws {
+    let home = fileManager.homeDirectoryForCurrentUser
+    let rawContentPath = home
+      .appending(path: ".cmd/chat-history/\(thread.projectInfo?.dirPath.hashValue ?? 0)/\(thread.id.uuidString).json")
+
+    let threadRecord = ChatThreadRecord(
+      id: thread.id.uuidString,
+      name: thread.name,
+      createdAt: thread.createdAt,
+      rawContentLocation: rawContentPath.path)
+
+    try await dbQueue.write { db in
+      // Save or update the thread
+      try threadRecord.save(db)
+    }
+  }
+
+  func loadLastChatThreads(last _: Int) async throws -> [ChatThreadModelMetadata] {
+    []
+  }
+
+  func loadChatThread(id: String) async throws -> ChatThreadModel? {
     try await dbQueue.read { db in
-      try ChatTabModel.order(Column("updatedAt").desc).fetchAll(db)
-    }
-  }
+      guard let threadRecord = try ChatThreadRecord.fetchOne(db, id: id) else {
+        throw NSError(
+          domain: "ChatHistoryService",
+          code: 404,
+          userInfo: [NSLocalizedDescriptionKey: "Chat thread with ID \(id) not found"])
+      }
 
-  func deleteChatTab(id: String) async throws {
-    _ = try await dbQueue.write { db in
-      try ChatTabModel.deleteOne(db, id: id)
-    }
-  }
-
-  // MARK: - Chat Message Operations
-
-  func saveChatMessage(_ message: ChatMessageModel) async throws {
-    try await dbQueue.write { db in
-      try message.save(db)
-    }
-  }
-
-  func loadChatMessages(for chatTabId: String) async throws -> [ChatMessageModel] {
-    try await dbQueue.read { db in
-      try ChatMessageModel
-        .filter(Column("chatTabId") == chatTabId)
+      // Load messages for this thread
+      let messageRecords = try ChatMessageRecord
+        .filter(Column("chatThreadId") == threadRecord.id)
         .order(Column("createdAt").asc)
         .fetchAll(db)
-    }
-  }
 
-  // MARK: - Chat Message Content Operations
+      var messages: [ChatMessageModel] = []
+      for messageRecord in messageRecords {
+        // Load contents for this message
+        let contentRecords = try ChatMessageContentRecord
+          .filter(Column("chatMessageId") == messageRecord.id)
+          .order(Column("createdAt").asc)
+          .fetchAll(db)
 
-  func saveChatMessageContent(_ content: ChatMessageContentModel) async throws {
-    try await dbQueue.write { db in
-      try content.save(db)
-    }
-  }
+        var contents: [ChatMessageContentModel] = []
+        for contentRecord in contentRecords {
+          // Load attachments for this content
+          let attachmentRecords = try AttachmentRecord
+            .filter(Column("chatMessageContentId") == contentRecord.id)
+            .order(Column("createdAt").asc)
+            .fetchAll(db)
 
-  func updateChatMessageContent(_ content: ChatMessageContentModel) async throws {
-    let updatedContent = ChatMessageContentModel(
-      id: content.id,
-      chatMessageId: content.chatMessageId,
-      type: content.type,
-      text: content.text,
-      projectRoot: content.projectRoot,
-      isStreaming: content.isStreaming,
-      signature: content.signature,
-      reasoningDuration: content.reasoningDuration,
-      toolName: content.toolName,
-      toolInput: content.toolInput,
-      toolResult: content.toolResult)
-    try await dbQueue.write { db in
-      try updatedContent.update(db)
-    }
-  }
+          let attachments = attachmentRecords.compactMap { try? AttachmentModel(from: $0, db: db) }
+          let content = ChatMessageContentModel(from: contentRecord, attachments: attachments)
+          contents.append(content)
+        }
 
-  func loadChatMessageContents(for messageId: String) async throws -> [ChatMessageContentModel] {
-    try await dbQueue.read { db in
-      try ChatMessageContentModel
-        .filter(Column("chatMessageId") == messageId)
-        .order(Column("createdAt").asc)
-        .fetchAll(db)
-    }
-  }
+        let message = ChatMessageModel(from: messageRecord, contents: contents)
+        messages.append(message)
+      }
 
-  // MARK: - Attachment Operations
-
-  func saveAttachment(_ attachment: AttachmentModel) async throws {
-    try await dbQueue.write { db in
-      try attachment.save(db)
-    }
-  }
-
-  func loadAttachments(for contentId: String) async throws -> [AttachmentModel] {
-    try await dbQueue.read { db in
-      try AttachmentModel
-        .filter(Column("chatMessageContentId") == contentId)
-        .order(Column("createdAt").asc)
-        .fetchAll(db)
-    }
-  }
-
-  // MARK: - Chat Event Operations
-
-  func saveChatEvent(_ event: ChatEventModel) async throws {
-    try await dbQueue.write { db in
-      try event.save(db)
-    }
-  }
-
-  func loadChatEvents(for chatTabId: String) async throws -> [ChatEventModel] {
-    try await dbQueue.read { db in
-      try ChatEventModel
-        .filter(Column("chatTabId") == chatTabId)
+      // Load events for this thread
+      let eventRecords = try ChatEventRecord
+        .filter(Column("chatThreadId") == threadRecord.id)
         .order(Column("orderIndex").asc)
         .fetchAll(db)
+
+      var events: [ChatEventModel] = []
+      for eventRecord in eventRecords {
+        var messageContent: ChatMessageContentModel?
+
+        // If this event references a message content, find it
+        if let contentId = eventRecord.chatMessageContentId {
+          // Find the content in the already loaded messages
+          for message in messages {
+            for content in message.content {
+              if content.id.uuidString == contentId {
+                messageContent = content
+                break
+              }
+            }
+            if messageContent != nil { break }
+          }
+        }
+
+        let event = ChatEventModel(from: eventRecord, messageContent: messageContent)
+        events.append(event)
+      }
+
+      return ChatThreadModel(from: threadRecord, messages: messages, events: events)
     }
   }
+
+  private let fileManager: FileManagerI
 
   // MARK: - Atomic Operations
-
-  func saveChatTabAtomic(
-    tab: ChatTabModel,
-    newMessages: [ChatMessageModel],
-    messageContents: [ChatMessageContentModel],
-    attachments: [AttachmentModel],
-    newEvents: [ChatEventModel])
-    async throws
-  {
-    try await dbQueue.write { db in
-      // Save or update the tab
-      try tab.save(db)
-
-      // Save new messages
-      for message in newMessages {
-        try message.save(db)
-      }
-
-      // Save new message contents
-      for content in messageContents {
-        try content.save(db)
-      }
-
-      // Save new attachments
-      for attachment in attachments {
-        try attachment.save(db)
-      }
-
-      // Save new events
-      for event in newEvents {
-        try event.save(db)
-      }
-    }
-
-    logger
-      .log(
-        "Atomically saved chat tab: \(tab.name) with \(newMessages.count) new messages, \(messageContents.count) contents, \(attachments.count) attachments, \(newEvents.count) events")
-  }
 
   private let dbQueue: DatabaseQueue
 
   private func createTables(_ db: Database) throws {
-    // Create chat_tabs table
-    try db.create(table: ChatTabModel.databaseTableName, ifNotExists: true) { t in
+    // Create chat_threads table
+    try db.create(table: ChatThreadRecord.databaseTableName, ifNotExists: true) { t in
       t.primaryKey("id", .text)
       t.column("name", .text).notNull()
       t.column("createdAt", .datetime).notNull()
@@ -190,16 +147,16 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     }
 
     // Create chat_messages table
-    try db.create(table: ChatMessageModel.databaseTableName, ifNotExists: true) { t in
+    try db.create(table: ChatMessageRecord.databaseTableName, ifNotExists: true) { t in
       t.primaryKey("id", .text)
-      t.column("chatTabId", .text).notNull().references("chat_tabs", onDelete: .cascade)
+      t.column("chatThreadId", .text).notNull().references("chat_threads", onDelete: .cascade)
       t.column("role", .text).notNull()
       t.column("createdAt", .datetime).notNull()
       t.column("updatedAt", .datetime).notNull()
     }
 
     // Create chat_message_contents table
-    try db.create(table: ChatMessageContentModel.databaseTableName, ifNotExists: true) { t in
+    try db.create(table: ChatMessageContentRecord.databaseTableName, ifNotExists: true) { t in
       t.primaryKey("id", .text)
       t.column("chatMessageId", .text).notNull().references("chat_messages", onDelete: .cascade)
       t.column("type", .text).notNull()
@@ -216,7 +173,7 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     }
 
     // Create attachments table
-    try db.create(table: AttachmentModel.databaseTableName, ifNotExists: true) { t in
+    try db.create(table: AttachmentRecord.databaseTableName, ifNotExists: true) { t in
       t.primaryKey("id", .text)
       t.column("chatMessageContentId", .text).notNull().references("chat_message_contents", onDelete: .cascade)
       t.column("type", .text).notNull()
@@ -224,14 +181,14 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       t.column("fileContent", .text)
       t.column("startLine", .integer)
       t.column("endLine", .integer)
-      t.column("imageData", .blob)
+      t.column("imageData", .blob) // TODO: Handle image data properly
       t.column("createdAt", .datetime).notNull()
     }
 
     // Create chat_events table
-    try db.create(table: ChatEventModel.databaseTableName, ifNotExists: true) { t in
+    try db.create(table: ChatEventRecord.databaseTableName, ifNotExists: true) { t in
       t.primaryKey("id", .text)
-      t.column("chatTabId", .text).notNull().references("chat_tabs", onDelete: .cascade)
+      t.column("chatThreadId", .text).notNull().references("chat_threads", onDelete: .cascade)
       t.column("type", .text).notNull()
       t.column("chatMessageContentId", .text).references("chat_message_contents", onDelete: .cascade)
       t.column("checkpointId", .text)
@@ -243,62 +200,32 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
 
     // Create indexes for better performance
     try db.create(
-      index: "idx_chat_messages_tab_id",
-      on: ChatMessageModel.databaseTableName,
-      columns: ["chatTabId"],
+      index: "idx_chat_messages_thread_id",
+      on: ChatMessageRecord.databaseTableName,
+      columns: ["chatThreadId"],
       ifNotExists: true)
     try db.create(
       index: "idx_chat_message_contents_message_id",
-      on: ChatMessageContentModel.databaseTableName,
+      on: ChatMessageContentRecord.databaseTableName,
       columns: ["chatMessageId"],
       ifNotExists: true)
     try db.create(
       index: "idx_attachments_content_id",
-      on: AttachmentModel.databaseTableName,
+      on: AttachmentRecord.databaseTableName,
       columns: ["chatMessageContentId"],
       ifNotExists: true)
     try db.create(
-      index: "idx_chat_events_tab_id",
-      on: ChatEventModel.databaseTableName,
-      columns: ["chatTabId"],
+      index: "idx_chat_events_thread_id",
+      on: ChatEventRecord.databaseTableName,
+      columns: ["chatThreadId"],
       ifNotExists: true)
     try db.create(
       index: "idx_chat_events_order",
-      on: ChatEventModel.databaseTableName,
-      columns: ["chatTabId", "orderIndex"],
+      on: ChatEventRecord.databaseTableName,
+      columns: ["chatThreadId", "orderIndex"],
       ifNotExists: true)
   }
 
-}
-
-// MARK: - ChatTabModel + FetchableRecord, PersistableRecord
-
-extension ChatTabModel: FetchableRecord, PersistableRecord {
-  public static let databaseTableName = "chat_tabs"
-}
-
-// MARK: - ChatMessageModel + FetchableRecord, PersistableRecord
-
-extension ChatMessageModel: FetchableRecord, PersistableRecord {
-  public static let databaseTableName = "chat_messages"
-}
-
-// MARK: - ChatMessageContentModel + FetchableRecord, PersistableRecord
-
-extension ChatMessageContentModel: FetchableRecord, PersistableRecord {
-  public static let databaseTableName = "chat_message_contents"
-}
-
-// MARK: - AttachmentModel + FetchableRecord, PersistableRecord
-
-extension AttachmentModel: FetchableRecord, PersistableRecord {
-  public static let databaseTableName = "attachments"
-}
-
-// MARK: - ChatEventModel + FetchableRecord, PersistableRecord
-
-extension ChatEventModel: FetchableRecord, PersistableRecord {
-  public static let databaseTableName = "chat_events"
 }
 
 extension BaseProviding where Self: FileManagerProviding {
@@ -329,6 +256,26 @@ extension BaseProviding where Self: FileManagerProviding {
           return try! DatabaseQueue()
         }
       }
+    }
+  }
+}
+
+extension ChatMessageContentModel {
+  var asText: ChatMessageTextContentModel? {
+    guard case .text(let textContent) = self else { return nil }
+    return textContent
+  }
+
+  var id: UUID {
+    switch self {
+    case .text(let content):
+      content.id
+    case .reasoning(let content):
+      content.id
+    case .nonUserFacingText(let content):
+      content.id
+    case .toolUse(let content):
+      content.id
     }
   }
 }
