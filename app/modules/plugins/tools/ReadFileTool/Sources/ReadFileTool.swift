@@ -99,6 +99,10 @@ public final class ReadFileTool: NonStreamableTool {
     "Read File"
   }
 
+  public var shortDescription: String {
+    "Reads the content of a file, optionally limiting to a specific line range."
+  }
+
   public var inputSchema: JSON {
     .object([
       "type": .string("object"),

@@ -136,6 +136,10 @@ public final class ExecuteCommandTool: NonStreamableTool {
     "Execute Command"
   }
 
+  public var shortDescription: String {
+    "Executes CLI commands on the system for operations, builds, and tests."
+  }
+
   public var inputSchema: JSON {
     .object([
       "type": .string("object"),
