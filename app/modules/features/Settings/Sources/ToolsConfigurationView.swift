@@ -53,8 +53,8 @@ private struct ToolRow: View {
       VStack(alignment: .leading, spacing: 4) {
         Text(tool.displayName)
           .font(.system(size: 13, weight: .medium))
-        if !tool.description.isEmpty {
-          Text(tool.description)
+        if !tool.shortDescription.isEmpty {
+          Text(tool.shortDescription)
             .font(.system(size: 11))
             .foregroundColor(.secondary)
         }

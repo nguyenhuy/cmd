@@ -30,6 +30,8 @@ public protocol Tool: Sendable {
   var canInputBeStreamed: Bool { get }
   /// The tool display name
   var displayName: String { get }
+  /// A short description of the tool (max 3 lines)
+  var shortDescription: String { get }
 }
 
 extension Tool {
