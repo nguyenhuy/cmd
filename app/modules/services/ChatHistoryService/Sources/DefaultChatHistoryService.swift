@@ -56,7 +56,7 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       at: rawContentPath.deletingLastPathComponent(),
       withIntermediateDirectories: true,
       attributes: nil)
-    var encoder = JSONEncoder()
+    let encoder = JSONEncoder()
 
     let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
     encoder.userInfo[AttachmentSerializer.codingUserInfoKey] = AttachmentSerializer(
@@ -67,24 +67,28 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     try fileManager.write(data: data, to: rawContentPath, options: .atomic)
   }
 
-  func loadLastChatThreads(last _: Int) async throws -> [ChatThreadModelMetadata] {
-    []
+  func loadLastChatThreads(last _: Int, offset _: Int) async throws -> [ChatThreadModelMetadata] {
+    let records = try await dbQueue.read { db in
+      try ChatThreadRecord
+        .fetchAll(db) // TODO: limit, order
+    }
+    return records.map { record in
+      ChatThreadModelMetadata(
+        id: UUID(uuidString: record.id) ?? UUID(),
+        name: record.name,
+        createdAt: record.createdAt)
+    }
   }
 
-  func loadChatThread(id: String) async throws -> ChatThreadModel? {
+  func loadChatThread(id: UUID) async throws -> ChatThreadModel? {
     let threadRecord = try await dbQueue.read { db in
-      guard let threadRecord = try ChatThreadRecord.fetchOne(db, id: id) else {
-        throw NSError(
-          domain: "ChatHistoryService",
-          code: 404,
-          userInfo: [NSLocalizedDescriptionKey: "Chat thread with ID \(id) not found"])
-      }
-      return threadRecord
+      try ChatThreadRecord.fetchOne(db, id: id.uuidString)
     }
+    guard let threadRecord else { return nil }
     let task = Task.detached(priority: .userInitiated) {
       let rawContentPath = URL(filePath: threadRecord.rawContentPath)
       let rawContent = try self.fileManager.read(dataFrom: URL(filePath: threadRecord.rawContentPath))
-      var decoder = JSONDecoder()
+      let decoder = JSONDecoder()
 
       let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
       decoder.userInfo[AttachmentSerializer.codingUserInfoKey] = AttachmentSerializer(

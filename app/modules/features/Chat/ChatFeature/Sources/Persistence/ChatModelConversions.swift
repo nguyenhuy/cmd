@@ -19,16 +19,18 @@ extension ChatTabViewModel {
       name: persistentModel.name,
       messages: persistentModel.messages.map { .init(from: $0) },
       events: persistentModel.events.map { .init(from: $0) },
-      projectInfo: persistentModel.projectInfo)
+      projectInfo: persistentModel.projectInfo,
+      createdAt: persistentModel.createdAt)
   }
 
   var persistentModel: ChatThreadModel {
     .init(
-      id: id.uuidString,
+      id: id,
       name: name,
       messages: messages.map(\.persistentModel),
       events: events.map(\.persistentModel),
-      projectInfo: projectInfo)
+      projectInfo: projectInfo,
+      createdAt: createdAt)
   }
 
 }
@@ -46,7 +48,7 @@ extension ChatMessageViewModel {
 
   var persistentModel: ChatMessageModel {
     ChatMessageModel(
-      id: id.uuidString,
+      id: id,
       content: content.map(\.persistentModel),
       role: role,
       timestamp: timestamp)
@@ -88,18 +90,18 @@ extension ChatMessageContent {
   var persistentModel: ChatMessageContentModel {
     switch self {
     case .text(let text):
-      .text(.init(id: text.id.uuidString, projectRoot: text.projectRoot, text: text.text, attachments: text.attachments))
+      .text(.init(id: text.id, projectRoot: text.projectRoot, text: text.text, attachments: text.attachments))
 
     case .reasoning(let reasoning):
       .reasoning(.init(
-        id: reasoning.id.uuidString,
+        id: reasoning.id,
         text: reasoning.text,
         signature: reasoning.signature,
         reasoningDuration: reasoning.reasoningDuration))
 
     case .nonUserFacingText(let nonUserFacingText):
       .nonUserFacingText(.init(
-        id: nonUserFacingText.id.uuidString,
+        id: nonUserFacingText.id,
         projectRoot: nonUserFacingText.projectRoot,
         text: nonUserFacingText.text,
         attachments: nonUserFacingText.attachments))

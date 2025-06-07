@@ -2,6 +2,7 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 import ChatFeatureInterface
+import Foundation
 
 #if DEBUG
 public final class MockChatHistoryService: ChatHistoryService {
@@ -10,11 +11,11 @@ public final class MockChatHistoryService: ChatHistoryService {
     fatalError("Not implemented in MockChatHistoryService")
   }
 
-  public func loadLastChatThreads(last _: Int) async throws -> [ChatThreadModelMetadata] {
+  public func loadLastChatThreads(last _: Int, offset _: Int) async throws -> [ChatThreadModelMetadata] {
     fatalError("Not implemented in MockChatHistoryService")
   }
 
-  public func loadChatThread(id _: String) async throws -> ChatThreadModel? {
+  public func loadChatThread(id _: UUID) async throws -> ChatThreadModel? {
     fatalError("Not implemented in MockChatHistoryService")
   }
 

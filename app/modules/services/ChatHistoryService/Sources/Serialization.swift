@@ -239,9 +239,9 @@ extension ChatMessageReasoningContentModel: Codable {
 
 }
 
-// MARK: - MessageRole + @retroactive Decodable
+// MARK: - MessageRole + Decodable
 
-extension MessageRole: @retroactive Decodable { }
+extension MessageRole: Decodable { }
 
 // MARK: - ChatEventModel + Codable
 

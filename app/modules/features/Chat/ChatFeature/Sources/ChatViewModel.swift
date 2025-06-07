@@ -108,39 +108,26 @@ public class ChatViewModel {
   func initializePersistence() async {
     @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
 
-    do {
-      try await chatHistoryService.setup()
-      await loadTabsFromDatabase()
-      defaultLogger.log("Chat persistence initialized")
-    } catch {
-      defaultLogger.error("Failed to initialize chat persistence", error)
-    }
+    await loadTabsFromDatabase()
+    defaultLogger.log("Chat persistence initialized")
   }
 
   func loadTabsFromDatabase() async {
     @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
 
     do {
-      let persistentTabs = try await chatHistoryService.loadChatTabs()
-
-      if persistentTabs.isEmpty {
-        // Keep the default empty tab if no saved tabs
+      guard
+        let persistentTabInfo = try await chatHistoryService.loadLastChatThreads(last: 1, offset: 0).first,
+        let thread = try await chatHistoryService.loadChatThread(id: persistentTabInfo.id)
+      else {
         return
       }
+      let chatTab = await ChatTabViewModel(from: thread)
 
-      var loadedTabs: [ChatTabViewModel] = []
+      tabs = [chatTab]
+      selectedTab = chatTab
 
-      for persistentTab in persistentTabs {
-        let chatTab = await ChatTabViewModel(from: persistentTab)
-        loadedTabs.append(chatTab)
-      }
-
-      if !loadedTabs.isEmpty {
-        tabs = loadedTabs
-        selectedTab = tabs.first
-      }
-
-      defaultLogger.log("Loaded \(loadedTabs.count) chat tabs from database")
+      defaultLogger.log("Loaded chat tabs from database")
     } catch {
       defaultLogger.error("Failed to load chat tabs from database", error)
     }

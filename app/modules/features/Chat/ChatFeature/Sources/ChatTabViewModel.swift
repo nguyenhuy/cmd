@@ -92,12 +92,14 @@ final class ChatTabViewModel: Identifiable, Equatable {
     name: String,
     messages: [ChatMessageViewModel],
     events: [ChatEvent]? = nil,
-    projectInfo: SelectedProjectInfo? = nil)
+    projectInfo: SelectedProjectInfo? = nil,
+    createdAt: Date = Date())
   {
     self.id = id
     self.name = name
     self.messages = messages
     self.projectInfo = projectInfo
+    self.createdAt = createdAt
     self.events = events ?? messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
@@ -122,6 +124,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
   typealias SelectedProjectInfo = ChatThreadModel.SelectedProjectInfo
 
   let id: UUID
+  let createdAt: Date
   var events: [ChatEvent]
   var input: ChatInputViewModel
   // TODO: look at making this a private(set). It's needed for a finding, that ideally would be readonly
@@ -284,7 +287,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
       let persistentTab = persistentModel
 
       // Save the complete tab with all resolved relationships
-      try await chatHistoryService.saveChatTabAtomic(persistentTab)
+      try await chatHistoryService.save(chatThread: persistentTab)
 
       // Update tracking variables
       lastSavedMessageCount = messages.count
