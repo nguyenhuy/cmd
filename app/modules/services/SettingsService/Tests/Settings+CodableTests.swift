@@ -33,7 +33,8 @@ struct SettingsCodableTests {
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic",
           "gpt-4o" : "openai"
-        }
+        },
+        "reasoningModels": {}
       }
       """
 
@@ -69,7 +70,8 @@ struct SettingsCodableTests {
           }
         },
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {}
+        "preferedProviders" : {},
+        "reasoningModels": {}
       }
       """
 
@@ -119,7 +121,8 @@ struct SettingsCodableTests {
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
-        }
+        },
+        "reasoningModels": {}
       }
       """
 
@@ -242,11 +245,49 @@ struct SettingsCodableTests {
         "inactiveModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {}
+        "preferedProviders" : {},
+        "reasoningModels": {}
       }
       """
 
     try testEncoding(settings, json)
+  }
+
+  @Test("Encode and decode settings with reasoning models")
+  func testSettingsReasoningModels() throws {
+    let settings = Settings(
+      pointReleaseXcodeExtensionToDebugApp: true,
+      allowAnonymousAnalytics: true,
+      automaticallyCheckForUpdates: true,
+      preferedProviders: [.claudeHaiku_3_5: .anthropic],
+      reasoningModels: [
+        .claudeOpus_4: .init(isEnabled: true),
+        .gpt_4o: .init(isEnabled: false),
+      ])
+
+    let json = """
+      {
+        "allowAnonymousAnalytics" : true,
+        "automaticallyCheckForUpdates" : true,
+        "customInstructions" : {},
+        "inactiveModels" : [],
+        "llmProviderSettings" : {},
+        "pointReleaseXcodeExtensionToDebugApp" : true,
+        "preferedProviders" : {
+          "claude-haiku-35" : "anthropic"
+        },
+        "reasoningModels" : {
+          "claude-opus-4" : {
+            "isEnabled" : true
+          },
+          "gpt-4o" : {
+            "isEnabled" : false
+          }
+        }
+      }
+      """
+
+    try testEncodingDecoding(settings, json)
   }
 
   @Test("Decoding with null baseUrl works correctly")
@@ -377,7 +418,8 @@ struct SettingsCodableTests {
         "llmProviderSettings" : {},
         "toolPreferences" : [],
         "pointReleaseXcodeExtensionToDebugApp" : false,
-        "preferedProviders" : {}
+        "preferedProviders" : {},
+        "reasoningModels": {}
       }
       """
 
@@ -411,7 +453,8 @@ struct SettingsCodableTests {
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
-        }
+        },
+        "reasoningModels": {}
       }
       """
 
