@@ -21,6 +21,7 @@ public final class ReadFileTool: NonStreamableTool {
     init(callingTool: ReadFileTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
+      self.context = context
       self.input = Input(
         path: input.path.resolvePath(from: context.projectRoot).path(),
         lineRange: input.lineRange)
@@ -50,7 +51,6 @@ public final class ReadFileTool: NonStreamableTool {
     public let callingTool: ReadFileTool
     public let toolUseId: String
     public let input: Input
-
     public let status: Status
 
     public func startExecuting() {
@@ -77,6 +77,8 @@ public final class ReadFileTool: NonStreamableTool {
     }
 
     let filePath: URL
+
+    private let context: ToolExecutionContext
 
     @Dependency(\.server) private var server
     @Dependency(\.fileManager) private var fileManager
@@ -186,11 +188,36 @@ extension [String] {
 }
 
 extension ReadFileTool.Use {
-  public convenience init(from _: Decoder) throws {
-    fatalError("not implemented")
+  public convenience init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+
+    let callingTool = try container.decode(ReadFileTool.self, forKey: .callingTool)
+    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
+    let input = try container.decode(Input.self, forKey: .input)
+    let context = try container.decode(ToolExecutionContext.self, forKey: .context)
+    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
+
+    self.init(callingTool: callingTool, toolUseId: toolUseId, input: input, context: context)
+
+    // Set the status to the decoded value
+    updateStatus.yield(statusValue)
   }
 
-  public func encode(to _: Encoder) throws {
-    fatalError("not implemented")
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+
+    try container.encode(callingTool, forKey: .callingTool)
+    try container.encode(toolUseId, forKey: .toolUseId)
+    try container.encode(input, forKey: .input)
+    try container.encode(context, forKey: .context)
+    try container.encode(status.value, forKey: .status)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case callingTool
+    case toolUseId
+    case input
+    case context
+    case status
   }
 }

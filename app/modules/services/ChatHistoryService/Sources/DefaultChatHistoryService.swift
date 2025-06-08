@@ -19,9 +19,11 @@ let logger = defaultLogger.subLogger(subsystem: "chatHistoryService")
 final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
   init(
     createDBConnection: () -> DatabaseQueue,
-    fileManager: FileManagerI)
+    fileManager: FileManagerI,
+    toolsPlugin: ToolsPlugin)
   {
     self.fileManager = fileManager
+    self.toolsPlugin = toolsPlugin
     dbQueue = createDBConnection()
 
     Task {
@@ -93,6 +95,7 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       let rawContentPath = URL(filePath: threadRecord.rawContentPath)
       let rawContent = try self.fileManager.read(dataFrom: URL(filePath: threadRecord.rawContentPath))
       let decoder = JSONDecoder()
+      decoder.userInfo.set(toolPlugin: self.toolsPlugin)
 
       let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
       decoder.userInfo[AttachmentSerializer.attachmentSerializerKey] = AttachmentSerializer(
@@ -115,6 +118,8 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       try ChatThreadRecord.deleteOne(db, id: id.uuidString)
     }
   }
+
+  private let toolsPlugin: ToolsPlugin
 
   private let fileManager: FileManagerI
 
@@ -142,7 +147,10 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
 
 }
 
-extension BaseProviding where Self: FileManagerProviding {
+extension BaseProviding where
+  Self: FileManagerProviding,
+  Self: ToolsPluginProviding
+{
   public var chatHistoryService: ChatHistoryService {
     shared {
       DefaultChatHistoryService(
@@ -174,7 +182,8 @@ extension BaseProviding where Self: FileManagerProviding {
             return try! DatabaseQueue()
           }
         },
-        fileManager: fileManager)
+        fileManager: fileManager,
+        toolsPlugin: toolsPlugin)
     }
   }
 }
