@@ -3,6 +3,7 @@
 
 import ChatFeatureInterface
 import ChatHistoryServiceInterface
+import CryptoKit
 import DependencyFoundation
 import Foundation
 import FoundationInterfaces
@@ -40,7 +41,7 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     let home = fileManager.homeDirectoryForCurrentUser
     let rawContentPath = home
       .appending(
-        path: ".cmd/chat-history/project-\(thread.projectInfo?.dirPath.hashValue ?? 0)-\(thread.projectInfo?.dirPath.lastPathComponent ?? "")/\(thread.createdAt.ISO8601Format())-\(thread.id.uuidString)/content.json")
+        path: ".cmd/chat-history/project-\(thread.projectInfo?.dirPath.path.sha256 ?? "sha256")-\(thread.projectInfo?.dirPath.lastPathComponent ?? "")/\(thread.createdAt.ISO8601Format())-\(thread.id.uuidString)/content.json")
 
     let threadRecord = ChatThreadRecord(
       id: thread.id.uuidString,
@@ -67,10 +68,12 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     try fileManager.write(data: data, to: rawContentPath, options: .atomic)
   }
 
-  func loadLastChatThreads(last _: Int, offset _: Int) async throws -> [ChatThreadModelMetadata] {
+  func loadLastChatThreads(last: Int, offset: Int) async throws -> [ChatThreadModelMetadata] {
     let records = try await dbQueue.read { db in
       try ChatThreadRecord
-        .fetchAll(db) // TODO: limit, order
+        .order(Column("createdAt").desc)
+        .limit(last, offset: offset)
+        .fetchAll(db)
     }
     return records.map { record in
       ChatThreadModelMetadata(
@@ -98,6 +101,12 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       return try decoder.decode(ChatThreadModel.self, from: rawContent)
     }
     return try await task.value
+  }
+
+  func deleteChatThread(id: UUID) async throws {
+    _ = try await dbQueue.write { db in
+      try ChatThreadRecord.deleteOne(db, id: id.uuidString)
+    }
   }
 
   private let fileManager: FileManagerI
@@ -252,5 +261,13 @@ extension Encoder {
       }
       return loader
     }
+  }
+}
+
+extension String {
+  var sha256: String {
+    let data = Data(utf8)
+    let hash = SHA256.hash(data: data)
+    return hash.map { String(format: "%02hhx", $0) }.joined()
   }
 }

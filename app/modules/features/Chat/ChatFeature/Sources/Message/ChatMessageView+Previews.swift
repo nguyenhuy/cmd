@@ -16,6 +16,18 @@ struct TestTool: NonStreamableTool {
   }
 
   struct Use: ToolUse {
+    init(
+      toolUseId _: String,
+      input: Data,
+      callingTool _: TestTool,
+      context _: ToolFoundation.ToolExecutionContext,
+      status _: ToolUseExecutionStatus<String>?)
+      throws
+    {
+      let input = try JSONDecoder().decode(String.self, from: input)
+      self.init(input: input)
+    }
+
     init(input: String = "") {
       self.input = input
       callingTool = TestTool()
@@ -26,11 +38,13 @@ struct TestTool: NonStreamableTool {
 
     public let isReadonly = true
 
+    let context = ToolExecutionContext(project: nil, projectRoot: nil)
+
     let input: String
 
     let callingTool: TestTool
 
-    var status: ConcurrencyFoundation.CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<String>>
+    var status: CurrentValueStream<ToolUseExecutionStatus<String>>
 
     let toolUseId: String
 

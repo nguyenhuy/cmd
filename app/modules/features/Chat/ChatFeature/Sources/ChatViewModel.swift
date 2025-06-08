@@ -122,12 +122,17 @@ public class ChatViewModel {
       else {
         return
       }
-      let chatTab = await ChatTabViewModel(from: thread)
+      do {
+        let chatTab = try ChatTabViewModel(from: thread)
 
-      tabs = [chatTab]
-      selectedTab = chatTab
+        tabs = [chatTab]
+        selectedTab = chatTab
 
-      defaultLogger.log("Loaded chat tabs from database")
+        defaultLogger.log("Loaded chat tabs from database")
+      } catch {
+        defaultLogger.error("Failed to load chat tabs from database. Deleting thread #\(thread.id)", error)
+        try await chatHistoryService.deleteChatThread(id: thread.id)
+      }
     } catch {
       defaultLogger.error("Failed to load chat tabs from database", error)
     }

@@ -1,8 +1,11 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import Foundation
 import LLMServiceInterface
+import LoggingServiceInterface
+import ToolFoundation
 
 // MARK: - ChatMessageModel
 
@@ -56,7 +59,7 @@ public enum ChatMessageContentModel: Sendable {
 
 // MARK: - ChatMessageTextContentModel
 
-public final class ChatMessageTextContentModel: Identifiable, Sendable {
+public struct ChatMessageTextContentModel: Identifiable, Sendable {
 
   public init(id: UUID, projectRoot: URL?, text: String, attachments: [AttachmentModel]) {
     self.id = id
@@ -74,21 +77,82 @@ public final class ChatMessageTextContentModel: Identifiable, Sendable {
 
 // MARK: - ChatMessageToolUseContentModel
 
-public final class ChatMessageToolUseContentModel: Identifiable, Sendable {
+public struct ChatMessageToolUseContentModel: Identifiable, Sendable {
 
-  public init(id: UUID, toolUse: String) {
+  public init(id: UUID, toolUse: ToolUseModel) {
     self.id = id
     self.toolUse = toolUse
   }
 
-  public let id: UUID
-  public let toolUse: String
+  public struct ToolUseModel: Sendable {
+    public init(
+      toolUseId: String,
+      input: Data,
+      callingToolName: String,
+      context: ToolExecutionContext,
+      status: ToolUseExecutionStatus<some Codable & Sendable>)
+    {
+      self.toolUseId = toolUseId
+      self.input = input
+      self.callingToolName = callingToolName
+      self.context = context
+      self.status = status.erasedStatus
+    }
 
+    public let toolUseId: String
+    public let input: Data
+    public let callingToolName: String
+    public let context: ToolExecutionContext
+    public let status: ToolUseExecutionStatus<Data>
+  }
+
+  public let id: UUID
+  public let toolUse: ToolUseModel
+
+}
+
+extension ToolUse {
+  public var erasedStatus: ToolUseExecutionStatus<Data> {
+    status.erasedStatus
+  }
+}
+
+extension ToolUseExecutionStatus {
+  var erasedStatus: ToolUseExecutionStatus<Data> {
+    switch self {
+    case .pendingApproval:
+      return .pendingApproval
+
+    case .notStarted:
+      return .notStarted
+
+    case .running:
+      return .running
+
+    case .completed(let result):
+      switch result {
+      case .success(let output):
+        do {
+          let data = try JSONEncoder().encode(output)
+          return .completed(.success(data))
+        } catch {
+          defaultLogger.error("Could not serialize tool output data", error)
+          return .completed(.failure(AppError(error)))
+        }
+
+      case .failure(let error):
+        return .completed(.failure(error))
+      }
+
+    case .rejected(reason: let reason):
+      return .rejected(reason: reason)
+    }
+  }
 }
 
 // MARK: - ChatMessageReasoningContentModel
 
-public final class ChatMessageReasoningContentModel: Identifiable, Sendable {
+public struct ChatMessageReasoningContentModel: Identifiable, Sendable {
 
   public init(id: UUID, text: String, signature: String?, reasoningDuration: TimeInterval?) {
     self.id = id

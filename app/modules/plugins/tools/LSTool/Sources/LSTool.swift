@@ -18,7 +18,15 @@ public final class LSTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    init(callingTool: LSTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
+    public init(
+      toolUseId: String,
+      input: Data,
+      callingTool: LSTool,
+      context: ToolFoundation.ToolExecutionContext,
+      status: Status.Element?)
+      throws
+    {
+      let input = try JSONDecoder().decode(Input.self, from: input)
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
@@ -27,8 +35,8 @@ public final class LSTool: NonStreamableTool {
         recursive: input.recursive)
       directoryPath = URL(fileURLWithPath: self.input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
-      status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: status ?? .pendingApproval)
+      self.status = stream
       self.updateStatus = updateStatus
     }
 
@@ -58,6 +66,8 @@ public final class LSTool: NonStreamableTool {
     public let input: Input
 
     public let status: Status
+
+    public let context: ToolExecutionContext
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -91,7 +101,6 @@ public final class LSTool: NonStreamableTool {
     let directoryPath: URL
 
     @Dependency(\.server) private var server
-    private let context: ToolExecutionContext
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
@@ -128,9 +137,9 @@ public final class LSTool: NonStreamableTool {
     true
   }
 
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-  }
+//  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+//    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+//  }
 
 }
 

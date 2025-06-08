@@ -10,6 +10,7 @@ public protocol ChatHistoryService: Sendable {
   func loadLastChatThreads(last: Int, offset: Int) async throws -> [ChatThreadModelMetadata]
   func loadChatThread(id: UUID) async throws -> ChatThreadModel?
   func save(chatThread: ChatThreadModel) async throws
+  func deleteChatThread(id: UUID) async throws
 }
 
 // MARK: - ChatThreadModelMetadata

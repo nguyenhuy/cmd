@@ -165,11 +165,12 @@ final class ChatMessageTextContent: EquatableByIdentifier {
 @Observable
 final class ChatMessageToolUseContent: EquatableByIdentifier {
 
-  init(toolUse: any ToolUse) {
+  init(id: UUID = UUID(), toolUse: any ToolUse) {
+    self.id = id
     self.toolUse = toolUse
   }
 
-  let id = UUID()
+  let id: UUID
   let toolUse: any ToolUse
 
 }

@@ -19,5 +19,9 @@ public final class MockChatHistoryService: ChatHistoryService {
     fatalError("Not implemented in MockChatHistoryService")
   }
 
+  public func deleteChatThread(id _: UUID) async throws {
+    fatalError("Not implemented in MockChatHistoryService")
+  }
+
 }
 #endif

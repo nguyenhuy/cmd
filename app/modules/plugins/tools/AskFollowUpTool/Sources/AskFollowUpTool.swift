@@ -17,13 +17,22 @@ public final class AskFollowUpTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    init(callingTool: AskFollowUpTool, toolUseId: String, input: Input) {
+    public init(
+      toolUseId: String,
+      input: Data,
+      callingTool: AskFollowUpTool,
+      context: ToolFoundation.ToolExecutionContext,
+      status: Status.Element?)
+      throws
+    {
+      let input = try JSONDecoder().decode(Input.self, from: input)
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.input = input
+      self.context = context
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
-      status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: status ?? .notStarted)
+      self.status = stream
       self.updateStatus = updateStatus
     }
 
@@ -43,6 +52,8 @@ public final class AskFollowUpTool: NonStreamableTool {
     public let input: Input
 
     public let status: Status
+
+    public let context: ToolExecutionContext
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -100,9 +111,9 @@ public final class AskFollowUpTool: NonStreamableTool {
     true
   }
 
-  public func use(toolUseId: String, input: Use.Input, context _: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input)
-  }
+//  public func use(toolUseId: String, input: Use.Input, context _: ToolExecutionContext) -> Use {
+//    Use(callingTool: self, toolUseId: toolUseId, input: input)
+//  }
 }
 
 // MARK: - ToolUseViewModel

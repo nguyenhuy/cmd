@@ -293,9 +293,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
       lastSavedMessageCount = messages.count
       lastSavedEventCount = events.count
       isTabModified = false
-
-      defaultLogger
-        .log("Saved chat tab: \(name) (\(messages.count) messages, \(events.count) events)")
     } catch {
       defaultLogger.error("Failed to save chat tab: \(name)", error)
     }

@@ -272,6 +272,7 @@ final class RequestStreamingHelper: Sendable {
       toolUseId: toolUseRequest.toolUseId,
       idx: toolUseRequest.idx)
 
+    let toolExecutionContext = ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)
     if let tool = tools.first(where: { $0.name == request.toolName }) {
       do {
         let data = try JSONEncoder().encode(request.input)
@@ -279,7 +280,7 @@ final class RequestStreamingHelper: Sendable {
           toolUseId: request.toolUseId,
           input: data,
           isInputComplete: true,
-          context: ToolExecutionContext(project: context.project, projectRoot: context.projectRoot))
+          context: toolExecutionContext)
 
         if !toolUse.isReadonly {
           await context.prepareForWriteToolUse()
@@ -301,14 +302,14 @@ final class RequestStreamingHelper: Sendable {
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
           toolName: request.toolName,
-          error: Self.failedToParseToolInputError(toolName: request.toolName, error: error)))
+          error: Self.failedToParseToolInputError(toolName: request.toolName, error: error), context: toolExecutionContext))
       }
     } else {
       // Tool not found
       content.append(toolUse: FailedToolUse(
         toolUseId: request.toolUseId,
         toolName: request.toolName,
-        error: Self.missingToolError(toolName: request.toolName)))
+        error: Self.missingToolError(toolName: request.toolName), context: toolExecutionContext))
     }
     result.update(with: AssistantMessage(content: content))
   }
@@ -324,7 +325,8 @@ final class RequestStreamingHelper: Sendable {
       content.append(toolUse: FailedToolUse(
         toolUseId: streamingToolUse.toolUseId,
         toolName: streamingToolUse.toolName,
-        error: error))
+        error: error,
+        context: ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)))
       result.update(with: AssistantMessage(content: content))
     }
 

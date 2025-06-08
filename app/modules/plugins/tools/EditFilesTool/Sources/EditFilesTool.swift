@@ -21,13 +21,30 @@ public final class EditFilesTool: Tool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
+    convenience public init(
+      toolUseId: String,
+      input: Data,
+      callingTool: EditFilesTool,
+      context: ToolFoundation.ToolExecutionContext,
+      status: Status.Element?)
+      throws
+    {
+      try self.init(
+        callingTool: callingTool,
+        toolUseId: toolUseId,
+        input: input,
+        isInputComplete: true,
+        context: context,
+        status: status)
+    }
 
     init(
       callingTool: EditFilesTool,
       toolUseId: String,
       input: Data,
       isInputComplete: Bool,
-      context: ToolExecutionContext)
+      context: ToolExecutionContext,
+      status: Status.Element? = nil)
       throws
     {
       self.callingTool = callingTool
@@ -37,8 +54,8 @@ public final class EditFilesTool: Tool {
       let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
       _input = Atomic(input)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
-      status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: status ?? .pendingApproval)
+      self.status = stream
       self.updateStatus = updateStatus
     }
 
@@ -100,6 +117,8 @@ public final class EditFilesTool: Tool {
     public let _input: Atomic<Input>
     public let status: Status
 
+    public let context: ToolExecutionContext
+
     public var input: Input { _input.value }
 
     public func receive(inputUpdate data: Data, isLast: Bool) throws {
@@ -158,7 +177,6 @@ public final class EditFilesTool: Tool {
     @MainActor private var _viewModel: ToolUseViewModel?
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-    private let context: ToolExecutionContext
 
   }
 

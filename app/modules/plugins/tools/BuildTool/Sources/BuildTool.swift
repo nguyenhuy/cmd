@@ -21,15 +21,23 @@ public final class BuildTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
+    public init(
+      toolUseId: String,
+      input: Data,
+      callingTool: BuildTool,
+      context: ToolFoundation.ToolExecutionContext,
+      status: Status.Element?)
+      throws
+    {
+      let input = try JSONDecoder().decode(Input.self, from: input)
 
-    init(callingTool: BuildTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
       self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
-      status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: status ?? .pendingApproval)
+      self.status = stream
       self.updateStatus = updateStatus
     }
 
@@ -54,6 +62,8 @@ public final class BuildTool: NonStreamableTool {
     public let input: Input
 
     public let status: Status
+
+    public let context: ToolExecutionContext
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -84,7 +94,6 @@ public final class BuildTool: NonStreamableTool {
 
     @Dependency(\.xcodeController) private var xcodeController
 
-    private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
@@ -120,9 +129,9 @@ public final class BuildTool: NonStreamableTool {
     chatMode == .agent
   }
 
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-  }
+//  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+//    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+//  }
 }
 
 // MARK: - ToolUseViewModel

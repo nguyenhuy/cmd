@@ -195,6 +195,7 @@ targets.append(contentsOf: Target.module(
   name: "ReadFileTool",
   dependencies: [
     "CodePreview",
+    "ConcurrencyFoundation",
     "DLS",
     "FoundationInterfaces",
     "HighlighterServiceInterface",
@@ -394,8 +395,11 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "ChatFeatureInterface",
   dependencies: [
+    "AppFoundation",
     "CheckpointServiceInterface",
     "LLMServiceInterface",
+    "LoggingServiceInterface",
+    "ToolFoundation",
   ],
   path: "./features/Chat/ChatFeatureInterface"))
 
@@ -981,6 +985,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "LoggingServiceInterface",
+    "ToolFoundation",
   ],
   testDependencies: [],
   path: "./services/ChatHistoryService"))

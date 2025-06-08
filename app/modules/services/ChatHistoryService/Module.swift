@@ -9,5 +9,6 @@ Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "LoggingServiceInterface",
+    "ToolFoundation",
   ],
   testDependencies: [])

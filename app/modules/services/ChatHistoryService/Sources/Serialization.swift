@@ -5,6 +5,7 @@ import ChatFeatureInterface
 import CheckpointServiceInterface
 import Foundation
 import LLMServiceInterface
+import ToolFoundation
 
 // MARK: - ChatThreadModel + Codable
 
@@ -168,7 +169,7 @@ extension ChatMessageContentModel: Codable {
 // MARK: - ChatMessageTextContentModel + Codable
 
 extension ChatMessageTextContentModel: Codable {
-  public convenience init(from decoder: any Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     try self.init(
       id: container.decode(UUID.self, forKey: .id),
@@ -194,11 +195,11 @@ extension ChatMessageTextContentModel: Codable {
 // MARK: - ChatMessageToolUseContentModel + Codable
 
 extension ChatMessageToolUseContentModel: Codable {
-  public convenience init(from decoder: any Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     try self.init(
       id: container.decode(UUID.self, forKey: .id),
-      toolUse: container.decode(String.self, forKey: .toolUse))
+      toolUse: container.decode(ChatMessageToolUseContentModel.ToolUseModel.self, forKey: .toolUse))
   }
 
   public func encode(to encoder: any Encoder) throws {
@@ -216,7 +217,7 @@ extension ChatMessageToolUseContentModel: Codable {
 // MARK: - ChatMessageReasoningContentModel + Codable
 
 extension ChatMessageReasoningContentModel: Codable {
-  public convenience init(from decoder: any Decoder) throws {
+  public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     try self.init(
       id: container.decode(UUID.self, forKey: .id),
@@ -235,6 +236,110 @@ extension ChatMessageReasoningContentModel: Codable {
 
   enum CodingKeys: String, CodingKey {
     case id, text, signature, reasoningDuration
+  }
+
+}
+
+// MARK: - ChatMessageToolUseContentModel.ToolUseModel + Codable
+
+extension ChatMessageToolUseContentModel.ToolUseModel: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      toolUseId: container.decode(String.self, forKey: .toolUseId),
+      input: container.decode(Data.self, forKey: .input),
+      callingToolName: container.decode(String.self, forKey: .callingToolName),
+      context: container.decode(ToolExecutionContext.self, forKey: .context),
+      status: container.decode(ToolUseExecutionStatus<Data>.self, forKey: .status))
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(toolUseId, forKey: .toolUseId)
+    try container.encode(input, forKey: .input)
+    try container.encode(callingToolName, forKey: .callingToolName)
+    try container.encode(context, forKey: .context)
+    try container.encode(status, forKey: .status)
+  }
+
+  enum CodingKeys: String, CodingKey {
+    case toolUseId, input, callingToolName, context, status
+  }
+
+}
+
+// MARK: - ToolUseExecutionStatus + Codable
+
+extension ToolUseExecutionStatus: Codable where Output: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: String.self)
+    let type = try container.decode(String.self, forKey: "type")
+    switch type {
+    case "pendingApproval":
+      self = .pendingApproval
+
+    case "notStarted":
+      self = .notStarted
+
+    case "running":
+      self = .running
+
+    case "rejected":
+      let reason = try container.decode(String.self, forKey: "reason")
+      self = .rejected(reason: reason)
+
+    case "completed":
+      let resultType = try container.decode(String.self, forKey: "result_type")
+      switch resultType {
+      case "success":
+        let output = try container.decode(Output.self, forKey: "result")
+        self = .completed(.success(output))
+
+      case "failure":
+        let errorDescription = try container.decode(String.self, forKey: "result")
+        let error = NSError(domain: "ToolUseExecutionStatus", code: 0, userInfo: [NSLocalizedDescriptionKey: errorDescription])
+        self = .completed(.failure(error))
+
+      default:
+        throw DecodingError.dataCorruptedError(
+          forKey: "result_type",
+          in: container,
+          debugDescription: "Unknown result type: \(resultType)")
+      }
+
+    default:
+      throw DecodingError.dataCorruptedError(forKey: .init("type"), in: container, debugDescription: "Unknown type: \(type)")
+    }
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: String.self)
+    switch self {
+    case .pendingApproval:
+      try container.encode("pendingApproval", forKey: "type")
+
+    case .notStarted:
+      try container.encode("notStarted", forKey: "type")
+
+    case .running:
+      try container.encode("running", forKey: "type")
+
+    case .rejected(reason: let reason):
+      try container.encode("rejected", forKey: "type")
+      try container.encode(reason, forKey: "reason")
+
+    case .completed(let result):
+      try container.encode("completed", forKey: "type")
+      switch result {
+      case .success(let output):
+        try container.encode("success", forKey: "result_type")
+        try container.encode(output, forKey: "result")
+
+      case .failure(let error):
+        try container.encode("failure", forKey: "result_type")
+        try container.encode(error.localizedDescription, forKey: "result")
+      }
+    }
   }
 
 }
