@@ -4,6 +4,8 @@
 import LLMFoundation
 import SettingsServiceInterface
 
+// MARK: - Settings + Codable
+
 extension Settings: Codable {
 
   public init(from decoder: any Decoder) throws {
@@ -27,6 +29,12 @@ extension Settings: Codable {
       inactiveModels: container
         .decodeIfPresent([String].self, forKey: "inactiveModels")?
         .compactMap { modelName in LLMModel(rawValue: modelName) } ?? [],
+      reasoningModels: container
+        .decodeIfPresent([String: LLMReasoningSetting].self, forKey: "reasoningModels")?
+        .reduce(into: [LLMModel: LLMReasoningSetting]()) { acc, el in
+          guard let provider = LLMModel(rawValue: el.key) else { return }
+          acc[provider] = el.value
+        } ?? [:],
       customInstructions: container
         .decodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Settings.CustomInstructions(),
       toolPreferences: container
@@ -45,7 +53,26 @@ extension Settings: Codable {
       acc[el.key.rawValue] = el.value
     }, forKey: "llmProviderSettings")
     try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
+    try container.encode(reasoningModels.reduce(into: [String: LLMReasoningSetting]()) { acc, el in
+      acc[el.key.rawValue] = el.value
+    }, forKey: "reasoningModels")
     try container.encode(customInstructions, forKey: "customInstructions")
     try container.encode(toolPreferences, forKey: "toolPreferences")
+  }
+}
+
+// MARK: - LLMReasoningSetting + Codable
+
+extension LLMReasoningSetting: Codable {
+
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: String.self)
+    try self.init(
+      isEnabled: container.decodeIfPresent(Bool.self, forKey: "isEnabled") ?? false)
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: String.self)
+    try container.encode(isEnabled, forKey: "isEnabled")
   }
 }
