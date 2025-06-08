@@ -641,6 +641,7 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
     "ChatFeatureInterface",
+    "ThreadSafe",
   ],
   testDependencies: [],
   path: "./serviceInterfaces/ChatHistoryServiceInterface"))
