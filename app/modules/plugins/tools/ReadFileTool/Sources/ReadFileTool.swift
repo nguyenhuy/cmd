@@ -2,7 +2,6 @@
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
 @preconcurrency import Combine
-import ConcurrencyFoundation
 import Dependencies
 import DLS
 import Foundation
@@ -19,25 +18,16 @@ public final class ReadFileTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    public init(
-      toolUseId: String,
-      input: Data,
-      callingTool: ReadFileTool,
-      context: ToolFoundation.ToolExecutionContext,
-      status: Status.Element?)
-      throws
-    {
-      let input = try JSONDecoder().decode(Input.self, from: input)
+    init(callingTool: ReadFileTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      self.context = context
       self.input = Input(
         path: input.path.resolvePath(from: context.projectRoot).path(),
         lineRange: input.lineRange)
       filePath = URL(fileURLWithPath: self.input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: status ?? .pendingApproval)
-      self.status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      status = stream
       self.updateStatus = updateStatus
     }
 
@@ -60,7 +50,6 @@ public final class ReadFileTool: NonStreamableTool {
     public let callingTool: ReadFileTool
     public let toolUseId: String
     public let input: Input
-    public let context: ToolExecutionContext
 
     public let status: Status
 
@@ -146,9 +135,9 @@ public final class ReadFileTool: NonStreamableTool {
     true
   }
 
-//  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-//    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-//  }
+  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  }
 
 }
 
@@ -193,5 +182,15 @@ extension [String] {
 
     guard start < end else { return nil }
     return Array(self[start..<end])
+  }
+}
+
+extension ReadFileTool.Use {
+  public convenience init(from _: Decoder) throws {
+    fatalError("not implemented")
+  }
+
+  public func encode(to _: Encoder) throws {
+    fatalError("not implemented")
   }
 }

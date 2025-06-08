@@ -197,19 +197,27 @@ extension ChatMessageTextContentModel: Codable {
 extension ChatMessageToolUseContentModel: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
+    let toolName = try container.decode(String.self, forKey: .toolName)
+    guard let tool = try decoder.toolsPlugin.tool(named: toolName) else {
+      throw DecodingError.dataCorruptedError(
+        forKey: .toolName,
+        in: container,
+        debugDescription: "Tool with name '\(toolName)' not found in userInfo.toolPlugin.")
+    }
     try self.init(
       id: container.decode(UUID.self, forKey: .id),
-      toolUse: container.decode(ChatMessageToolUseContentModel.ToolUseModel.self, forKey: .toolUse))
+      toolUse: container.decode(useOf: tool, forKey: .toolUse))
   }
 
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(id, forKey: .id)
+    try container.encode(toolUse.toolName, forKey: .toolName)
     try container.encode(toolUse, forKey: .toolUse)
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, toolUse
+    case id, toolUse, toolName
   }
 
 }
@@ -240,33 +248,31 @@ extension ChatMessageReasoningContentModel: Codable {
 
 }
 
-// MARK: - ChatMessageToolUseContentModel.ToolUseModel + Codable
-
-extension ChatMessageToolUseContentModel.ToolUseModel: Codable {
-  public init(from decoder: any Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    try self.init(
-      toolUseId: container.decode(String.self, forKey: .toolUseId),
-      input: container.decode(Data.self, forKey: .input),
-      callingToolName: container.decode(String.self, forKey: .callingToolName),
-      context: container.decode(ToolExecutionContext.self, forKey: .context),
-      status: container.decode(ToolUseExecutionStatus<Data>.self, forKey: .status))
-  }
-
-  public func encode(to encoder: any Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(toolUseId, forKey: .toolUseId)
-    try container.encode(input, forKey: .input)
-    try container.encode(callingToolName, forKey: .callingToolName)
-    try container.encode(context, forKey: .context)
-    try container.encode(status, forKey: .status)
-  }
-
-  enum CodingKeys: String, CodingKey {
-    case toolUseId, input, callingToolName, context, status
-  }
-
-}
+// extension ChatMessageToolUseContentModel.ToolUseModel: Codable {
+//  public init(from decoder: any Decoder) throws {
+//    let container = try decoder.container(keyedBy: CodingKeys.self)
+//    try self.init(
+//      toolUseId: container.decode(String.self, forKey: .toolUseId),
+//      input: container.decode(Data.self, forKey: .input),
+//      callingToolName: container.decode(String.self, forKey: .callingToolName),
+//      context: container.decode(ToolExecutionContext.self, forKey: .context),
+//      status: container.decode(ToolUseExecutionStatus<Data>.self, forKey: .status))
+//  }
+//
+//  public func encode(to encoder: any Encoder) throws {
+//    var container = encoder.container(keyedBy: CodingKeys.self)
+//    try container.encode(toolUseId, forKey: .toolUseId)
+//    try container.encode(input, forKey: .input)
+//    try container.encode(callingToolName, forKey: .callingToolName)
+//    try container.encode(context, forKey: .context)
+//    try container.encode(status, forKey: .status)
+//  }
+//
+//  enum CodingKeys: String, CodingKey {
+//    case toolUseId, input, callingToolName, context, status
+//  }
+//
+// }
 
 // MARK: - ToolUseExecutionStatus + Codable
 

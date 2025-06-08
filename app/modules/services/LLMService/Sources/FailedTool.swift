@@ -3,16 +3,8 @@
 
 import AppFoundation
 import ConcurrencyFoundation
-import Foundation
 import JSONFoundation
 import ToolFoundation
-
-// MARK: - ToolUseError
-
-struct ToolUseError: Error, Codable, Sendable {
-  let toolName: String
-  let message: String
-}
 
 // MARK: - EmptyObject
 
@@ -21,44 +13,27 @@ struct EmptyObject: Codable, Sendable { }
 // MARK: - FailedToolUse
 
 struct FailedToolUse: ToolUse {
-  init(
-    toolUseId: String,
-    input: Data,
-    callingTool _: FailedTool,
-    context: ToolExecutionContext,
-    status _: Status.Element?)
-    throws
-  {
-    self.toolUseId = toolUseId
-    self.context = context
-    let input = try JSONDecoder().decode(ToolUseError.self, from: input)
-    callingTool = FailedTool(name: input.toolName)
-    self.input = input
-    error = AppError(input.message)
-  }
 
-  init(toolUseId: String, toolName: String, error: Error, context: ToolExecutionContext) {
+  init(toolUseId: String, toolName: String, errorDescription: String) {
     self.toolUseId = toolUseId
     callingTool = FailedTool(name: toolName)
-    self.error = error
-    input = .init(toolName: toolName, message: error.localizedDescription)
-    self.context = context
+    self.errorDescription = errorDescription
   }
 
   public let isReadonly = true
 
-  typealias Input = ToolUseError
+  typealias Input = EmptyObject
   typealias Output = EmptyObject
-
-  let context: ToolExecutionContext
 
   var callingTool: FailedTool
   let toolUseId: String
-  let error: Error
+  let errorDescription: String
 
-  let input: Input
+  var status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<EmptyObject>> {
+    .Just(.completed(.failure(AppError(errorDescription))))
+  }
 
-  var status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<EmptyObject>> { .Just(.completed(.failure(error))) }
+  var input: Input { Input() }
 
   func startExecuting() { }
 
@@ -95,4 +70,14 @@ struct FailedTool: NonStreamableTool {
     fatalError("Should not be called")
   }
 
+}
+
+extension FailedToolUse {
+  public init(from _: Decoder) throws {
+    fatalError("not implemented")
+  }
+
+  public func encode(to _: Encoder) throws {
+    fatalError("not implemented")
+  }
 }

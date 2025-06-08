@@ -79,35 +79,13 @@ public struct ChatMessageTextContentModel: Identifiable, Sendable {
 
 public struct ChatMessageToolUseContentModel: Identifiable, Sendable {
 
-  public init(id: UUID, toolUse: ToolUseModel) {
+  public init(id: UUID, toolUse: any ToolUse) {
     self.id = id
     self.toolUse = toolUse
   }
 
-  public struct ToolUseModel: Sendable {
-    public init(
-      toolUseId: String,
-      input: Data,
-      callingToolName: String,
-      context: ToolExecutionContext,
-      status: ToolUseExecutionStatus<some Codable & Sendable>)
-    {
-      self.toolUseId = toolUseId
-      self.input = input
-      self.callingToolName = callingToolName
-      self.context = context
-      self.status = status.erasedStatus
-    }
-
-    public let toolUseId: String
-    public let input: Data
-    public let callingToolName: String
-    public let context: ToolExecutionContext
-    public let status: ToolUseExecutionStatus<Data>
-  }
-
   public let id: UUID
-  public let toolUse: ToolUseModel
+  public let toolUse: any ToolUse
 
 }
 

@@ -302,14 +302,14 @@ final class RequestStreamingHelper: Sendable {
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
           toolName: request.toolName,
-          error: Self.failedToParseToolInputError(toolName: request.toolName, error: error), context: toolExecutionContext))
+          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription))
       }
     } else {
       // Tool not found
       content.append(toolUse: FailedToolUse(
         toolUseId: request.toolUseId,
         toolName: request.toolName,
-        error: Self.missingToolError(toolName: request.toolName), context: toolExecutionContext))
+        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription))
     }
     result.update(with: AssistantMessage(content: content))
   }
@@ -325,8 +325,7 @@ final class RequestStreamingHelper: Sendable {
       content.append(toolUse: FailedToolUse(
         toolUseId: streamingToolUse.toolUseId,
         toolName: streamingToolUse.toolName,
-        error: error,
-        context: ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)))
+        errorDescription: error.localizedDescription))
       result.update(with: AssistantMessage(content: content))
     }
 

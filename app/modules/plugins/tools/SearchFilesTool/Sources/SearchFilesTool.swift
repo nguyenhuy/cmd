@@ -18,15 +18,8 @@ public final class SearchFilesTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    public init(
-      toolUseId: String,
-      input: Data,
-      callingTool: SearchFilesTool,
-      context: ToolFoundation.ToolExecutionContext,
-      status: Status.Element?)
-      throws
-    {
-      let input = try JSONDecoder().decode(Input.self, from: input)
+
+    init(callingTool: SearchFilesTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
@@ -36,8 +29,8 @@ public final class SearchFilesTool: NonStreamableTool {
         regex: input.regex,
         filePattern: input.filePattern)
 
-      let (stream, updateStatus) = Status.makeStream(initial: status ?? .pendingApproval)
-      self.status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      status = stream
       self.updateStatus = updateStatus
     }
 
@@ -56,8 +49,6 @@ public final class SearchFilesTool: NonStreamableTool {
     public let input: Input
 
     public let status: Status
-
-    public let context: ToolExecutionContext
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -99,6 +90,7 @@ public final class SearchFilesTool: NonStreamableTool {
     @Dependency(\.server) private var server
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    private let context: ToolExecutionContext
 
   }
 
@@ -141,9 +133,9 @@ public final class SearchFilesTool: NonStreamableTool {
     true
   }
 
-//  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-//      Use(callingTool: self, toolUseId: toolUseId, input: input, context: context, status: .pendingApproval)
-//  }
+  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  }
 
 }
 
@@ -176,5 +168,15 @@ extension SearchFilesTool.Use.Output {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     try container.encode(outputForLLm)
+  }
+}
+
+extension SearchFilesTool.Use {
+  public convenience init(from _: Decoder) throws {
+    fatalError("not implemented")
+  }
+
+  public func encode(to _: Encoder) throws {
+    fatalError("not implemented")
   }
 }

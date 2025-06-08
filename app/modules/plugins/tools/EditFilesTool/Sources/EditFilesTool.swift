@@ -21,30 +21,13 @@ public final class EditFilesTool: Tool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    convenience public init(
-      toolUseId: String,
-      input: Data,
-      callingTool: EditFilesTool,
-      context: ToolFoundation.ToolExecutionContext,
-      status: Status.Element?)
-      throws
-    {
-      try self.init(
-        callingTool: callingTool,
-        toolUseId: toolUseId,
-        input: input,
-        isInputComplete: true,
-        context: context,
-        status: status)
-    }
 
     init(
       callingTool: EditFilesTool,
       toolUseId: String,
       input: Data,
       isInputComplete: Bool,
-      context: ToolExecutionContext,
-      status: Status.Element? = nil)
+      context: ToolExecutionContext)
       throws
     {
       self.callingTool = callingTool
@@ -54,8 +37,8 @@ public final class EditFilesTool: Tool {
       let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
       _input = Atomic(input)
 
-      let (stream, updateStatus) = Status.makeStream(initial: status ?? .pendingApproval)
-      self.status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      status = stream
       self.updateStatus = updateStatus
     }
 
@@ -117,8 +100,6 @@ public final class EditFilesTool: Tool {
     public let _input: Atomic<Input>
     public let status: Status
 
-    public let context: ToolExecutionContext
-
     public var input: Input { _input.value }
 
     public func receive(inputUpdate data: Data, isLast: Bool) throws {
@@ -177,6 +158,7 @@ public final class EditFilesTool: Tool {
     @MainActor private var _viewModel: ToolUseViewModel?
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    private let context: ToolExecutionContext
 
   }
 
@@ -285,6 +267,14 @@ public final class EditFilesTool: Tool {
     """
   }
 
+  public var shortDescription: String {
+    if shouldAutoApply {
+      "Replace existing code using search/replace blocks in a list of files and create new files."
+    } else {
+      "Suggest to replace existing code using search/replace blocks in a list of files and to create new files."
+    }
+  }
+
   public func isAvailable(in mode: ChatMode) -> Bool {
     switch mode {
     case .agent:
@@ -311,12 +301,14 @@ public final class EditFilesTool: Tool {
 
   private let shouldAutoApply: Bool
 
-  public var shortDescription: String {
-    if shouldAutoApply {
-      "Replace existing code using search/replace blocks in a list of files and create new files."
-    } else {
-      "Suggest to replace existing code using search/replace blocks in a list of files and to create new files."
-    }
+}
+
+extension EditFilesTool.Use {
+  public convenience init(from _: Decoder) throws {
+    fatalError("not implemented")
   }
 
+  public func encode(to _: Encoder) throws {
+    fatalError("not implemented")
+  }
 }

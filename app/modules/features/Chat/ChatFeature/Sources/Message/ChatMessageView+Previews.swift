@@ -322,3 +322,13 @@ struct DebugStreamingMessage: View {
 }
 
 #endif
+
+extension TestTool.Use {
+  public init(from _: Decoder) throws {
+    fatalError("not implemented")
+  }
+
+  public func encode(to _: Encoder) throws {
+    fatalError("not implemented")
+  }
+}

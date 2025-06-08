@@ -10,17 +10,16 @@ import FileSuggestionServiceInterface
 import Foundation
 import JSONFoundation
 import LLMServiceInterface
-import ToolFoundation
 
 // MARK: - ChatTabViewModel Extensions
 
 extension ChatTabViewModel {
-  convenience init(from persistentModel: ChatThreadModel) throws {
-    try self.init(
+  convenience init(from persistentModel: ChatThreadModel) {
+    self.init(
       id: persistentModel.id,
       name: persistentModel.name,
-      messages: persistentModel.messages.map { try .init(from: $0) },
-      events: persistentModel.events.map { try .init(from: $0) },
+      messages: persistentModel.messages.map { .init(from: $0) },
+      events: persistentModel.events.map { .init(from: $0) },
       projectInfo: persistentModel.projectInfo,
       createdAt: persistentModel.createdAt)
   }
@@ -40,10 +39,10 @@ extension ChatTabViewModel {
 // MARK: - ChatMessage Extensions
 
 extension ChatMessageViewModel {
-  convenience init(from persistentModel: ChatMessageModel) throws {
-    try self.init(
+  convenience init(from persistentModel: ChatMessageModel) {
+    self.init(
       id: persistentModel.id,
-      content: persistentModel.content.map { try .init(from: $0) },
+      content: persistentModel.content.map { .init(from: $0) },
       role: persistentModel.role,
       timestamp: persistentModel.timestamp)
   }
@@ -62,7 +61,7 @@ extension ChatMessageViewModel {
 
 extension ChatMessageContent {
   @MainActor
-  init(from persistentModel: ChatMessageContentModel) throws {
+  init(from persistentModel: ChatMessageContentModel) {
     switch persistentModel {
     case .text(let text):
       self = .text(.init(
@@ -84,19 +83,9 @@ extension ChatMessageContent {
         isStreaming: false))
 
     case .toolUse(let toolUseContent):
-      let toolUse = toolUseContent.toolUse
-      @Dependency(\.toolsPlugin) var toolsPlugin
-      guard let tool = toolsPlugin.tool(named: toolUse.callingToolName) else {
-        // TODO: better error handling
-        throw AppError("Tool \(toolUse.callingToolName) not found")
-      }
-      self = try .toolUse(.init(
+      self = .toolUse(.init(
         id: toolUseContent.id,
-        toolUse: tool.deserialize(
-          toolUseId: toolUse.toolUseId,
-          input: toolUse.input,
-          context: toolUse.context,
-          status: toolUse.status)))
+        toolUse: toolUseContent.toolUse))
     }
   }
 
@@ -104,31 +93,24 @@ extension ChatMessageContent {
   var persistentModel: ChatMessageContentModel {
     switch self {
     case .text(let text):
-      return .text(.init(id: text.id, projectRoot: text.projectRoot, text: text.text, attachments: text.attachments))
+      .text(.init(id: text.id, projectRoot: text.projectRoot, text: text.text, attachments: text.attachments))
 
     case .reasoning(let reasoning):
-      return .reasoning(.init(
+      .reasoning(.init(
         id: reasoning.id,
         text: reasoning.text,
         signature: reasoning.signature,
         reasoningDuration: reasoning.reasoningDuration))
 
     case .nonUserFacingText(let nonUserFacingText):
-      return .nonUserFacingText(.init(
+      .nonUserFacingText(.init(
         id: nonUserFacingText.id,
         projectRoot: nonUserFacingText.projectRoot,
         text: nonUserFacingText.text,
         attachments: nonUserFacingText.attachments))
 
     case .toolUse(let toolUseContent):
-      let toolUse = toolUseContent.toolUse
-      let toolUseModel = ChatMessageToolUseContentModel.ToolUseModel(
-        toolUseId: toolUse.toolUseId,
-        input: (try? JSONEncoder().encode(toolUse.input)) ?? Data(),
-        callingToolName: toolUse.callingTool.name,
-        context: toolUse.context,
-        status: toolUse.erasedStatus)
-      return .toolUse(.init(id: toolUseContent.id, toolUse: toolUseModel))
+      .toolUse(.init(id: toolUseContent.id, toolUse: toolUseContent.toolUse))
     }
   }
 
@@ -138,7 +120,7 @@ extension ChatMessageContent {
 
 extension ChatEvent {
   @MainActor
-  init(from persistentModel: ChatEventModel) throws {
+  init(from persistentModel: ChatEventModel) {
     switch persistentModel {
     case .checkpoint(let checkpoint):
       self = .checkpoint(.init(
@@ -148,7 +130,7 @@ extension ChatEvent {
         taskId: checkpoint.taskId))
 
     case .message(let message):
-      self = try .message(.init(content: .init(from: message.content), role: message.role, failureReason: message.failureReason))
+      self = .message(.init(content: .init(from: message.content), role: message.role, failureReason: message.failureReason))
     }
   }
 

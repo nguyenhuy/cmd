@@ -16,6 +16,8 @@ import SwiftUI
 /// Each invocation of the tool is a 'tool use' that has its own input/output/state and possibly UI.
 public protocol Tool: Sendable {
   associatedtype Use: ToolUse
+  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
+  func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use
   /// The name of the tool, used to identify it. It should only contain alphanumeric characters.
   var name: String { get }
   /// A description of what the tool does. The description of its input parameters is better suited for the `inputSchema` property.
@@ -37,33 +39,41 @@ extension Tool {
   public typealias Output = Use.Output
 
   /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-  public func use(toolUseId: String, input: Data, isInputComplete _: Bool, context: ToolExecutionContext) throws -> Use {
-//        let input = try JSONDecoder().decode(Input.self, from: input)
-    try Use(toolUseId: toolUseId, input: input, callingTool: self as! Self.Use.SomeTool, context: context, status: nil)
+//  public func use(toolUseId: String, input: Data, isInputComplete _: Bool, context: ToolExecutionContext) throws -> Use {
+  ////        let input = try JSONDecoder().decode(Input.self, from: input)
+//    try Use(toolUseId: toolUseId, input: input, callingTool: self as! Self.Use.SomeTool, context: context, status: nil)
+//  }
+
+//  /// Re-create the tool use from its serialization.
+//  public func deserialize(
+//    toolUseId: String,
+//    input: Data,
+//    context: ToolExecutionContext,
+//    status: ToolUseExecutionStatus<Data>)
+//    throws -> Use
+//  {
+  ////        let input = try JSONDecoder().decode(Input.self, from: input)
+//    try Use(
+//      toolUseId: toolUseId,
+//      input: input,
+//      callingTool: self as! Self.Use.SomeTool,
+//      context: context,
+//      status: status.map { try JSONDecoder().decode(Output.self, from: $0) })
+//  }
+
+  ///    public func deserializeToolUse(from data: Data) throws -> Use {
+  ///        try JSONDecoder().decode(Use.self, from: data)
+  ///    }
+  func decode<K: CodingKey>(from container: KeyedDecodingContainer<K>, forKey key: K) throws -> Use {
+    try container.decode(Use.self, forKey: key)
   }
 
-  /// Re-create the tool use from its serialization.
-  public func deserialize(
-    toolUseId: String,
-    input: Data,
-    context: ToolExecutionContext,
-    status: ToolUseExecutionStatus<Data>)
-    throws -> Use
-  {
-//        let input = try JSONDecoder().decode(Input.self, from: input)
-    try Use(
-      toolUseId: toolUseId,
-      input: input,
-      callingTool: self as! Self.Use.SomeTool,
-      context: context,
-      status: status.map { try JSONDecoder().decode(Output.self, from: $0) })
-  }
 }
 
 // MARK: - ToolUse
 
 /// A specific usage of a tool.
-public protocol ToolUse: Sendable {
+public protocol ToolUse: Sendable, Codable {
   associatedtype Input: Codable & Sendable
   associatedtype Output: Codable & Sendable
   associatedtype SomeTool: Tool where SomeTool.Use == Self
@@ -81,10 +91,10 @@ public protocol ToolUse: Sendable {
   var callingTool: SomeTool { get }
   /// The status of the execution of the tool use.
   var status: Status { get }
-  /// The context in which the tool use is being executed.
-  var context: ToolExecutionContext { get }
-  /// Create a new instance of the tool use.
-  init(toolUseId: String, input: Data, callingTool: SomeTool, context: ToolExecutionContext, status: Status.Element?) throws
+//  /// The context in which the tool use is being executed.
+//  var context: ToolExecutionContext { get }
+//  /// Create a new instance of the tool use.
+//  init(toolUseId: String, input: Data, callingTool: SomeTool, context: ToolExecutionContext, status: Status.Element?) throws
   /// Update the input with the updated one.
   /// Note: the tool can expect this to be called only if `canInputBeStreamed` is true.
   /// - Parameters:
@@ -100,10 +110,10 @@ public protocol ToolUse: Sendable {
 }
 
 extension ToolUse {
-
-  public init(toolUseId: String, input: Data, callingTool: SomeTool, context: ToolExecutionContext) throws {
-    try self.init(toolUseId: toolUseId, input: input, callingTool: callingTool, context: context, status: nil)
-  }
+//
+//  public init(toolUseId: String, input: Data, callingTool: SomeTool, context: ToolExecutionContext) throws {
+//    try self.init(toolUseId: toolUseId, input: input, callingTool: callingTool, context: context, status: nil)
+//  }
 
   public var toolName: String { callingTool.name }
 
@@ -134,27 +144,27 @@ extension ToolUse {
     guard case .completed(let result) = status.value else { return nil }
     return try? result.get()
   }
-
-  public var currentStatus: ToolUseExecutionStatus<Output> {
-    status.value
-  }
+//
+//  public var currentStatus: ToolUseExecutionStatus<Output> {
+//    status.value
+//  }
 
 }
 
 /// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
 public protocol NonStreamableTool: Tool {
   /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-//  func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use
+  func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use
 }
 
 extension NonStreamableTool {
   public var canInputBeStreamed: Bool { false }
 
-//  public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
-//    assert(isInputComplete)
-//    let input = try JSONDecoder().decode(Input.self, from: input)
-//    return use(toolUseId: toolUseId, input: input, context: context)
-//  }
+  public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
+    assert(isInputComplete)
+    let input = try JSONDecoder().decode(Input.self, from: input)
+    return use(toolUseId: toolUseId, input: input, context: context)
+  }
 }
 
 extension ToolUse where SomeTool: NonStreamableTool {
@@ -197,45 +207,45 @@ public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
 
 }
 
-extension ToolUseExecutionStatus {
-  public var output: Output? {
-    switch self {
-    case .completed(let result):
-      switch result {
-      case .success(let output):
-        output
-      case .failure:
-        nil
-      }
-
-    default:
-      nil
-    }
-  }
-
-  public func map<NewOutput: Codable & Sendable>(_ map: (Output) throws -> NewOutput) rethrows
-    -> ToolUseExecutionStatus<NewOutput>
-  {
-    switch self {
-    case .pendingApproval:
-      .pendingApproval
-    case .rejected(let reason):
-      .rejected(reason: reason)
-    case .notStarted:
-      .notStarted
-    case .running:
-      .running
-    case .completed(let result):
-      switch result {
-      case .failure(let error):
-        .completed(.failure(error))
-      case .success(let output):
-        try .completed(.success(map(output)))
-      }
-    }
-  }
-
-}
+// extension ToolUseExecutionStatus {
+//  public var output: Output? {
+//    switch self {
+//    case .completed(let result):
+//      switch result {
+//      case .success(let output):
+//        output
+//      case .failure:
+//        nil
+//      }
+//
+//    default:
+//      nil
+//    }
+//  }
+//
+//  public func map<NewOutput: Codable & Sendable>(_ map: (Output) throws -> NewOutput) rethrows
+//    -> ToolUseExecutionStatus<NewOutput>
+//  {
+//    switch self {
+//    case .pendingApproval:
+//      .pendingApproval
+//    case .rejected(let reason):
+//      .rejected(reason: reason)
+//    case .notStarted:
+//      .notStarted
+//    case .running:
+//      .running
+//    case .completed(let result):
+//      switch result {
+//      case .failure(let error):
+//        .completed(.failure(error))
+//      case .success(let output):
+//        try .completed(.success(map(output)))
+//      }
+//    }
+//  }
+//
+// }
 
 public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Codable, Sendable {
   case streaming(_ input: StreamingInput)
@@ -266,5 +276,10 @@ extension KeyedDecodingContainer {
       items.append(try? container.decode(T.self))
     }
     return items.compactMap(\.self)
+  }
+
+  /// Decodes the use of a given tool from the container.
+  public func decode<T: Tool>(useOf tool: T, forKey: K) throws -> T.Use {
+    try tool.decode(from: self, forKey: forKey)
   }
 }

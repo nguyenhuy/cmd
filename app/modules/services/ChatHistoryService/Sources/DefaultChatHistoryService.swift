@@ -10,6 +10,7 @@ import FoundationInterfaces
 import GRDB
 import LLMServiceInterface
 import LoggingServiceInterface
+import ToolFoundation
 
 let logger = defaultLogger.subLogger(subsystem: "chatHistoryService")
 
@@ -60,7 +61,7 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     let encoder = JSONEncoder()
 
     let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
-    encoder.userInfo[AttachmentSerializer.codingUserInfoKey] = AttachmentSerializer(
+    encoder.userInfo[AttachmentSerializer.attachmentSerializerKey] = AttachmentSerializer(
       fileManager: fileManager,
       objectsDir: objectsDir)
 
@@ -88,17 +89,23 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       try ChatThreadRecord.fetchOne(db, id: id.uuidString)
     }
     guard let threadRecord else { return nil }
-    let task = Task.detached(priority: .userInitiated) {
+    let task = Task.detached(priority: .userInitiated) { () -> ChatThreadModel? in
       let rawContentPath = URL(filePath: threadRecord.rawContentPath)
       let rawContent = try self.fileManager.read(dataFrom: URL(filePath: threadRecord.rawContentPath))
       let decoder = JSONDecoder()
 
       let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
-      decoder.userInfo[AttachmentSerializer.codingUserInfoKey] = AttachmentSerializer(
+      decoder.userInfo[AttachmentSerializer.attachmentSerializerKey] = AttachmentSerializer(
         fileManager: self.fileManager,
         objectsDir: objectsDir)
 
-      return try decoder.decode(ChatThreadModel.self, from: rawContent)
+      do {
+        return try decoder.decode(ChatThreadModel.self, from: rawContent)
+      } catch {
+        defaultLogger.error("Chat thread could not be loaded. Removing it.", error)
+        try await self.deleteChatThread(id: id)
+        return nil
+      }
     }
     return try await task.value
   }
@@ -198,7 +205,8 @@ final class AttachmentSerializer: Sendable {
     self.objectsDir = objectsDir
   }
 
-  static let codingUserInfoKey = CodingUserInfoKey(rawValue: "attachmentSerializer")!
+  static let attachmentSerializerKey = CodingUserInfoKey(rawValue: "attachmentSerializer")!
+  static let toolsPluginKey = CodingUserInfoKey(rawValue: "toolsPlugin")!
 
   func save(_ string: String, for id: UUID) throws {
     let data = Data(string.utf8)
@@ -238,7 +246,7 @@ final class AttachmentSerializer: Sendable {
 extension Decoder {
   var attachmentSerializer: AttachmentSerializer {
     get throws {
-      guard let loader = userInfo[AttachmentSerializer.codingUserInfoKey] as? AttachmentSerializer else {
+      guard let loader = userInfo[AttachmentSerializer.attachmentSerializerKey] as? AttachmentSerializer else {
         throw DecodingError.dataCorrupted(
           DecodingError.Context(
             codingPath: codingPath,
@@ -247,12 +255,24 @@ extension Decoder {
       return loader
     }
   }
+
+  var toolsPlugin: ToolsPlugin {
+    get throws {
+      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
+        throw DecodingError.dataCorrupted(
+          DecodingError.Context(
+            codingPath: codingPath,
+            debugDescription: "ToolsPlugin not found in userInfo"))
+      }
+      return plugin
+    }
+  }
 }
 
 extension Encoder {
   var attachmentSerializer: AttachmentSerializer {
     get throws {
-      guard let loader = userInfo[AttachmentSerializer.codingUserInfoKey] as? AttachmentSerializer else {
+      guard let loader = userInfo[AttachmentSerializer.attachmentSerializerKey] as? AttachmentSerializer else {
         throw EncodingError.invalidValue(
           self,
           EncodingError.Context(
@@ -260,6 +280,18 @@ extension Encoder {
             debugDescription: "AttachmentSerializer not found in userInfo"))
       }
       return loader
+    }
+  }
+
+  var toolsPlugin: ToolsPlugin {
+    get throws {
+      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
+        throw DecodingError.dataCorrupted(
+          DecodingError.Context(
+            codingPath: codingPath,
+            debugDescription: "ToolsPlugin not found in userInfo"))
+      }
+      return plugin
     }
   }
 }

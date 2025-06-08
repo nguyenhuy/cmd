@@ -19,15 +19,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   @ThreadSafe
   public final class Use: ToolUse, @unchecked Sendable {
-    public init(
-      toolUseId: String,
-      input: Data,
-      callingTool: ExecuteCommandTool,
-      context: ToolFoundation.ToolExecutionContext,
-      status: Status.Element?)
-      throws
-    {
-      let input = try JSONDecoder().decode(Input.self, from: input)
+
+    init(callingTool: ExecuteCommandTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
@@ -37,8 +30,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
         canModifySourceFiles: input.canModifySourceFiles,
         canModifyDerivedFiles: input.canModifyDerivedFiles)
 
-      let (stream, updateStatus) = Status.makeStream(initial: status ?? .pendingApproval)
-      self.status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      status = stream
       self.updateStatus = updateStatus
 
       let (stdout, setStdout) = Future<BroadcastedStream<Data>, Never>.make()
@@ -69,8 +62,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
     public let input: Input
 
     public let status: Status
-
-    public let context: ToolExecutionContext
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -127,6 +118,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     @Dependency(\.shellService) private var shellService
 
+    private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
@@ -182,9 +174,9 @@ public final class ExecuteCommandTool: NonStreamableTool {
     mode == .agent
   }
 
-//  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-//    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-//  }
+  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
+  }
 
   static let truncationLimit = 30000
 
@@ -243,5 +235,15 @@ extension String {
     let i = index(startIndex, offsetBy: limit / 2)
     let j = index(endIndex, offsetBy: -limit / 2)
     return String(self[startIndex..<i]) + "... [\(count - limit) characters truncated] ..." + String(self[j..<endIndex])
+  }
+}
+
+extension ExecuteCommandTool.Use {
+  public convenience init(from _: Decoder) throws {
+    fatalError("not implemented")
+  }
+
+  public func encode(to _: Encoder) throws {
+    fatalError("not implemented")
   }
 }

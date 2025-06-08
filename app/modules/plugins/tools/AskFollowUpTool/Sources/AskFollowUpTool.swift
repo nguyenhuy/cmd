@@ -17,22 +17,13 @@ public final class AskFollowUpTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    public init(
-      toolUseId: String,
-      input: Data,
-      callingTool: AskFollowUpTool,
-      context: ToolFoundation.ToolExecutionContext,
-      status: Status.Element?)
-      throws
-    {
-      let input = try JSONDecoder().decode(Input.self, from: input)
+    init(callingTool: AskFollowUpTool, toolUseId: String, input: Input) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.input = input
-      self.context = context
 
-      let (stream, updateStatus) = Status.makeStream(initial: status ?? .notStarted)
-      self.status = stream
+      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      status = stream
       self.updateStatus = updateStatus
     }
 
@@ -52,8 +43,6 @@ public final class AskFollowUpTool: NonStreamableTool {
     public let input: Input
 
     public let status: Status
-
-    public let context: ToolExecutionContext
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -115,9 +104,9 @@ public final class AskFollowUpTool: NonStreamableTool {
     true
   }
 
-//  public func use(toolUseId: String, input: Use.Input, context _: ToolExecutionContext) -> Use {
-//    Use(callingTool: self, toolUseId: toolUseId, input: input)
-//  }
+  public func use(toolUseId: String, input: Use.Input, context _: ToolExecutionContext) -> Use {
+    Use(callingTool: self, toolUseId: toolUseId, input: input)
+  }
 }
 
 // MARK: - ToolUseViewModel
@@ -144,4 +133,14 @@ final class ToolUseViewModel {
   let input: AskFollowUpTool.Use.Input
   var status: ToolUseExecutionStatus<AskFollowUpTool.Output>
   let selectFollowUp: (String) -> Void
+}
+
+extension AskFollowUpTool.Use {
+  public convenience init(from _: Decoder) throws {
+    fatalError("not implemented")
+  }
+
+  public func encode(to _: Encoder) throws {
+    fatalError("not implemented")
+  }
 }
