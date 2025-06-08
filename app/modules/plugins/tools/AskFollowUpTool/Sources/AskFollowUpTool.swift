@@ -17,12 +17,12 @@ public final class AskFollowUpTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    init(callingTool: AskFollowUpTool, toolUseId: String, input: Input) {
+    init(callingTool: AskFollowUpTool, toolUseId: String, input: Input, initialStatus: Status.Element? = nil) {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.input = input
 
-      let (stream, updateStatus) = Status.makeStream(initial: .notStarted)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -133,36 +133,4 @@ final class ToolUseViewModel {
   let input: AskFollowUpTool.Use.Input
   var status: ToolUseExecutionStatus<AskFollowUpTool.Output>
   let selectFollowUp: (String) -> Void
-}
-
-extension AskFollowUpTool.Use {
-  public convenience init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-
-    let callingTool = try container.decode(AskFollowUpTool.self, forKey: .callingTool)
-    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    let input = try container.decode(Input.self, forKey: .input)
-    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
-
-    self.init(callingTool: callingTool, toolUseId: toolUseId, input: input)
-
-    // Set the status to the decoded value
-    updateStatus.yield(statusValue)
-  }
-
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-
-    try container.encode(callingTool, forKey: .callingTool)
-    try container.encode(toolUseId, forKey: .toolUseId)
-    try container.encode(input, forKey: .input)
-    try container.encode(status.value, forKey: .status)
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case callingTool
-    case toolUseId
-    case input
-    case status
-  }
 }

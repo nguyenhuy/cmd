@@ -20,7 +20,13 @@ public final class ExecuteCommandTool: NonStreamableTool {
   @ThreadSafe
   public final class Use: ToolUse, @unchecked Sendable {
 
-    init(callingTool: ExecuteCommandTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
+    init(
+      callingTool: ExecuteCommandTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
@@ -30,7 +36,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
         canModifySourceFiles: input.canModifySourceFiles,
         canModifyDerivedFiles: input.canModifyDerivedFiles)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
 
@@ -235,40 +241,5 @@ extension String {
     let i = index(startIndex, offsetBy: limit / 2)
     let j = index(endIndex, offsetBy: -limit / 2)
     return String(self[startIndex..<i]) + "... [\(count - limit) characters truncated] ..." + String(self[j..<endIndex])
-  }
-}
-
-extension ExecuteCommandTool.Use {
-  public convenience init(from decoder: Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-
-    let callingTool = try container.decode(ExecuteCommandTool.self, forKey: .callingTool)
-    let toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    let input = try container.decode(Input.self, forKey: .input)
-    let context = try container.decode(ToolExecutionContext.self, forKey: .context)
-    let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
-
-    self.init(callingTool: callingTool, toolUseId: toolUseId, input: input, context: context)
-
-    // Set the status to the decoded value
-    updateStatus.yield(statusValue)
-  }
-
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-
-    try container.encode(callingTool, forKey: .callingTool)
-    try container.encode(toolUseId, forKey: .toolUseId)
-    try container.encode(input, forKey: .input)
-    try container.encode(context, forKey: .context)
-    try container.encode(status.value, forKey: .status)
-  }
-
-  private enum CodingKeys: String, CodingKey {
-    case callingTool
-    case toolUseId
-    case input
-    case context
-    case status
   }
 }
