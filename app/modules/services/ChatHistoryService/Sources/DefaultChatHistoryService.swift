@@ -206,7 +206,8 @@ final class AttachmentSerializer: Sendable {
   }
 
   static let attachmentSerializerKey = CodingUserInfoKey(rawValue: "attachmentSerializer")!
-  static let toolsPluginKey = CodingUserInfoKey(rawValue: "toolsPlugin")!
+
+//  static let toolsPluginKey = CodingUserInfoKey(rawValue: "toolsPlugin")!
 
   func save(_ string: String, for id: UUID) throws {
     let data = Data(string.utf8)
@@ -256,17 +257,17 @@ extension Decoder {
     }
   }
 
-  var toolsPlugin: ToolsPlugin {
-    get throws {
-      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
-        throw DecodingError.dataCorrupted(
-          DecodingError.Context(
-            codingPath: codingPath,
-            debugDescription: "ToolsPlugin not found in userInfo"))
-      }
-      return plugin
-    }
-  }
+//  var toolsPlugin: ToolsPlugin {
+//    get throws {
+//      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
+//        throw DecodingError.dataCorrupted(
+//          DecodingError.Context(
+//            codingPath: codingPath,
+//            debugDescription: "ToolsPlugin not found in userInfo"))
+//      }
+//      return plugin
+//    }
+//  }
 }
 
 extension Encoder {
@@ -283,17 +284,17 @@ extension Encoder {
     }
   }
 
-  var toolsPlugin: ToolsPlugin {
-    get throws {
-      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
-        throw DecodingError.dataCorrupted(
-          DecodingError.Context(
-            codingPath: codingPath,
-            debugDescription: "ToolsPlugin not found in userInfo"))
-      }
-      return plugin
-    }
-  }
+//  var toolsPlugin: ToolsPlugin {
+//    get throws {
+//      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
+//        throw DecodingError.dataCorrupted(
+//          DecodingError.Context(
+//            codingPath: codingPath,
+//            debugDescription: "ToolsPlugin not found in userInfo"))
+//      }
+//      return plugin
+//    }
+//  }
 }
 
 extension String {

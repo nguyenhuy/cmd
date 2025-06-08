@@ -197,13 +197,7 @@ extension ChatMessageTextContentModel: Codable {
 extension ChatMessageToolUseContentModel: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    let toolName = try container.decode(String.self, forKey: .toolName)
-    guard let tool = try decoder.toolsPlugin.tool(named: toolName) else {
-      throw DecodingError.dataCorruptedError(
-        forKey: .toolName,
-        in: container,
-        debugDescription: "Tool with name '\(toolName)' not found in userInfo.toolPlugin.")
-    }
+    let tool = try container.decodeAnyTool(forKey: .callingTool)
     try self.init(
       id: container.decode(UUID.self, forKey: .id),
       toolUse: container.decode(useOf: tool, forKey: .toolUse))
@@ -212,12 +206,12 @@ extension ChatMessageToolUseContentModel: Codable {
   public func encode(to encoder: any Encoder) throws {
     var container = encoder.container(keyedBy: CodingKeys.self)
     try container.encode(id, forKey: .id)
-    try container.encode(toolUse.toolName, forKey: .toolName)
+    try container.encode(toolUse.callingTool, forKey: .callingTool)
     try container.encode(toolUse, forKey: .toolUse)
   }
 
   enum CodingKeys: String, CodingKey {
-    case id, toolUse, toolName
+    case id, toolUse, callingTool
   }
 
 }

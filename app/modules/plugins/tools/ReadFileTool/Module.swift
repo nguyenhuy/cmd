@@ -2,7 +2,6 @@ Target.module(
   name: "ReadFileTool",
   dependencies: [
     "CodePreview",
-    "ConcurrencyFoundation",
     "DLS",
     "FoundationInterfaces",
     "HighlighterServiceInterface",

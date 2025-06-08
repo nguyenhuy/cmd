@@ -266,6 +266,8 @@ public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: C
   }
 }
 
+private let toolsPluginKey = CodingUserInfoKey(rawValue: "toolsPlugin")!
+
 extension KeyedDecodingContainer {
   /// Decodes an array, dropping values that failed to decode.
   /// This can be useful to decode streamed input, where the last value in the array was truncated in a way that makes decoding impossible.
@@ -281,5 +283,41 @@ extension KeyedDecodingContainer {
   /// Decodes the use of a given tool from the container.
   public func decode<T: Tool>(useOf tool: T, forKey: K) throws -> T.Use {
     try tool.decode(from: self, forKey: forKey)
+  }
+
+  public func decode<T: Tool>(_: T.Type, forKey key: K) throws -> T {
+    guard let tool = try decodeAnyTool(forKey: key) as? T else {
+      throw DecodingError.dataCorruptedError(
+        forKey: key,
+        in: self,
+        debugDescription: "Tool does't match the expected type \(T.self)")
+    }
+    return tool
+  }
+
+  public func decodeAnyTool(forKey key: K) throws -> any Tool {
+    let toolName = try decode(String.self, forKey: key)
+    guard let toolsPlugin = try superDecoder().userInfo[toolsPluginKey] as? ToolsPlugin else {
+      throw DecodingError.dataCorruptedError(
+        forKey: key,
+        in: self,
+        debugDescription: "The tools plugin was not set in the decoder. Make sure to call `decoder.userInfo.set(toolPlugin:)` before decoding tools.")
+    }
+    guard let tool = toolsPlugin.tool(named: toolName) else {
+      throw DecodingError.dataCorruptedError(forKey: key, in: self, debugDescription: "Tool \(toolName) not found")
+    }
+    return tool
+  }
+}
+
+extension KeyedEncodingContainer {
+  public mutating func encode(_ tool: some Tool, forKey key: K) throws {
+    try encode(tool.name, forKey: key)
+  }
+}
+
+extension [CodingUserInfoKey: Any] {
+  public mutating func set(toolPlugin: ToolsPlugin) {
+    self[toolsPluginKey] = toolPlugin
   }
 }
