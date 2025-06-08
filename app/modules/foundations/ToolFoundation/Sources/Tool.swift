@@ -38,36 +38,6 @@ extension Tool {
   public typealias Input = Use.Input
   public typealias Output = Use.Output
 
-  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-//  public func use(toolUseId: String, input: Data, isInputComplete _: Bool, context: ToolExecutionContext) throws -> Use {
-  ////        let input = try JSONDecoder().decode(Input.self, from: input)
-//    try Use(toolUseId: toolUseId, input: input, callingTool: self as! Self.Use.SomeTool, context: context, status: nil)
-//  }
-
-//  /// Re-create the tool use from its serialization.
-//  public func deserialize(
-//    toolUseId: String,
-//    input: Data,
-//    context: ToolExecutionContext,
-//    status: ToolUseExecutionStatus<Data>)
-//    throws -> Use
-//  {
-  ////        let input = try JSONDecoder().decode(Input.self, from: input)
-//    try Use(
-//      toolUseId: toolUseId,
-//      input: input,
-//      callingTool: self as! Self.Use.SomeTool,
-//      context: context,
-//      status: status.map { try JSONDecoder().decode(Output.self, from: $0) })
-//  }
-
-  ///    public func deserializeToolUse(from data: Data) throws -> Use {
-  ///        try JSONDecoder().decode(Use.self, from: data)
-  ///    }
-  func decode<K: CodingKey>(from container: KeyedDecodingContainer<K>, forKey key: K) throws -> Use {
-    try container.decode(Use.self, forKey: key)
-  }
-
 }
 
 // MARK: - ToolUse
@@ -91,16 +61,11 @@ public protocol ToolUse: Sendable, Codable {
   var callingTool: SomeTool { get }
   /// The status of the execution of the tool use.
   var status: Status { get }
-//  /// The context in which the tool use is being executed.
-//  var context: ToolExecutionContext { get }
-//  /// Create a new instance of the tool use.
-//  init(toolUseId: String, input: Data, callingTool: SomeTool, context: ToolExecutionContext, status: Status.Element?) throws
   /// Update the input with the updated one.
   /// Note: the tool can expect this to be called only if `canInputBeStreamed` is true.
   /// - Parameters:
   ///   - inputUpdate: The update input containing all the data since it started streaming.
   ///   - isLast: Whether this is the last chunk of the input.
-
   func receive(inputUpdate: Data, isLast: Bool) throws
   /// Start the execution of the tool use. The execution should not start before this method is called.
   /// Note: the tool can expect this to be called after all the input has been received, and to not receive later calls to `receive(inputUpdate:)`.
@@ -110,10 +75,6 @@ public protocol ToolUse: Sendable, Codable {
 }
 
 extension ToolUse {
-//
-//  public init(toolUseId: String, input: Data, callingTool: SomeTool, context: ToolExecutionContext) throws {
-//    try self.init(toolUseId: toolUseId, input: input, callingTool: callingTool, context: context, status: nil)
-//  }
 
   public var toolName: String { callingTool.name }
 
@@ -144,10 +105,6 @@ extension ToolUse {
     guard case .completed(let result) = status.value else { return nil }
     return try? result.get()
   }
-//
-//  public var currentStatus: ToolUseExecutionStatus<Output> {
-//    status.value
-//  }
 
 }
 
@@ -206,46 +163,6 @@ public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
   case completed(Result<Output, Error>)
 
 }
-
-// extension ToolUseExecutionStatus {
-//  public var output: Output? {
-//    switch self {
-//    case .completed(let result):
-//      switch result {
-//      case .success(let output):
-//        output
-//      case .failure:
-//        nil
-//      }
-//
-//    default:
-//      nil
-//    }
-//  }
-//
-//  public func map<NewOutput: Codable & Sendable>(_ map: (Output) throws -> NewOutput) rethrows
-//    -> ToolUseExecutionStatus<NewOutput>
-//  {
-//    switch self {
-//    case .pendingApproval:
-//      .pendingApproval
-//    case .rejected(let reason):
-//      .rejected(reason: reason)
-//    case .notStarted:
-//      .notStarted
-//    case .running:
-//      .running
-//    case .completed(let result):
-//      switch result {
-//      case .failure(let error):
-//        .completed(.failure(error))
-//      case .success(let output):
-//        try .completed(.success(map(output)))
-//      }
-//    }
-//  }
-//
-// }
 
 public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Sendable {
   case streaming(_ input: StreamingInput)

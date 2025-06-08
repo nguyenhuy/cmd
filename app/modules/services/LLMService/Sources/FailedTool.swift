@@ -73,11 +73,23 @@ struct FailedTool: NonStreamableTool {
 }
 
 extension FailedToolUse {
-  public init(from _: Decoder) throws {
-    fatalError("not implemented")
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    toolUseId = try container.decode(String.self, forKey: .toolUseId)
+    callingTool = try container.decode(FailedTool.self, forKey: .tool)
+    errorDescription = try container.decode(String.self, forKey: .errorDescription)
   }
 
-  public func encode(to _: Encoder) throws {
-    fatalError("not implemented")
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(toolUseId, forKey: .toolUseId)
+    try container.encode(callingTool, forKey: .tool)
+    try container.encode(errorDescription, forKey: .errorDescription)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case toolUseId
+    case tool
+    case errorDescription
   }
 }

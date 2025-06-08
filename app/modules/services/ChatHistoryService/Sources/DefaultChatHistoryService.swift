@@ -265,18 +265,6 @@ extension Decoder {
       return loader
     }
   }
-
-//  var toolsPlugin: ToolsPlugin {
-//    get throws {
-//      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
-//        throw DecodingError.dataCorrupted(
-//          DecodingError.Context(
-//            codingPath: codingPath,
-//            debugDescription: "ToolsPlugin not found in userInfo"))
-//      }
-//      return plugin
-//    }
-//  }
 }
 
 extension Encoder {
@@ -292,18 +280,6 @@ extension Encoder {
       return loader
     }
   }
-
-//  var toolsPlugin: ToolsPlugin {
-//    get throws {
-//      guard let plugin = userInfo[AttachmentSerializer.toolsPluginKey] as? ToolsPlugin else {
-//        throw DecodingError.dataCorrupted(
-//          DecodingError.Context(
-//            codingPath: codingPath,
-//            debugDescription: "ToolsPlugin not found in userInfo"))
-//      }
-//      return plugin
-//    }
-//  }
 }
 
 extension String {

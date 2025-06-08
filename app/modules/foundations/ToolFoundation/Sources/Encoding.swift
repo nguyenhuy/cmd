@@ -5,6 +5,14 @@ import AppFoundation
 
 private let toolsPluginKey = CodingUserInfoKey(rawValue: "toolsPlugin")!
 
+extension Tool {
+
+  func decode<K: CodingKey>(from container: KeyedDecodingContainer<K>, forKey key: K) throws -> Use {
+    try container.decode(Use.self, forKey: key)
+  }
+
+}
+
 extension KeyedDecodingContainer {
   /// Decodes an array, dropping values that failed to decode.
   /// This can be useful to decode streamed input, where the last value in the array was truncated in a way that makes decoding impossible.

@@ -39,54 +39,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
       messages: [])
   }
 
-//  convenience init(from persistentModel: ChatThreadModel) async {
-//    // Convert persistent messages to view models
-//    var loadedMessages: [ChatMessageViewModel] = []
-//    for persistentMessage in persistentModel.messages {
-//      var messageContents: [ChatMessageContent] = []
-//
-//      for persistentContent in persistentMessage.contents {
-//        if let content = ChatMessageContent.from(persistentModel: persistentContent) {
-//          messageContents.append(content)
-//        }
-//      }
-//
-//      let message = ChatMessageViewModel.from(persistentModel: persistentMessage, contents: messageContents)
-//      loadedMessages.append(message)
-//    }
-//
-//    // Convert persistent events to view models
-//    var loadedEvents: [ChatEvent] = []
-//    for persistentEvent in persistentModel.events {
-//      if let event = ChatEvent.from(persistentModel: persistentEvent) {
-//        loadedEvents.append(event)
-//      }
-//    }
-//
-//    // Create project info if available
-//    let projectInfo: SelectedProjectInfo? =
-//      if
-//        let projectPath = persistentModel.projectPath,
-//        let projectRootPath = persistentModel.projectRootPath
-//      {
-//        SelectedProjectInfo(
-//          path: URL(filePath: projectPath),
-//          dirPath: URL(filePath: projectRootPath))
-//      } else {
-//        nil
-//      }
-//
-//    self.init(
-//      id: persistentModel.id,
-//      name: persistentModel.name,
-//      messages: loadedMessages,
-//      events: loadedEvents,
-//      projectInfo: projectInfo)
-//
-//    // Reset change tracking since this is loaded data
-//    resetChangeTracking()
-//  }
-
   init(
     id: UUID,
     name: String,
