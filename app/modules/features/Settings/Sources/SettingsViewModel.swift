@@ -151,7 +151,7 @@ public final class SettingsViewModel {
       return reasoningModels
     }
     set {
-      let oldValue = reasoningModels
+      let oldValue = settings.reasoningModels
       for (model, provider) in newValue {
         if oldValue[model] != provider {
           settings.reasoningModels[model] = provider
