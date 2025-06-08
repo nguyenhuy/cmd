@@ -57,7 +57,7 @@ public struct commandApp: App {
           windowsViewModel.handle(.closeSidePanel)
         }
         .keyboardShortcut(.escape, modifiers: .command)
-      } else if windowsViewModel.state.isOnbardingVisible {
+      } else if windowsViewModel.state.isOnboardingVisible {
         Button("Show onboarding") {
           windowsViewModel.handle(.showApplication)
         }
