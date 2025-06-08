@@ -112,6 +112,10 @@ public final class SearchFilesTool: NonStreamableTool {
     "Search Files"
   }
 
+  public var shortDescription: String {
+    "Performs regex search across files in a directory, returning matches with context."
+  }
+
   public var inputSchema: JSON {
     .object([
       "type": .string("object"),

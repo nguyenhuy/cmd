@@ -80,6 +80,10 @@ struct FailedTool: NonStreamableTool {
     "Failed tool"
   }
 
+  var shortDescription: String {
+    "Placeholder for tools that failed to execute properly."
+  }
+
   var description: String { "Failed tool" }
   var inputSchema: JSON { .object([:]) }
 

@@ -83,6 +83,10 @@ public final class AskFollowUpTool: NonStreamableTool {
     "Follow Up"
   }
 
+  public var shortDescription: String {
+    "Asks the user a clarifying question with suggested follow-up options."
+  }
+
   public var inputSchema: JSON {
     .object([
       "type": .string("object"),

@@ -311,7 +311,7 @@ public final class EditFilesTool: Tool {
 
   private let shouldAutoApply: Bool
 
-  private var shortDescription: String {
+  public var shortDescription: String {
     if shouldAutoApply {
       "Replace existing code using search/replace blocks in a list of files and create new files."
     } else {

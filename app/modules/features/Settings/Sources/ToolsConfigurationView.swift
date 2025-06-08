@@ -49,15 +49,14 @@ private struct ToolRow: View {
   let onToggle: (Bool) -> Void
 
   var body: some View {
-    HStack(spacing: 12) {
+    HStack(alignment: .top, spacing: 12) {
       VStack(alignment: .leading, spacing: 4) {
         Text(tool.displayName)
           .font(.system(size: 13, weight: .medium))
-        if !tool.description.isEmpty {
-          Text(tool.description)
+        if !tool.shortDescription.isEmpty {
+          Text(tool.shortDescription)
             .font(.system(size: 11))
             .foregroundColor(.secondary)
-            .lineLimit(2)
         }
       }
       Spacer()
