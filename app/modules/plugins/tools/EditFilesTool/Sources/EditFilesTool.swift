@@ -43,7 +43,7 @@ public final class EditFilesTool: Tool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable {
+    public struct Input: Codable, Sendable, Equatable {
       init(files: [FileChange]) {
         self.files = files
       }
@@ -54,8 +54,8 @@ public final class EditFilesTool: Tool {
         files = try container.resilientlyDecode([FileChange].self, forKey: "files")
       }
 
-      public struct FileChange: Codable, Sendable {
-        public struct Change: Codable, Sendable {
+      public struct FileChange: Codable, Sendable, Equatable {
+        public struct Change: Codable, Sendable, Equatable {
           public let search: String
           public let replace: String
 
@@ -90,7 +90,7 @@ public final class EditFilesTool: Tool {
       }
     }
 
-    public struct Output: Codable, Sendable {
+    public struct Output: Codable, Sendable, Equatable {
       public let result: JSON
     }
 
@@ -140,6 +140,8 @@ public final class EditFilesTool: Tool {
 
     let isInputComplete: Atomic<Bool>
 
+    let context: ToolExecutionContext
+
     @MainActor
     var viewModel: ToolUseViewModel {
       if let _viewModel {
@@ -159,7 +161,6 @@ public final class EditFilesTool: Tool {
     @MainActor private var _viewModel: ToolUseViewModel?
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-    private let context: ToolExecutionContext
 
   }
 

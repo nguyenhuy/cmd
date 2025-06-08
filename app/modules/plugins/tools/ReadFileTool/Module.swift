@@ -13,4 +13,5 @@ Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ])

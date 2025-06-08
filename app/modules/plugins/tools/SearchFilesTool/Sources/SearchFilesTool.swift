@@ -40,7 +40,7 @@ public final class SearchFilesTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable {
+    public struct Input: Codable, Sendable, Equatable {
       public let directoryPath: String
       public let regex: String
       public let filePattern: String?
@@ -93,10 +93,11 @@ public final class SearchFilesTool: NonStreamableTool {
       updateStatus.yield(.rejected(reason: reason))
     }
 
+    let context: ToolExecutionContext
+
     @Dependency(\.server) private var server
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-    private let context: ToolExecutionContext
 
   }
 

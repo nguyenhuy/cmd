@@ -188,6 +188,7 @@ targets.append(contentsOf: Target.module(
     "LSTool",
     "ServerServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ],
   path: "./plugins/tools/AskFollowUpTool"))
 
@@ -206,6 +207,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ],
   path: "./plugins/tools/ReadFileTool"))
 
@@ -221,7 +223,11 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
     "XcodeControllerServiceInterface",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "SwiftTesting",
+    "ToolFoundation",
+    "XcodeControllerServiceInterface",
+  ],
   path: "./plugins/tools/BuildTool"))
 
 targets.append(contentsOf: Target.module(
@@ -237,6 +243,7 @@ targets.append(contentsOf: Target.module(
   testDependencies: [
     "ServerServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ],
   path: "./plugins/tools/LSTool"))
 
@@ -258,6 +265,7 @@ targets.append(contentsOf: Target.module(
     "ServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ],
   path: "./plugins/tools/ExecuteCommandTool"))
 
@@ -303,6 +311,7 @@ targets.append(contentsOf: Target.module(
   testDependencies: [
     "ServerServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ],
   path: "./plugins/tools/SearchFilesTool"))
 
@@ -376,6 +385,7 @@ targets.append(contentsOf: Target.module(
     "AccessibilityFoundation",
     "AppEventServiceInterface",
     "ChatAppEvents",
+    "ChatFeatureInterface",
     "ChatFoundation",
     "ChatHistoryServiceInterface",
     "CheckpointServiceInterface",
@@ -643,7 +653,12 @@ targets.append(contentsOf: Target.module(
     "ChatFeatureInterface",
     "ThreadSafe",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "AppFoundation",
+    "ChatFeatureInterface",
+    "ConcurrencyFoundation",
+    "SwiftTesting",
+  ],
   path: "./serviceInterfaces/ChatHistoryServiceInterface"))
 
 targets.append(contentsOf: Target.module(
@@ -987,7 +1002,15 @@ targets.append(contentsOf: Target.module(
     "LoggingServiceInterface",
     "ToolFoundation",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "ChatFeatureInterface",
+    "ChatHistoryServiceInterface",
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "SwiftTesting",
+    "ToolFoundation",
+  ],
   path: "./services/ChatHistoryService"))
 
 let package = Package(

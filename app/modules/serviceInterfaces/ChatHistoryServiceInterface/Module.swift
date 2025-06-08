@@ -5,4 +5,9 @@ Target.module(
     "ChatFeatureInterface",
     "ThreadSafe",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "AppFoundation",
+    "ChatFeatureInterface",
+    "ConcurrencyFoundation",
+    "SwiftTesting",
+  ])

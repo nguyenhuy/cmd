@@ -13,13 +13,13 @@ public final class MockChatHistoryService: ChatHistoryService {
     self.chatThreads = chatThreads
   }
 
-  public var onSaveChatThread: ((ChatThreadModel) async throws -> Void)?
+  public var onSaveChatThread: (@Sendable (ChatThreadModel) async throws -> Void)?
 
-  public var onLoadLastChatThreads: ((Int, Int) async throws -> [ChatThreadModelMetadata])?
+  public var onLoadLastChatThreads: (@Sendable (Int, Int) async throws -> [ChatThreadModelMetadata])?
 
-  public var onLoadChatThread: ((UUID) async throws -> ChatThreadModel?)?
+  public var onLoadChatThread: (@Sendable (UUID) async throws -> ChatThreadModel?)?
 
-  public var onDeleteChatThread: ((UUID) async throws -> Void)?
+  public var onDeleteChatThread: (@Sendable (UUID) async throws -> Void)?
 
   public func save(chatThread: ChatThreadModel) async throws {
     try await onSaveChatThread?(chatThread)

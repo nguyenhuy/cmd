@@ -48,14 +48,14 @@ public final class ExecuteCommandTool: NonStreamableTool {
       setStderrStream = { stream in setStderr(.success(stream)) }
     }
 
-    public struct Input: Codable, Sendable {
+    public struct Input: Codable, Sendable, Equatable {
       public let command: String
       public let cwd: String?
       public let canModifySourceFiles: Bool
       public let canModifyDerivedFiles: Bool
     }
 
-    public struct Output: Codable, Sendable {
+    public struct Output: Codable, Sendable, Equatable {
       public let output: String?
       public let exitCode: Int32
     }
@@ -114,6 +114,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
     let setStdoutStream: (BroadcastedStream<Data>) -> Void
     let setStderrStream: (BroadcastedStream<Data>) -> Void
 
+    let context: ToolExecutionContext
+
     func killRunningProcess() async {
       commandWasManuallyInterrupted = true
       await runningProcess?.tearDown()
@@ -124,7 +126,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     @Dependency(\.shellService) private var shellService
 
-    private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }

@@ -12,4 +12,5 @@ Target.module(
     "LSTool",
     "ServerServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ])

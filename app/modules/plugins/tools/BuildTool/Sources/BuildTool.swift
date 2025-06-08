@@ -39,7 +39,7 @@ public final class BuildTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable {
+    public struct Input: Codable, Sendable, Equatable {
       public let `for`: BuildType
 
       public init(`for`: BuildType) {
@@ -47,7 +47,7 @@ public final class BuildTool: NonStreamableTool {
       }
     }
 
-    public struct Output: Codable, Sendable {
+    public struct Output: Codable, Sendable, Equatable {
       let buildResult: BuildSection
       let isSuccess: Bool
     }
@@ -88,9 +88,10 @@ public final class BuildTool: NonStreamableTool {
       updateStatus.yield(.rejected(reason: reason))
     }
 
+    let context: ToolExecutionContext
+
     @Dependency(\.xcodeController) private var xcodeController
 
-    private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }

@@ -38,16 +38,16 @@ public final class LSTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable {
+    public struct Input: Codable, Sendable, Equatable {
       public let path: String
       public let recursive: Bool?
     }
 
-    public struct Output: Codable, Sendable {
+    public struct Output: Codable, Sendable, Equatable {
       public let files: [File]
       /// Whether the output was truncated because there are too many files to reasonably return.
       public let hasMore: Bool
-      public struct File: Codable, Sendable {
+      public struct File: Codable, Sendable, Equatable {
         /// The full path of the file
         public let path: String
         /// The attributes of the file, e.g. like `drwxr-xr-x`.
@@ -96,8 +96,9 @@ public final class LSTool: NonStreamableTool {
 
     let directoryPath: URL
 
+    let context: ToolExecutionContext
+
     @Dependency(\.server) private var server
-    private let context: ToolExecutionContext
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 

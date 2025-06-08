@@ -57,7 +57,7 @@ public struct BuildError: Error {
 
 // MARK: - BuildSection
 
-public struct BuildSection: Codable, Sendable {
+public struct BuildSection: Codable, Sendable, Equatable {
   public init(title: String, messages: [BuildMessage], subSections: [BuildSection], duration: TimeInterval) {
     self.title = title
     self.messages = messages
@@ -89,20 +89,20 @@ public struct BuildSection: Codable, Sendable {
 
 // MARK: - BuildMessage
 
-public struct BuildMessage: Codable, Sendable {
+public struct BuildMessage: Codable, Sendable, Equatable {
   public init(message: String, severity: Severity, location: Location?) {
     self.message = message
     self.severity = severity
     self.location = location
   }
 
-  public enum Severity: Int, Codable, Sendable, RawRepresentable {
+  public enum Severity: Int, Codable, Sendable, RawRepresentable, Equatable {
     case info = 0
     case warning = 1
     case error = 2
   }
 
-  public struct Location: Codable, Sendable {
+  public struct Location: Codable, Sendable, Equatable {
     public init(
       file: URL,
       startingLineNumber: Int?,

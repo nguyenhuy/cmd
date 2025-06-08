@@ -1,6 +1,7 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import ChatFeatureInterface
 import ChatHistoryServiceInterface
 import Foundation
 import SwiftTesting
@@ -19,7 +20,7 @@ struct SimplePersistenceTests {
     let persistentModel = originalTab.persistentModel
 
     #expect(persistentModel.name == "Test Tab")
-    #expect(persistentModel.id == originalTab.id.uuidString)
+    #expect(persistentModel.id == originalTab.id)
 
     // Test ChatThreadModel to ChatTabViewModel conversion
     let loadedTab = await ChatTabViewModel(from: persistentModel)

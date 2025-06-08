@@ -73,3 +73,18 @@ public func testEncodingDecoding(_ value: some Codable & Equatable, _ json: Stri
   try testEncoding(value, json)
   try testDecoding(value, json)
 }
+
+/// Test that encoding the value gives the expected json, and that decoding the json gives the expected value.
+public func testDecodingEncoding<T: Codable>(_ value: T, _ json: String) throws {
+  // Validate that encoding the value gives the expected json
+  try testEncoding(value, json)
+
+  // Validate that decoding the json and re-encoding it gives the same json
+  let decoded = try JSONDecoder().decode(T.self, from: json.utf8Data)
+  let encoded = try JSONEncoder().encode(decoded)
+
+  let value = encoded.jsonString()
+  let expected = json.utf8Data.jsonString()
+
+  #expect(expected == value)
+}

@@ -11,4 +11,12 @@ Target.module(
     "LoggingServiceInterface",
     "ToolFoundation",
   ],
-  testDependencies: [])
+  testDependencies: [
+    "ChatFeatureInterface",
+    "ChatHistoryServiceInterface",
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "SwiftTesting",
+    "ToolFoundation",
+  ])

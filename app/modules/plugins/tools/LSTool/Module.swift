@@ -11,4 +11,5 @@ Target.module(
   testDependencies: [
     "ServerServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ])
