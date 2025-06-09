@@ -5,10 +5,40 @@
 ## AI, in Xcode
 
 `cmd` integrates in your existing workflows with Xcode. Not need for another IDE. `⌘`+`I` brings the assistant, `⌘`+`␛` backgrounds it.
-<img align="center" height="300" src="./docs/images/sidebar.png"/>
+
+
+<img align="center" width="100%" src="./docs/images/sidebar.png"/>
 
 ## Delegate your work
-`cmd` autonomously handles various tasks 
+`cmd` autonomously handles various tasks. From new code generation, to bug fixing, to refactoring, to understanding new codebases, it can help you in many aspects of your job.
 
 ## You're in control
-`cmd` is 
+- Use any LLM provider of your chosing (if your preferred provider is not yet supported, open an issue and we'll add support)
+- Your data is shared with no 3rd party other than the LLM provider you chose. All processing is local
+- `cmd` is free to use. No murky pricing or misaligned incentives. You bring your own API keys and get the most out of them
+- fine grained permissions about what agents can do autonomously
+- `cmd` is open source with an Apache 2.0 license
+
+## Installation
+- Download [the latest release](./releases)
+- Extract the app, move it to `Applications`
+- Open the app, and follow the quick setup (Accessibility permission, Bring your own API key)
+- Enjoy!
+
+## Roadmap & contributions
+[We welcome contributions](./contributing.md)! Help us make your work more enjoyable.
+
+Sharing feedback or opening a well documented issue is also greatly helpful.
+
+`cmd` works well already, and there's a lot we want to do in the short term:
+- MCP integration
+- Web search
+- Auto context condensing
+- Visiblity in API cost
+- Task / sub-task orchestration
+- Increase LLM provider support
+- Integration with UI previews
+- tools refinement
+- Misc UI & UX improvements
+
+and much more! `cmd` is early stage, and very actively develop.
