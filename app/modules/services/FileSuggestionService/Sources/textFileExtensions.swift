@@ -1,5 +1,5 @@
-// Copyright command. All rights reserved.
-// Licensed under the XXX License. See License.txt in the project root for license information.
+// Copyright cmd app, Inc. All rights reserved.
+// Licensed under the MIT License. See License.txt in the project root for license information.
 
 /// A list that should cover most extensions for files that have text content.
 /// Obtained from looking at all the extensions supported in VSCode.

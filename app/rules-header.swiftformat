@@ -4,7 +4,7 @@
 --exclude Carthage,Pods,.build,**/Module.swift,**/Package.swift,build
 
 # options
---header Copyright command. All rights reserved.\nLicensed under the XXX License. See License.txt in the project root for license information.
+--header Copyright cmd app, Inc. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.
 
 
 # rules
