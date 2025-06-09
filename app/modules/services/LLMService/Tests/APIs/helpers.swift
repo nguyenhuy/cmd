@@ -105,21 +105,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
       status = .Just(.completed(output))
     }
 
-    init(from decoder: Decoder) throws {
-      let container = try decoder.container(keyedBy: CodingKeys.self)
-      toolUseId = try container.decode(String.self, forKey: .toolUseId)
-      input = try container.decode(Input.self, forKey: .input)
-      isReadonly = try container.decode(Bool.self, forKey: .isReadonly)
-
-      // Set non-decodable properties to test values
-      callingTool = TestTool(name: "decoded", output: .failure(AppError("test")))
-      output = .failure(AppError("test"))
-      status = .Just(.completed(.failure(AppError("test"))))
-    }
-
-    /// Manual Codable implementation for testing
-    enum CodingKeys: String, CodingKey {
-      case toolUseId, input, isReadonly
+    init(from _: Decoder) throws {
+      fatalError("Decoding not implemented for TestTool.Use")
     }
 
     let callingTool: TestTool<Input, Output>
@@ -134,11 +121,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
 
     func reject(reason _: String?) { }
 
-    func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(toolUseId, forKey: .toolUseId)
-      try container.encode(input, forKey: .input)
-      try container.encode(isReadonly, forKey: .isReadonly)
+    func encode(to _: Encoder) throws {
+      fatalError("Decoding not implemented for TestTool.Use")
     }
 
   }
@@ -202,26 +186,8 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
       status = .Just(.completed(output))
     }
 
-    init(from decoder: Decoder) throws {
-      let container = try decoder.container(keyedBy: CodingKeys.self)
-
-      // Set properties directly
-      toolUseId = try container.decode(String.self, forKey: .toolUseId)
-      input = try container.decode(Input.self, forKey: .input)
-      isReadonly = try container.decode(Bool.self, forKey: .isReadonly)
-      hasReceivedAllInput = try container.decode(Bool.self, forKey: .hasReceivedAllInput)
-      receivedInputs = try container.decode([Input].self, forKey: .receivedInputs)
-
-      // Set non-decodable properties to test values
-      callingTool = TestStreamingTool(name: "decoded", output: .failure(AppError("test")))
-      output = .failure(AppError("test"))
-      status = .Just(.completed(.failure(AppError("test"))))
-      onReceiveInput = { }
-    }
-
-    /// Manual Codable implementation for testing
-    enum CodingKeys: String, CodingKey {
-      case toolUseId, input, isReadonly, hasReceivedAllInput, receivedInputs
+    init(from _: Decoder) throws {
+      fatalError("Decoding not implemented for TestStreamingTool.Use")
     }
 
     let callingTool: TestStreamingTool<Input, Output>
@@ -244,13 +210,8 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
 
     func reject(reason _: String?) { }
 
-    func encode(to encoder: Encoder) throws {
-      var container = encoder.container(keyedBy: CodingKeys.self)
-      try container.encode(toolUseId, forKey: .toolUseId)
-      try container.encode(input, forKey: .input)
-      try container.encode(isReadonly, forKey: .isReadonly)
-      try container.encode(hasReceivedAllInput, forKey: .hasReceivedAllInput)
-      try container.encode(receivedInputs, forKey: .receivedInputs)
+    func encode(to _: Encoder) throws {
+      fatalError("Decoding not implemented for TestStreamingTool.Use")
     }
 
   }

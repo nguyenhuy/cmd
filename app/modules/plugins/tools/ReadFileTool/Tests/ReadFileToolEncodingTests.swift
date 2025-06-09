@@ -21,14 +21,15 @@ struct ReadFileToolEncodingTests {
       lineRange: nil)
     let use = tool.use(toolUseId: "read-123", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "read_file",
+        "context": {},
         "input": {
           "path": "/src/main.swift"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "read-123"
       }
@@ -44,9 +45,10 @@ struct ReadFileToolEncodingTests {
       lineRange: lineRange)
     let use = tool.use(toolUseId: "read-range-456", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "read_file",
+        "context": {},
         "input": {
           "lineRange": {
             "end": 15,
@@ -55,7 +57,7 @@ struct ReadFileToolEncodingTests {
           "path": "/test/file.py"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "read-range-456"
       }
@@ -71,9 +73,10 @@ struct ReadFileToolEncodingTests {
       lineRange: lineRange)
     let use = tool.use(toolUseId: "read-single-789", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "read_file",
+        "context": {},
         "input": {
           "lineRange": {
             "end": 25,
@@ -82,7 +85,7 @@ struct ReadFileToolEncodingTests {
           "path": "/config/settings.json"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "read-single-789"
       }
@@ -93,3 +96,22 @@ struct ReadFileToolEncodingTests {
 private let toolExecutionContext = ToolExecutionContext(
   project: nil,
   projectRoot: nil)
+
+private func testDecodingEncodingWithTool(
+  of value: some Codable,
+  tool: any Tool,
+  _ json: String)
+  throws
+{
+  // Create decoder with tool plugin
+  let toolsPlugin = ToolsPlugin()
+  toolsPlugin.plugIn(tool: tool)
+  let decoder = JSONDecoder()
+  decoder.userInfo.set(toolPlugin: toolsPlugin)
+
+  // Create encoder
+  let encoder = JSONEncoder()
+
+  // Use the test function with proper decoder/encoder
+  try testDecodingEncoding(of: value, json, decoder: decoder, encoder: encoder)
+}

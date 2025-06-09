@@ -10,7 +10,8 @@ extension EditFilesTool.Use {
 
     let callingTool = try container.decode(EditFilesTool.self, forKey: .callingTool)
     let toolUseId = try container.decode(String.self, forKey: .toolUseId)
-    let inputData = try container.decode(Data.self, forKey: .inputData)
+    let input = try container.decode(Input.self, forKey: .inputData)
+    let inputData = try JSONEncoder().encode(input)
     let isInputComplete = try container.decode(Bool.self, forKey: .isInputComplete)
     let context = try container.decode(ToolExecutionContext.self, forKey: .context)
     let statusValue = try container.decode(ToolUseExecutionStatus<Output>.self, forKey: .status)
@@ -29,10 +30,7 @@ extension EditFilesTool.Use {
 
     try container.encode(callingTool, forKey: .callingTool)
     try container.encode(toolUseId, forKey: .toolUseId)
-
-    // Encode the input as Data
-    let inputData = try JSONEncoder().encode(input)
-    try container.encode(inputData, forKey: .inputData)
+    try container.encode(input, forKey: .inputData)
 
     try container.encode(isInputComplete.value, forKey: .isInputComplete)
     try container.encode(context, forKey: .context)

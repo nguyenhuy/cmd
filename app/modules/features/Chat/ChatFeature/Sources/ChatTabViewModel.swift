@@ -90,7 +90,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
   var name: String {
     didSet {
       if name != oldValue {
-        markAsModified()
+        hasChangedSinceLastSave = true
       }
     }
   }
@@ -102,7 +102,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
   func resetChangeTracking() {
     lastSavedMessageCount = messages.count
     lastSavedEventCount = events.count
-    isTabModified = false
+    hasChangedSinceLastSave = false
   }
 
   @MainActor
@@ -197,7 +197,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
       streamingTask = nil
 
       // Save the conversation after successful completion
-      await saveToDatabase()
+      await persistThread()
     } catch {
       defaultLogger.error("Error sending message", error)
       streamingTask = nil
@@ -207,7 +207,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
       }
 
       // Save even after error to preserve the failure state
-      await saveToDatabase()
+      await persistThread()
     }
   }
 
@@ -223,14 +223,15 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   // MARK: - Persistence Methods
 
-  func saveToDatabase() async {
+  /// Persist the current chat thread to the chat history service, so that it can be reloaded at the next app launch.
+  func persistThread() async {
     @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
 
     // Check if there are any changes to save
     let hasNewMessages = messages.count > lastSavedMessageCount
     let hasNewEvents = events.count > lastSavedEventCount
 
-    if !isTabModified, !hasNewMessages, !hasNewEvents {
+    if !hasChangedSinceLastSave, !hasNewMessages, !hasNewEvents {
       // No changes to save
       return
     }
@@ -244,7 +245,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
       // Update tracking variables
       lastSavedMessageCount = messages.count
       lastSavedEventCount = events.count
-      isTabModified = false
+      hasChangedSinceLastSave = false
     } catch {
       defaultLogger.error("Failed to save chat tab: \(name)", error)
     }
@@ -254,7 +255,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   private var lastSavedMessageCount = 0
   private var lastSavedEventCount = 0
-  private var isTabModified = true
+  /// Whether the chat thread has new changes to save.
+  private var hasChangedSinceLastSave = true
 
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
 
@@ -280,10 +282,6 @@ final class ChatTabViewModel: Identifiable, Equatable {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
-  }
-
-  private func markAsModified() {
-    isTabModified = true
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {

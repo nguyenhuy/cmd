@@ -31,14 +31,31 @@ struct EditFilesToolEncodingTests {
     let data = try JSONEncoder().encode(input)
     let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "edit_files",
-        "isInputComplete": true,
-        "status": {
-          "status": "pendingApproval"
+        "callingTool" : "suggest_files_changes",
+        "context" : {
+
         },
-        "toolUseId": "edit-123"
+        "inputData" : {
+          "files" : [
+            {
+              "changes" : [
+                {
+                  "replace" : "# New Title",
+                  "search" : "# Old Title"
+                }
+              ],
+              "isNewFile" : false,
+              "path" : "\\/project\\/README.md"
+            }
+          ]
+        },
+        "isInputComplete" : true,
+        "status" : {
+          "status" : "pendingApproval"
+        },
+        "toolUseId" : "edit-123"
       }
       """)
   }
@@ -60,14 +77,31 @@ struct EditFilesToolEncodingTests {
     let data = try JSONEncoder().encode(input)
     let use = try tool.use(toolUseId: "edit-new-456", input: data, isInputComplete: true, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "edit_files",
-        "isInputComplete": true,
-        "status": {
-          "status": "pendingApproval"
+        "callingTool" : "suggest_files_changes",
+        "context" : {
+
         },
-        "toolUseId": "edit-new-456"
+        "inputData" : {
+          "files" : [
+            {
+              "changes" : [
+                {
+                  "replace" : "{\\"environment\\": \\"production\\"}",
+                  "search" : ""
+                }
+              ],
+              "isNewFile" : true,
+              "path" : "/config/settings.json"
+            }
+          ]
+        },
+        "isInputComplete" : true,
+        "status" : {
+          "status" : "pendingApproval"
+        },
+        "toolUseId" : "edit-new-456"
       }
       """)
   }
@@ -99,14 +133,41 @@ struct EditFilesToolEncodingTests {
     let data = try JSONEncoder().encode(input)
     let use = try tool.use(toolUseId: "edit-multi-789", input: data, isInputComplete: true, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
-        "callingTool": "edit_files",
-        "isInputComplete": true,
-        "status": {
-          "status": "pendingApproval"
+        "callingTool" : "suggest_files_changes",
+        "context" : {
+
         },
-        "toolUseId": "edit-multi-789"
+        "inputData" : {
+          "files" : [
+            {
+              "changes" : [
+                {
+                  "replace" : "let API_URL = \\"api.example.com\\"",
+                  "search" : "let API_URL = \\"dev.example.com\\""
+                }
+              ],
+              "isNewFile" : false,
+              "path" : "/src/constants.swift"
+            },
+            {
+              "changes" : [
+                {
+                  "replace" : "import XCTest\\n\\nclass NewTest: XCTestCase {\\n    \\/\\/ Test implementation\\n}",
+                  "search" : ""
+                }
+              ],
+              "isNewFile" : true,
+              "path" : "/tests/NewTest.swift"
+            }
+          ]
+        },
+        "isInputComplete" : true,
+        "status" : {
+          "status" : "pendingApproval"
+        },
+        "toolUseId" : "edit-multi-789"
       }
       """)
   }
@@ -115,3 +176,22 @@ struct EditFilesToolEncodingTests {
 private let toolExecutionContext = ToolExecutionContext(
   project: nil,
   projectRoot: nil)
+
+private func testDecodingEncodingWithTool(
+  of value: some Codable,
+  tool: any Tool,
+  _ json: String)
+  throws
+{
+  // Create decoder with tool plugin
+  let toolsPlugin = ToolsPlugin()
+  toolsPlugin.plugIn(tool: tool)
+  let decoder = JSONDecoder()
+  decoder.userInfo.set(toolPlugin: toolsPlugin)
+
+  // Create encoder
+  let encoder = JSONEncoder()
+
+  // Use the test function with proper decoder/encoder
+  try testDecodingEncoding(of: value, json, decoder: decoder, encoder: encoder)
+}

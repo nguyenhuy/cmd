@@ -242,32 +242,6 @@ extension ChatMessageReasoningContentModel: Codable {
 
 }
 
-// extension ChatMessageToolUseContentModel.ToolUseModel: Codable {
-//  public init(from decoder: any Decoder) throws {
-//    let container = try decoder.container(keyedBy: CodingKeys.self)
-//    try self.init(
-//      toolUseId: container.decode(String.self, forKey: .toolUseId),
-//      input: container.decode(Data.self, forKey: .input),
-//      callingToolName: container.decode(String.self, forKey: .callingToolName),
-//      context: container.decode(ToolExecutionContext.self, forKey: .context),
-//      status: container.decode(ToolUseExecutionStatus<Data>.self, forKey: .status))
-//  }
-//
-//  public func encode(to encoder: any Encoder) throws {
-//    var container = encoder.container(keyedBy: CodingKeys.self)
-//    try container.encode(toolUseId, forKey: .toolUseId)
-//    try container.encode(input, forKey: .input)
-//    try container.encode(callingToolName, forKey: .callingToolName)
-//    try container.encode(context, forKey: .context)
-//    try container.encode(status, forKey: .status)
-//  }
-//
-//  enum CodingKeys: String, CodingKey {
-//    case toolUseId, input, callingToolName, context, status
-//  }
-//
-// }
-
 // MARK: - ToolUseExecutionStatus + Codable
 
 extension ToolUseExecutionStatus: Codable where Output: Codable {

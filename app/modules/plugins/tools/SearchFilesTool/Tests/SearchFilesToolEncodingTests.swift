@@ -22,9 +22,10 @@ struct SearchFilesToolEncodingTests {
       filePattern: nil)
     let use = tool.use(toolUseId: "search-123", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "search_files",
+        "context": {},
         "input": {
           "directoryPath": "/project",
           "regex": "FIXME"
@@ -46,9 +47,10 @@ struct SearchFilesToolEncodingTests {
       filePattern: "*.swift")
     let use = tool.use(toolUseId: "search-pattern-456", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "search_files",
+        "context": {},
         "input": {
           "directoryPath": "/codebase/src",
           "filePattern": "*.swift",
@@ -71,9 +73,10 @@ struct SearchFilesToolEncodingTests {
       filePattern: "*.{py,js}")
     let use = tool.use(toolUseId: "search-structure-789", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "search_files",
+        "context": {},
         "input": {
           "directoryPath": "/workspace/backend",
           "filePattern": "*.{py,js}",
@@ -91,3 +94,22 @@ struct SearchFilesToolEncodingTests {
 private let toolExecutionContext = ToolExecutionContext(
   project: nil,
   projectRoot: nil)
+
+private func testDecodingEncodingWithTool(
+  of value: some Codable,
+  tool: any Tool,
+  _ json: String)
+  throws
+{
+  // Create decoder with tool plugin
+  let toolsPlugin = ToolsPlugin()
+  toolsPlugin.plugIn(tool: tool)
+  let decoder = JSONDecoder()
+  decoder.userInfo.set(toolPlugin: toolsPlugin)
+
+  // Create encoder
+  let encoder = JSONEncoder()
+
+  // Use the test function with proper decoder/encoder
+  try testDecodingEncoding(of: value, json, decoder: decoder, encoder: encoder)
+}

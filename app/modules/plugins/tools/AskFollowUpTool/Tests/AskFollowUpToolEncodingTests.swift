@@ -21,7 +21,7 @@ struct AskFollowUpToolEncodingTests {
       followUp: ["Follow up 1"])
     let use = tool.use(toolUseId: "test-123", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
         "input": {
@@ -46,7 +46,7 @@ struct AskFollowUpToolEncodingTests {
       followUp: ["Step 1", "Step 2", "Step 3"])
     let use = tool.use(toolUseId: "complex-456", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
         "input": {
@@ -73,11 +73,13 @@ struct AskFollowUpToolEncodingTests {
       followUp: [])
     let use = tool.use(toolUseId: "simple-789", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
         "input": {
-          "followUp": [],
+          "followUp": [
+
+          ],
           "question": "Simple question?"
         },
         "status": {
@@ -92,3 +94,22 @@ struct AskFollowUpToolEncodingTests {
 private let toolExecutionContext = ToolExecutionContext(
   project: nil,
   projectRoot: nil)
+
+private func testDecodingEncodingWithTool(
+  of value: some Codable,
+  tool: any Tool,
+  _ json: String)
+  throws
+{
+  // Create decoder with tool plugin
+  let toolsPlugin = ToolsPlugin()
+  toolsPlugin.plugIn(tool: tool)
+  let decoder = JSONDecoder()
+  decoder.userInfo.set(toolPlugin: toolsPlugin)
+
+  // Create encoder
+  let encoder = JSONEncoder()
+
+  // Use the test function with proper decoder/encoder
+  try testDecodingEncoding(of: value, json, decoder: decoder, encoder: encoder)
+}

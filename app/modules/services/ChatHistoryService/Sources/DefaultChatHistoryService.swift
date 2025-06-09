@@ -52,10 +52,12 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
       createdAt: thread.createdAt,
       rawContentPath: rawContentPath.path)
 
+    // Save or update the thread metadata in the database
     try await dbQueue.write { db in
-      // Save or update the thread
       try threadRecord.save(db)
     }
+
+    // Write the thread content as plain JSON to the file system
     try fileManager.createDirectory(
       at: rawContentPath.deletingLastPathComponent(),
       withIntermediateDirectories: true,
@@ -204,80 +206,6 @@ extension ChatMessageContentModel {
       content.id
     case .toolUse(let content):
       content.id
-    }
-  }
-}
-
-final class AttachmentSerializer: Sendable {
-  init(fileManager: FileManagerI, objectsDir: URL) {
-    self.fileManager = fileManager
-    self.objectsDir = objectsDir
-  }
-
-  static let attachmentSerializerKey = CodingUserInfoKey(rawValue: "attachmentSerializer")!
-
-//  static let toolsPluginKey = CodingUserInfoKey(rawValue: "toolsPlugin")!
-
-  func save(_ string: String, for id: UUID) throws {
-    let data = Data(string.utf8)
-    try save(data, for: id)
-  }
-
-  func save(_ data: Data, for id: UUID) throws {
-    let objectPath = objectsDir.appendingPathComponent("\(id).json")
-    try fileManager.createDirectory(
-      at: objectsDir,
-      withIntermediateDirectories: true,
-      attributes: nil)
-    return try fileManager.write(data: data, to: objectPath, options: .atomic)
-  }
-
-  func read(_: String.Type, for id: UUID) throws -> String {
-    let data = try read(Data.self, for: id)
-    guard let string = String(data: data, encoding: .utf8) else {
-      throw DecodingError.dataCorrupted(
-        DecodingError.Context(
-          codingPath: [],
-          debugDescription: "Failed to decode string from data"))
-    }
-    return string
-  }
-
-  func read(_: Data.Type, for id: UUID) throws -> Data {
-    let objectPath = objectsDir.appendingPathComponent("\(id).json")
-    return try fileManager.read(dataFrom: objectPath)
-  }
-
-  private let fileManager: FileManagerI
-  private let objectsDir: URL
-
-}
-
-extension Decoder {
-  var attachmentSerializer: AttachmentSerializer {
-    get throws {
-      guard let loader = userInfo[AttachmentSerializer.attachmentSerializerKey] as? AttachmentSerializer else {
-        throw DecodingError.dataCorrupted(
-          DecodingError.Context(
-            codingPath: codingPath,
-            debugDescription: "AttachmentSerializer not found in userInfo"))
-      }
-      return loader
-    }
-  }
-}
-
-extension Encoder {
-  var attachmentSerializer: AttachmentSerializer {
-    get throws {
-      guard let loader = userInfo[AttachmentSerializer.attachmentSerializerKey] as? AttachmentSerializer else {
-        throw EncodingError.invalidValue(
-          self,
-          EncodingError.Context(
-            codingPath: codingPath,
-            debugDescription: "AttachmentSerializer not found in userInfo"))
-      }
-      return loader
     }
   }
 }

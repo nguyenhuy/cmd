@@ -89,45 +89,6 @@ public struct ChatMessageToolUseContentModel: Identifiable, Sendable {
 
 }
 
-extension ToolUse {
-  public var erasedStatus: ToolUseExecutionStatus<Data> {
-    status.erasedStatus
-  }
-}
-
-extension ToolUseExecutionStatus {
-  var erasedStatus: ToolUseExecutionStatus<Data> {
-    switch self {
-    case .pendingApproval:
-      return .pendingApproval
-
-    case .notStarted:
-      return .notStarted
-
-    case .running:
-      return .running
-
-    case .completed(let result):
-      switch result {
-      case .success(let output):
-        do {
-          let data = try JSONEncoder().encode(output)
-          return .completed(.success(data))
-        } catch {
-          defaultLogger.error("Could not serialize tool output data", error)
-          return .completed(.failure(AppError(error)))
-        }
-
-      case .failure(let error):
-        return .completed(.failure(error))
-      }
-
-    case .rejected(reason: let reason):
-      return .rejected(reason: reason)
-    }
-  }
-}
-
 // MARK: - ChatMessageReasoningContentModel
 
 public struct ChatMessageReasoningContentModel: Identifiable, Sendable {

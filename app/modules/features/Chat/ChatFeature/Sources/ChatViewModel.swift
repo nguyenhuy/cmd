@@ -64,7 +64,7 @@ public class ChatViewModel {
       }.store(in: &cancellables)
 
     Task {
-      await initializePersistence()
+      await loadPersistedChatThreads()
     }
   }
 
@@ -75,6 +75,8 @@ public class ChatViewModel {
   // TODO: persist to user defaults and load
   var defaultMode: ChatMode
   private(set) var focusedWorkspacePath: URL? = nil
+
+  @ObservationIgnored @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
 
   /// Create a new tab/thread.
   /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
@@ -105,16 +107,7 @@ public class ChatViewModel {
 
   // MARK: - Persistence Methods
 
-  func initializePersistence() async {
-    @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
-
-    await loadTabsFromDatabase()
-    defaultLogger.log("Chat persistence initialized")
-  }
-
-  func loadTabsFromDatabase() async {
-    @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
-
+  func loadPersistedChatThreads() async {
     do {
       guard
         let persistentTabInfo = try await chatHistoryService.loadLastChatThreads(last: 1, offset: 0).first,

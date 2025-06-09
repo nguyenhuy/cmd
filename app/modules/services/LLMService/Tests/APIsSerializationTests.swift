@@ -193,7 +193,7 @@ struct APIParamsEncodingTests {
             }
           ],
           "model" : "claude-sonnet-4-20250514",
-          "enableReasoning": true,
+          "enableReasoning": false,
           "provider" : {
             "name" : "anthropic",
             "settings" : { "apiKey" : "anthropic-key" }
@@ -289,7 +289,7 @@ struct APIParamsEncodingTests {
             }
           ],
           "model" : "o3",
-          "enableReasoning": true,
+          "enableReasoning": false,
           "provider" : {
             "name" : "openai",
             "settings" : { "apiKey" : "openai-key" }

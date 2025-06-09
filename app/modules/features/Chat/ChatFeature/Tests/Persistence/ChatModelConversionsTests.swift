@@ -8,9 +8,9 @@ import SwiftTesting
 import Testing
 @testable import ChatFeature
 
-// MARK: - SimplePersistenceTests
+// MARK: - ChatModelConversionsTests
 
-struct SimplePersistenceTests {
+struct ChatModelConversionsTests {
 
   @MainActor
   @Test("test model creation and conversion")

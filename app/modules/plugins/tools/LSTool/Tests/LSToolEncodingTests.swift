@@ -21,15 +21,16 @@ struct LSToolEncodingTests {
       recursive: false)
     let use = tool.use(toolUseId: "ls-123", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
+        "context": {},
         "input": {
           "path": "/project",
           "recursive": false
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "ls-123"
       }
@@ -44,15 +45,16 @@ struct LSToolEncodingTests {
       recursive: true)
     let use = tool.use(toolUseId: "ls-recursive-456", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
+        "context": {},
         "input": {
           "path": "/workspace/src",
           "recursive": true
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "ls-recursive-456"
       }
@@ -67,14 +69,15 @@ struct LSToolEncodingTests {
       recursive: nil)
     let use = tool.use(toolUseId: "ls-structure-789", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
+        "context": {},
         "input": {
           "path": "/home/user/projects"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "ls-structure-789"
       }
@@ -85,3 +88,22 @@ struct LSToolEncodingTests {
 private let toolExecutionContext = ToolExecutionContext(
   project: nil,
   projectRoot: nil)
+
+private func testDecodingEncodingWithTool(
+  of value: some Codable,
+  tool: any Tool,
+  _ json: String)
+  throws
+{
+  // Create decoder with tool plugin
+  let toolsPlugin = ToolsPlugin()
+  toolsPlugin.plugIn(tool: tool)
+  let decoder = JSONDecoder()
+  decoder.userInfo.set(toolPlugin: toolsPlugin)
+
+  // Create encoder
+  let encoder = JSONEncoder()
+
+  // Use the test function with proper decoder/encoder
+  try testDecodingEncoding(of: value, json, decoder: decoder, encoder: encoder)
+}

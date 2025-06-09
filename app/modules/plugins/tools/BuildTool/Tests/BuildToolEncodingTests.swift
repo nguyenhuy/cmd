@@ -20,14 +20,15 @@ struct BuildToolEncodingTests {
     let input = BuildTool.Use.Input(for: .test)
     let use = tool.use(toolUseId: "build-test-789", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "build",
+        "context": {},
         "input": {
           "for": "test"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "build-test-789"
       }
@@ -40,14 +41,15 @@ struct BuildToolEncodingTests {
     let input = BuildTool.Use.Input(for: .run)
     let use = tool.use(toolUseId: "build-run-101", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "build",
+        "context": {},
         "input": {
           "for": "run"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "build-run-101"
       }
@@ -58,3 +60,22 @@ struct BuildToolEncodingTests {
 private let toolExecutionContext = ToolExecutionContext(
   project: nil,
   projectRoot: nil)
+
+private func testDecodingEncodingWithTool(
+  of value: some Codable,
+  tool: any Tool,
+  _ json: String)
+  throws
+{
+  // Create decoder with tool plugin
+  let toolsPlugin = ToolsPlugin()
+  toolsPlugin.plugIn(tool: tool)
+  let decoder = JSONDecoder()
+  decoder.userInfo.set(toolPlugin: toolsPlugin)
+
+  // Create encoder
+  let encoder = JSONEncoder()
+
+  // Use the test function with proper decoder/encoder
+  try testDecodingEncoding(of: value, json, decoder: decoder, encoder: encoder)
+}

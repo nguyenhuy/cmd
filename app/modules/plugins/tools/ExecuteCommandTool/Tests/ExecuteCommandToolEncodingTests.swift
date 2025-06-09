@@ -23,16 +23,17 @@ struct ExecuteCommandToolEncodingTests {
       canModifyDerivedFiles: false)
     let use = tool.use(toolUseId: "exec-123", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "execute_command",
+        "context": {},
         "input": {
           "canModifyDerivedFiles": false,
           "canModifySourceFiles": false,
           "command": "pwd"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "exec-123"
       }
@@ -49,9 +50,10 @@ struct ExecuteCommandToolEncodingTests {
       canModifyDerivedFiles: true)
     let use = tool.use(toolUseId: "exec-git-456", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "execute_command",
+        "context": {},
         "input": {
           "canModifyDerivedFiles": true,
           "canModifySourceFiles": false,
@@ -59,7 +61,7 @@ struct ExecuteCommandToolEncodingTests {
           "cwd": "/path/to/project"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "exec-git-456"
       }
@@ -76,9 +78,10 @@ struct ExecuteCommandToolEncodingTests {
       canModifyDerivedFiles: true)
     let use = tool.use(toolUseId: "exec-build-789", input: input, context: toolExecutionContext)
 
-    try testDecodingEncoding(of: use, """
+    try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "execute_command",
+        "context": {},
         "input": {
           "canModifyDerivedFiles": true,
           "canModifySourceFiles": true,
@@ -86,7 +89,7 @@ struct ExecuteCommandToolEncodingTests {
           "cwd": "/source"
         },
         "status": {
-          "status": "notStarted"
+          "status": "pendingApproval"
         },
         "toolUseId": "exec-build-789"
       }
@@ -97,3 +100,22 @@ struct ExecuteCommandToolEncodingTests {
 private let toolExecutionContext = ToolExecutionContext(
   project: nil,
   projectRoot: nil)
+
+private func testDecodingEncodingWithTool(
+  of value: some Codable,
+  tool: any Tool,
+  _ json: String)
+  throws
+{
+  // Create decoder with tool plugin
+  let toolsPlugin = ToolsPlugin()
+  toolsPlugin.plugIn(tool: tool)
+  let decoder = JSONDecoder()
+  decoder.userInfo.set(toolPlugin: toolsPlugin)
+
+  // Create encoder
+  let encoder = JSONEncoder()
+
+  // Use the test function with proper decoder/encoder
+  try testDecodingEncoding(of: value, json, decoder: decoder, encoder: encoder)
+}

@@ -18,14 +18,10 @@ struct TestTool: NonStreamableTool {
   struct Use: ToolUse {
     init(
       toolUseId _: String,
-      input: Data,
-      callingTool _: TestTool,
-      context _: ToolFoundation.ToolExecutionContext,
-      status _: ToolUseExecutionStatus<String>?)
+      input _: Data)
       throws
     {
-      let input = try JSONDecoder().decode(String.self, from: input)
-      self.init(input: input)
+      fatalError("not implemented")
     }
 
     init(input: String = "") {
@@ -321,8 +317,6 @@ struct DebugStreamingMessage: View {
   .padding()
 }
 
-#endif
-
 extension TestTool.Use {
   public init(from _: Decoder) throws {
     fatalError("not implemented")
@@ -332,3 +326,5 @@ extension TestTool.Use {
     fatalError("not implemented")
   }
 }
+
+#endif

@@ -50,7 +50,7 @@ public func testDecodingEncodingOf<T: Codable>(_ json: String, with _: T.Type) t
   #expect(expected == value)
 }
 
-/// Test that encoding the value gives the expected json, and that decoding the json gives the expected value.
+/// Test that encoding the value gives the expected json, and that decoding the json and re-encoding it doesn't change the value.
 public func testDecodingEncoding<T: Codable>(
   of value: T,
   _ json: String,
