@@ -13,7 +13,7 @@
 `cmd` autonomously handles various tasks. From new code generation, to bug fixing, to refactoring, to understanding new codebases, it can help you in many aspects of your job.
 
 ## You're in control
-- Use any LLM provider of your chosing (if your preferred provider is not yet supported, open an issue and we'll add support)
+- Use any LLM provider of your choosing (if your preferred provider is not yet supported, open an issue and we'll add support)
 - Your data is shared with no 3rd party other than the LLM provider you chose. All processing is local
 - `cmd` is free to use. No murky pricing or misaligned incentives. You bring your own API keys and get the most out of them
 - fine grained permissions about what agents can do autonomously
