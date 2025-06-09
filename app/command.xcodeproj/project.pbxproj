@@ -404,7 +404,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.getcmd.debug.command.command-Extension";
 				PRODUCT_NAME = "$(PRODUCT_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_EApache 2.0_LOC_STRINGS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
@@ -437,7 +437,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "dev.getcmd.command.command-Extension";
 				PRODUCT_NAME = "$(PRODUCT_NAME)";
 				SKIP_INSTALL = YES;
-				SWIFT_EApache 2.0_LOC_STRINGS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
@@ -594,7 +594,7 @@
 				MARKETING_VERSION = "$(MARKETING_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.getcmd.debug.command;
 				PRODUCT_NAME = "$(PRODUCT_NAME)";
-				SWIFT_EApache 2.0_LOC_STRINGS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
@@ -628,7 +628,7 @@
 				MARKETING_VERSION = "$(MARKETING_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.getcmd.command;
 				PRODUCT_NAME = "$(PRODUCT_NAME)";
-				SWIFT_EApache 2.0_LOC_STRINGS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
