@@ -41,4 +41,4 @@ Sharing feedback or opening a well documented issue is also greatly helpful.
 - tools refinement
 - Misc UI & UX improvements
 
-and much more! `cmd` is early stage, and very actively develop.
+and much more! `cmd` is early stage, and in active development.
