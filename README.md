@@ -4,7 +4,7 @@
 
 ## AI, in Xcode
 
-`cmd` integrates in your existing workflows with Xcode. Not need for another IDE. `⌘`+`I` brings the assistant, `⌘`+`␛` backgrounds it.
+`cmd` integrates in your existing workflows with Xcode. No need for another IDE. `⌘`+`I` brings the assistant, `⌘`+`␛` backgrounds it.
 
 
 <img align="center" width="100%" src="./docs/images/sidebar.png"/>
