@@ -27,7 +27,7 @@ extension ChatTabViewModel {
   var persistentModel: ChatThreadModel {
     .init(
       id: id,
-      name: name,
+      name: name ?? "new thread",
       messages: messages.map(\.persistentModel),
       events: events.map(\.persistentModel),
       projectInfo: projectInfo,

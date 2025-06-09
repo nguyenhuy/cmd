@@ -21,8 +21,12 @@ sync_dependencies_command() {
 
 close_xcode() {
 	if pgrep -x "Xcode" >/dev/null; then
-		# Kill Xcode.
+		# Kill Xcode
 		pkill -x "Xcode"
+		# Wait for Xcode to close
+		while pgrep -x "Xcode" >/dev/null; do
+			sleep 0.01
+		done
 	fi
 }
 

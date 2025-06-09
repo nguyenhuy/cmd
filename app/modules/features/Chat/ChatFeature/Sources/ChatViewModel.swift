@@ -23,36 +23,29 @@ public class ChatViewModel {
   #if DEBUG
   convenience init(
     defaultMode: ChatMode? = nil,
-    tabs: [ChatTabViewModel],
-    currentModel: LLMModel = .claudeSonnet_4_0,
-    selectedTab: ChatTabViewModel? = nil)
+    tab: ChatTabViewModel = ChatTabViewModel())
   {
     self.init(
       defaultMode: defaultMode ?? .agent,
-      tabs: tabs,
-      currentModel: currentModel,
-      selectedTab: selectedTab ?? tabs.first)
+      tab: tab,
+      currentModel: .claudeSonnet_4_0)
   }
   #endif
 
   public convenience init(defaultMode: ChatMode? = nil) {
-    let tabs = [ChatTabViewModel()]
     self.init(
       defaultMode: defaultMode ?? .agent,
-      tabs: tabs,
-      currentModel: .claudeSonnet_4_0,
-      selectedTab: tabs.first)
+      tab: ChatTabViewModel(),
+      currentModel: .claudeSonnet_4_0)
   }
 
   private init(
     defaultMode: ChatMode,
-    tabs: [ChatTabViewModel],
-    currentModel: LLMModel,
-    selectedTab: ChatTabViewModel?)
+    tab: ChatTabViewModel,
+    currentModel: LLMModel)
   {
-    self.tabs = tabs
+    self.tab = tab
     self.currentModel = currentModel
-    self.selectedTab = selectedTab
     self.defaultMode = defaultMode
     registerAsAppEventHandler()
 
@@ -68,40 +61,41 @@ public class ChatViewModel {
     }
   }
 
-  var tabs: [ChatTabViewModel]
+  private(set) var tab: ChatTabViewModel
   var currentModel: LLMModel
   var selectedFile: URL?
-  var selectedTab: ChatTabViewModel?
+
   // TODO: persist to user defaults and load
   var defaultMode: ChatMode
   private(set) var focusedWorkspacePath: URL? = nil
+  private(set) var showChatHistory = false
 
   @ObservationIgnored @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
+
+  let chatHistory = ChatHistoryViewModel()
+
+  func handleShowChatHistory() {
+    showChatHistory = true
+  }
+
+  func handleHideChatHistory() {
+    showChatHistory = false
+  }
+
+  func handleSelectChatThread(id: UUID) {
+    Task {
+      await selectChatThread(id: id)
+    }
+  }
 
   /// Create a new tab/thread.
   /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
   func addTab(copyingCurrentInput: Bool = false) {
     let newTab = ChatTabViewModel()
-    let currentTab = selectedTab
-    if selectedTab?.events.isEmpty == true {
-      // if the selected tab is empty, replace it with the new tab instead of keeping it in memory.
-      tabs[tabs.count - 1] = newTab
-    } else {
-      tabs.append(newTab)
-    }
-    selectedTab = newTab
-    if copyingCurrentInput, let currentTab {
+    let currentTab = tab
+    tab = newTab
+    if copyingCurrentInput {
       newTab.input = currentTab.input.copy()
-    }
-  }
-
-  func remove(tab: ChatTabViewModel) {
-    tabs.removeAll { $0 == tab }
-    if selectedTab == tab {
-      selectedTab = tabs.first
-    }
-    if tabs.isEmpty {
-      addTab()
     }
   }
 
@@ -117,8 +111,7 @@ public class ChatViewModel {
       }
       let chatTab = ChatTabViewModel(from: thread)
 
-      tabs = [chatTab]
-      selectedTab = chatTab
+      tab = chatTab
 
       defaultLogger.log("Loaded chat tabs from database")
     } catch {
@@ -132,6 +125,20 @@ public class ChatViewModel {
   @ObservationIgnored @Dependency(\.xcodeObserver) private var xcodeObserver
   @ObservationIgnored @Dependency(\.fileManager) private var fileManager
 
+  private func selectChatThread(id: UUID) async {
+    do {
+      guard let thread = try await chatHistoryService.loadChatThread(id: id) else {
+        return
+      }
+
+      tab = ChatTabViewModel(from: thread)
+      showChatHistory = false
+    } catch {
+      showChatHistory = false
+      defaultLogger.error("Failed to load chat thread with id \(id)", error)
+    }
+  }
+
   private func registerAsAppEventHandler() {
     appEventHandlerRegistry.registerHandler { [weak self] event in
       guard let self else { return false }
@@ -140,7 +147,7 @@ public class ChatViewModel {
         return true //
       } else if let event = event as? ChangeChatModeEvent {
         Task { @MainActor in
-          self.selectedTab?.input.mode = event.chatMode
+          self.tab.input.mode = event.chatMode
         }
         return true
       } else if event is NewChatEvent {
@@ -164,10 +171,10 @@ public class ChatViewModel {
         self.addTab()
       }
       if let chatMode = event.chatMode {
-        self.selectedTab?.input.mode = chatMode
+        self.tab.input.mode = chatMode
       }
 
-      self.selectedTab?.input.textInputNeedsFocus = true
+      self.tab.input.textInputNeedsFocus = true
 
       if let workspace = xcodeObserver.state.focusedWorkspace {
         let handled = addCodeSelection(from: workspace)
@@ -187,10 +194,7 @@ public class ChatViewModel {
   }
 
   private func addCodeSelection(from workspace: XcodeWorkspaceState) -> Bool {
-    guard let inputModel = selectedTab?.input else {
-      defaultLogger.log("Missing selected Tab to handle add to code to chat event")
-      return false
-    }
+    let inputModel = tab.input
     let editor = workspace.editors.first(where: { $0.isFocused })
     if editor?.fileName != workspace.document?.lastPathComponent {
       if let document = workspace.document, let content = try? fileManager.read(contentsOf: document) {

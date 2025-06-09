@@ -41,21 +41,29 @@ public struct ChatView: View {
       VStack(spacing: 0) {
         quickActionsRow
         secondaryActionRow
-        if let selectedTab = viewModel.selectedTab {
-          ChatMessageList(viewModel: selectedTab)
-            .id("ChatMessageList-\(selectedTab.id)")
-          ChatInputView(
-            inputViewModel: selectedTab.input,
-            isStreamingResponse: Bindable(selectedTab).isStreamingResponse,
-            didTapCancel: { [weak selectedTab] in
-              selectedTab?.cancelCurrentMessage()
-            },
-            didSend: { [weak selectedTab] in
-              Task {
-                await selectedTab?.sendMessage()
-              }
-            }).id("ChatInputView-\(selectedTab.id)")
-        }
+        ChatMessageList(viewModel: viewModel.tab)
+          .id("ChatMessageList-\(viewModel.tab.id)")
+        ChatInputView(
+          inputViewModel: viewModel.tab.input,
+          isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse,
+          didTapCancel: { [weak viewModel] in
+            viewModel?.tab.cancelCurrentMessage()
+          },
+          didSend: { [weak viewModel] in
+            Task {
+              await viewModel?.tab.sendMessage()
+            }
+          }).id("ChatInputView-\(viewModel.tab.id)")
+      }
+      if viewModel.showChatHistory {
+        ChatHistoryView(
+          viewModel: viewModel.chatHistory,
+          onBack: {
+            viewModel.handleHideChatHistory()
+          },
+          onSelectThread: { threadId in
+            viewModel.handleSelectChatThread(id: threadId)
+          })
       }
       if showSettingsSheet {
         SettingsView {
@@ -66,8 +74,12 @@ public struct ChatView: View {
     .background(colorScheme.primaryBackground)
   }
 
+  enum Constants {
+    static let iconSize: CGFloat = 22
+  }
+
   var projectName: String? {
-    viewModel.selectedTab?.projectInfo?.path.lastPathComponent.split(separator: ".").first.map(String.init)
+    viewModel.tab.projectInfo?.path.lastPathComponent.split(separator: ".").first.map(String.init)
   }
 
   var focusedWorkspaceName: String? {
@@ -83,13 +95,22 @@ public struct ChatView: View {
 
   @Bindable private var viewModel: ChatViewModel
 
-  private let iconSizes: CGFloat = 22
-
   @ViewBuilder
   private var quickActionsRow: some View {
     HStack(spacing: 0) {
       projectHeader
       Spacer(minLength: 0)
+
+      IconButton(
+        action: {
+          viewModel.handleShowChatHistory()
+        },
+        systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90",
+        onHoverColor: colorScheme.secondarySystemBackground,
+        padding: 4)
+        .frame(square: Constants.iconSize)
+        .padding(4)
+
       IconButton(
         action: {
           viewModel.addTab()
@@ -97,7 +118,7 @@ public struct ChatView: View {
         systemName: "plus",
         onHoverColor: colorScheme.secondarySystemBackground,
         padding: 4)
-        .frame(width: iconSizes, height: iconSizes)
+        .frame(square: Constants.iconSize)
         .padding(4)
 
       IconButton(
@@ -107,7 +128,7 @@ public struct ChatView: View {
         systemName: "gearshape",
         onHoverColor: colorScheme.secondarySystemBackground,
         padding: 4)
-        .frame(width: iconSizes, height: iconSizes)
+        .frame(square: Constants.iconSize)
         .padding(4)
     }
   }
@@ -133,7 +154,7 @@ public struct ChatView: View {
 
   @ViewBuilder
   private var secondaryActionRow: some View {
-    if viewModel.focusedWorkspacePath != nil, viewModel.selectedTab?.projectInfo?.path != viewModel.focusedWorkspacePath {
+    if viewModel.focusedWorkspacePath != nil, viewModel.tab.projectInfo?.path != viewModel.focusedWorkspacePath {
       HStack {
         focusOnNewProjectCTA
         Spacer()

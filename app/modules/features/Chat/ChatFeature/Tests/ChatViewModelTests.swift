@@ -28,8 +28,7 @@ struct ChatViewModelTests {
   func test_initialization_withDefaultParameters() {
     let viewModel = ChatViewModel()
 
-    #expect(viewModel.tabs.count == 1)
-    #expect(viewModel.selectedTab == viewModel.tabs.first)
+    #expect(viewModel.tab.messages == [])
     #expect(viewModel.defaultMode == .agent)
     #expect(viewModel.currentModel == .claudeSonnet_4_0)
   }
@@ -45,114 +44,46 @@ struct ChatViewModelTests {
   @MainActor
   @Test("debug initializer with custom tabs and selected tab")
   func test_debugInitializer_withCustomTabsAndSelectedTab() {
-    let tab1 = ChatTabViewModel()
-    let tab2 = ChatTabViewModel()
-    let tabs = [tab1, tab2]
+    let tab = ChatTabViewModel()
 
     let viewModel = ChatViewModel(
       defaultMode: .ask,
-      tabs: tabs,
-      currentModel: .gpt_4o,
-      selectedTab: tab2)
+      tab: tab)
 
-    #expect(viewModel.tabs.count == 2)
-    #expect(viewModel.tabs[0] == tab1)
-    #expect(viewModel.tabs[1] == tab2)
-    #expect(viewModel.selectedTab == tab2)
+    #expect(viewModel.tab == tab)
     #expect(viewModel.defaultMode == ChatMode.ask)
-    #expect(viewModel.currentModel == .gpt_4o)
+    #expect(viewModel.currentModel == .claudeSonnet_4_0)
   }
 
   @MainActor
-  @Test("adding a new tab increases tab count when current tab is not empty")
+  @Test("adding a new tab replaces the current one")
   func test_addTab_increasesTabCount() async {
     let viewModel = withAllModelAvailable {
       ChatViewModel()
     }
-    viewModel.selectedTab?.input.textInput = TextInput([.text("Test input")])
-    await viewModel.selectedTab?.sendMessage()
-    #expect(viewModel.tabs.count == 1)
+    let firstTab = viewModel.tab
+    firstTab.input.textInput = TextInput([.text("Test input")])
+    await firstTab.sendMessage()
+    #expect(viewModel.tab.messages.count == 1)
     viewModel.addTab()
 
-    #expect(viewModel.tabs.count == 2)
-    #expect(viewModel.selectedTab == viewModel.tabs.last)
-  }
-
-  @MainActor
-  @Test("adding a new tab when current tab is empty replaces it")
-  func test_addTab_replacesEmptyTab() {
-    let viewModel = withAllModelAvailable {
-      ChatViewModel(tabs: [.init()])
-    }
-    let initialTab = viewModel.tabs.first
-
-    // Ensure the initial tab is empty
-    #expect(initialTab?.events.isEmpty == true)
-    #expect(viewModel.tabs.count == 1)
-    viewModel.addTab()
-
-    #expect(viewModel.tabs.count == 1)
-    #expect(viewModel.selectedTab != initialTab)
+    #expect(viewModel.tab.messages.count == 0)
+    #expect(viewModel.tab != firstTab)
   }
 
   @MainActor
   @Test("adding a new tab with copyingCurrentInput copies the input")
   func test_addTab_withCopyingCurrentInput() {
     let viewModel = ChatViewModel()
-    let initialTab = viewModel.selectedTab
+    let initialTab = viewModel.tab
 
     // Set some input on the initial tab
-    initialTab?.input.textInput = TextInput([.text("Test input")])
+    initialTab.input.textInput = TextInput([.text("Test input")])
 
     viewModel.addTab(copyingCurrentInput: true)
 
-    #expect(viewModel.selectedTab?.input.textInput.string.string == "Test input")
-  }
-
-  @MainActor
-  @Test("removing a tab decreases tab count")
-  func test_removeTab_decreasesTabCount() {
-    // Create a viewModel with multiple tabs
-    let tab1 = ChatTabViewModel()
-    let tab2 = ChatTabViewModel()
-    let tabs = [tab1, tab2]
-
-    let viewModel = ChatViewModel(tabs: tabs)
-
-    let initialTabCount = viewModel.tabs.count
-
-    viewModel.remove(tab: tab2)
-
-    #expect(viewModel.tabs.count == initialTabCount - 1)
-    #expect(!viewModel.tabs.contains(tab2))
-  }
-
-  @MainActor
-  @Test("removing the selected tab selects the first tab")
-  func test_removeTab_removingSelectedTab() {
-    // Create a viewModel with multiple tabs
-    let tab1 = ChatTabViewModel()
-    let tab2 = ChatTabViewModel()
-    let tabs = [tab1, tab2]
-
-    let viewModel = ChatViewModel(tabs: tabs, selectedTab: tab2)
-
-    viewModel.remove(tab: tab2)
-
-    #expect(viewModel.selectedTab == tab1)
-  }
-
-  @MainActor
-  @Test("removing the last tab creates a new one")
-  func test_removeTab_removingLastTab() throws {
-    let viewModel = ChatViewModel()
-    let initialTab = try #require(viewModel.tabs.first)
-
-    #expect(viewModel.tabs.count == 1)
-    viewModel.remove(tab: initialTab)
-
-    #expect(viewModel.tabs.count == 1)
-    #expect(viewModel.tabs.first != initialTab)
+    #expect(viewModel.tab != initialTab)
+    #expect(viewModel.tab.input.textInput.string.string == "Test input")
   }
 
   @MainActor
@@ -168,16 +99,16 @@ struct ChatViewModelTests {
       }
     }
 
-    viewModel.selectedTab?.input.textInput = TextInput([.text("Test input")])
-    await viewModel.selectedTab?.sendMessage()
-    #expect(viewModel.tabs.count == 1)
-    #expect(viewModel.tabs.first?.events.count == 1)
+    let firstTab = viewModel.tab
+    firstTab.input.textInput = TextInput([.text("Test input")])
+    await firstTab.sendMessage()
+    #expect(firstTab.events.count == 1)
 
     let handled = await mockAppEventHandlerRegistry.handle(event: NewChatEvent())
     #expect(handled == true)
 
     // Verify a new tab was added
-    #expect(viewModel.tabs.count == 2)
+    #expect(viewModel.tab != firstTab)
   }
 
   @MainActor
@@ -193,16 +124,16 @@ struct ChatViewModelTests {
       ChatViewModel()
     }
     }
-    viewModel.selectedTab?.input.textInput = TextInput([.text("Test input")])
-    await viewModel.selectedTab?.sendMessage()
-    #expect(viewModel.tabs.count == 1)
-    #expect(viewModel.tabs.first?.events.count == 1)
+    let firstTab = viewModel.tab
+    firstTab.input.textInput = TextInput([.text("Test input")])
+    await firstTab.sendMessage()
+    #expect(firstTab.events.count == 1)
 
     let handled = await mockAppEventHandlerRegistry.handle(event: AddCodeToChatEvent(newThread: true, chatMode: .ask))
     #expect(handled == true)
 
     // Verify a new tab was added
-    #expect(viewModel.tabs.count == 2)
+    #expect(viewModel.tab != firstTab)
   }
 
   @MainActor
@@ -222,7 +153,7 @@ struct ChatViewModelTests {
     #expect(handled == true)
 
     // Verify the selected tab's mode was updated
-    #expect(viewModel.selectedTab?.input.mode == .ask)
+    #expect(viewModel.tab.input.mode == .ask)
   }
 
   @MainActor
@@ -264,8 +195,8 @@ struct ChatViewModelTests {
     let handled = await mockAppEventHandlerRegistry.handle(event: AddCodeToChatEvent(newThread: false, chatMode: nil))
     #expect(handled)
     // Verify a file attachment was added
-    #expect(viewModel.selectedTab?.input.attachments.count == 1)
-    if case .file(let fileAttachment) = viewModel.selectedTab?.input.attachments.first {
+    #expect(viewModel.tab.input.attachments.count == 1)
+    if case .file(let fileAttachment) = viewModel.tab.input.attachments.first {
       #expect(fileAttachment.path == documentURL)
       #expect(fileAttachment.content == documentContent)
     } else {
@@ -321,8 +252,8 @@ struct ChatViewModelTests {
     #expect(handled)
 
     // Verify a file selection attachment was added
-    #expect(viewModel.selectedTab?.input.attachments.count == 1)
-    if case .fileSelection(let selectionAttachment) = viewModel.selectedTab?.input.attachments.first {
+    #expect(viewModel.tab.input.attachments.count == 1)
+    if case .fileSelection(let selectionAttachment) = viewModel.tab.input.attachments.first {
       #expect(selectionAttachment.file.path == filePath)
       #expect(selectionAttachment.file.content == content)
       #expect(selectionAttachment.startLine == 1) // 0-based to 1-based

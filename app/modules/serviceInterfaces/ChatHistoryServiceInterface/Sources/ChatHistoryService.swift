@@ -15,7 +15,7 @@ public protocol ChatHistoryService: Sendable {
 
 // MARK: - ChatThreadModelMetadata
 
-public struct ChatThreadModelMetadata: Sendable {
+public struct ChatThreadModelMetadata: Sendable, Identifiable {
   public let id: UUID
   public let name: String
   public let createdAt: Date
