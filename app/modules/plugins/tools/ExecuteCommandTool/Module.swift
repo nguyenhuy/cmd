@@ -16,4 +16,5 @@ Target.module(
     "ServerServiceInterface",
     "ShellServiceInterface",
     "SwiftTesting",
+    "ToolFoundation",
   ])

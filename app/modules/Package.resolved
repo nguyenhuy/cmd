@@ -1,5 +1,5 @@
 {
-  "originHash" : "12e157bde51f00dc3fb896cf94a4723217fa5bed8dad731fde0b05318ca2d1e4",
+  "originHash" : "a77929ac0ef7cd75be454c3cc7e345b2fde3697f5151ae5c2161ae91f7dabccb",
   "pins" : [
     {
       "identity" : "aexml",
@@ -34,6 +34,15 @@
       "location" : "https://github.com/gsabran/Down",
       "state" : {
         "revision" : "14309dd8781c7613063344727454ffbbebc8e8bd"
+      }
+    },
+    {
+      "identity" : "grdb.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/groue/GRDB.swift",
+      "state" : {
+        "revision" : "a5a1be26b4513dc7ec360eb56bc08a345bac6649",
+        "version" : "7.5.0"
       }
     },
     {

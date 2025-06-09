@@ -35,7 +35,7 @@ final class SendOneMessageTests {
             }
           ],
           "model" : "claude-sonnet-4-20250514",
-          "enableReasoning": true,
+          "enableReasoning": false,
           "provider" : {
             "name" : "anthropic",
             "settings" : { "apiKey" : "anthropic-key" }
@@ -278,8 +278,7 @@ final class SendOneMessageTests {
         #expect(toolCall.toolName == "read_file")
         #expect(toolCall.toolUse.toolUseId == "123")
         #expect(
-          (toolCall.toolUse as? FailedToolUse)?.error
-            .localizedDescription ==
+          (toolCall.toolUse as? FailedToolUse)?.errorDescription ==
             "Could not parse the input for tool read_file: The data couldn’t be read because it is missing.")
         toolCallReceived.fulfill()
       }

@@ -38,19 +38,12 @@ extension Tool {
   public typealias Input = Use.Input
   public typealias Output = Use.Output
 
-//  /// Decodes the input and create a tool use.
-//  public func use(toolUseId: String, input: JSON, context: ToolExecutionContext) throws -> Use {
-//    let data = try JSONEncoder().encode(input)
-//    let input = try JSONDecoder().decode(Use.Input.self, from: data)
-//    return use(toolUseId: toolUseId, input: input, context: context)
-//  }
-
 }
 
 // MARK: - ToolUse
 
 /// A specific usage of a tool.
-public protocol ToolUse: Sendable {
+public protocol ToolUse: Sendable, Codable {
   associatedtype Input: Codable & Sendable
   associatedtype Output: Codable & Sendable
   associatedtype SomeTool: Tool where SomeTool.Use == Self
@@ -112,6 +105,7 @@ extension ToolUse {
     guard case .completed(let result) = status.value else { return nil }
     return try? result.get()
   }
+
 }
 
 /// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
@@ -146,7 +140,7 @@ public protocol DisplayableToolUse: ToolUse {
 // MARK: - ToolExecutionContext
 
 /// The context in which a tool use has been created.
-public struct ToolExecutionContext: Sendable {
+public struct ToolExecutionContext: Sendable, Codable {
   /// The path to the project.
   public let project: URL?
   /// The path to the root of the project.
@@ -167,36 +161,10 @@ public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
   case notStarted
   case running
   case completed(Result<Output, Error>)
+
 }
 
-public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Codable, Sendable {
+public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Sendable {
   case streaming(_ input: StreamingInput)
   case streamed(_ input: StreamedInput)
-
-  public init(from decoder: any Decoder) throws {
-    /// When working with streamed input,
-    self = try .streaming(StreamingInput(from: decoder))
-  }
-
-  public func encode(to encoder: any Encoder) throws {
-    switch self {
-    case .streaming(let input):
-      try input.encode(to: encoder)
-    case .streamed(let input):
-      try input.encode(to: encoder)
-    }
-  }
-}
-
-extension KeyedDecodingContainer {
-  /// Decodes an array, dropping values that failed to decode.
-  /// This can be useful to decode streamed input, where the last value in the array was truncated in a way that makes decoding impossible.
-  public func resilientlyDecode<T: Decodable>(_: [T].Type, forKey key: K) throws -> [T] {
-    var items = [T?]()
-    var container = try nestedUnkeyedContainer(forKey: key)
-    while !container.isAtEnd, items.count < container.count ?? Int.max {
-      items.append(try? container.decode(T.self))
-    }
-    return items.compactMap(\.self)
-  }
 }

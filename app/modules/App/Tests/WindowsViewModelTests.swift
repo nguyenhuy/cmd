@@ -33,7 +33,7 @@ struct WindowsViewModelTests {
     }
 
     #expect(viewModel.state.isSidePanelVisible == false)
-    #expect(viewModel.state.isOnbardingVisible == true) // Should be true because onboarding is not completed by default
+    #expect(viewModel.state.isOnboardingVisible == true) // Should be true because onboarding is not completed by default
   }
 
   @Test("registers app event handler on initialization")
@@ -100,29 +100,6 @@ struct WindowsViewModelTests {
     #expect(viewModel.state.isSidePanelVisible == false)
   }
 
-  @Test("stopChat action hides side panel")
-  func test_handleAction_stopChat() {
-    let mockAppEventRegistry = MockAppEventHandlerRegistry()
-    let mockPermissionsService = MockPermissionsService()
-    let mockUserDefaults = MockUserDefaults()
-
-    let viewModel = withDependencies {
-      $0.appEventHandlerRegistry = mockAppEventRegistry
-      $0.permissionsService = mockPermissionsService
-      $0.userDefaults = mockUserDefaults
-    } operation: {
-      WindowsViewModel()
-    }
-
-    // First show the side panel
-    viewModel.handle(.showApplication)
-    #expect(viewModel.state.isSidePanelVisible == true)
-
-    // Then stop chat
-    viewModel.handle(.stopChat)
-    #expect(viewModel.state.isSidePanelVisible == false)
-  }
-
   @Test("accessibilityPermissionChanged with nil value ignores change")
   func test_handleAction_accessibilityPermissionChanged_nilValue() {
     let mockAppEventRegistry = MockAppEventHandlerRegistry()
@@ -143,7 +120,7 @@ struct WindowsViewModelTests {
 
     // State should remain unchanged
     #expect(viewModel.state.isSidePanelVisible == initialState.isSidePanelVisible)
-    #expect(viewModel.state.isOnbardingVisible == initialState.isOnbardingVisible)
+    #expect(viewModel.state.isOnboardingVisible == initialState.isOnboardingVisible)
   }
 
   @Test("accessibilityPermissionChanged with false shows onboarding")
@@ -165,7 +142,7 @@ struct WindowsViewModelTests {
 
     viewModel.handle(.accessibilityPermissionChanged(isGranted: false))
 
-    #expect(viewModel.state.isOnbardingVisible == true)
+    #expect(viewModel.state.isOnboardingVisible == true)
   }
 
   @Test("accessibilityPermissionChanged with true hides onboarding when completed")
@@ -187,7 +164,7 @@ struct WindowsViewModelTests {
 
     viewModel.handle(.accessibilityPermissionChanged(isGranted: true))
 
-    #expect(viewModel.state.isOnbardingVisible == false)
+    #expect(viewModel.state.isOnboardingVisible == false)
   }
 
   @Test("onboardingDidComplete updates onboarding visibility")
@@ -207,7 +184,7 @@ struct WindowsViewModelTests {
     viewModel.handle(.onboardingDidComplete)
 
     // Should compute onboarding visibility based on current state
-    #expect(viewModel.state.isOnbardingVisible == true) // Because onboarding is not marked as completed
+    #expect(viewModel.state.isOnboardingVisible == true) // Because onboarding is not marked as completed
   }
 
   @Test("onboarding visibility when onboarding not completed")
@@ -227,7 +204,7 @@ struct WindowsViewModelTests {
       WindowsViewModel()
     }
 
-    #expect(viewModel.state.isOnbardingVisible == true)
+    #expect(viewModel.state.isOnboardingVisible == true)
   }
 
   @Test("onboarding visibility when accessibility permission not granted")
@@ -250,7 +227,7 @@ struct WindowsViewModelTests {
     // Trigger accessibility permission change
     viewModel.handle(.accessibilityPermissionChanged(isGranted: false))
 
-    #expect(viewModel.state.isOnbardingVisible == true)
+    #expect(viewModel.state.isOnboardingVisible == true)
   }
 
   @Test("onboarding hidden when all conditions met")
@@ -273,6 +250,6 @@ struct WindowsViewModelTests {
     // Trigger accessibility permission change to true
     viewModel.handle(.accessibilityPermissionChanged(isGranted: true))
 
-    #expect(viewModel.state.isOnbardingVisible == false)
+    #expect(viewModel.state.isOnboardingVisible == false)
   }
 }

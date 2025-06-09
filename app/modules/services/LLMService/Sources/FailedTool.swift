@@ -1,6 +1,7 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ConcurrencyFoundation
 import JSONFoundation
 import ToolFoundation
@@ -13,10 +14,10 @@ struct EmptyObject: Codable, Sendable { }
 
 struct FailedToolUse: ToolUse {
 
-  init(toolUseId: String, toolName: String, error: Error) {
+  init(toolUseId: String, toolName: String, errorDescription: String) {
     self.toolUseId = toolUseId
     callingTool = FailedTool(name: toolName)
-    self.error = error
+    self.errorDescription = errorDescription
   }
 
   public let isReadonly = true
@@ -26,9 +27,11 @@ struct FailedToolUse: ToolUse {
 
   var callingTool: FailedTool
   let toolUseId: String
-  let error: Error
+  let errorDescription: String
 
-  var status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<EmptyObject>> { .Just(.completed(.failure(error))) }
+  var status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<EmptyObject>> {
+    .Just(.completed(.failure(AppError(errorDescription))))
+  }
 
   var input: Input { Input() }
 
@@ -67,4 +70,26 @@ struct FailedTool: NonStreamableTool {
     fatalError("Should not be called")
   }
 
+}
+
+extension FailedToolUse {
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    toolUseId = try container.decode(String.self, forKey: .toolUseId)
+    callingTool = try container.decode(FailedTool.self, forKey: .tool)
+    errorDescription = try container.decode(String.self, forKey: .errorDescription)
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(toolUseId, forKey: .toolUseId)
+    try container.encode(callingTool, forKey: .tool)
+    try container.encode(errorDescription, forKey: .errorDescription)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case toolUseId
+    case tool
+    case errorDescription
+  }
 }

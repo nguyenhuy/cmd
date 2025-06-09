@@ -19,7 +19,13 @@ public final class SearchFilesTool: NonStreamableTool {
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
 
-    init(callingTool: SearchFilesTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
+    init(
+      callingTool: SearchFilesTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
@@ -29,7 +35,7 @@ public final class SearchFilesTool: NonStreamableTool {
         regex: input.regex,
         filePattern: input.filePattern)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -87,10 +93,11 @@ public final class SearchFilesTool: NonStreamableTool {
       updateStatus.yield(.rejected(reason: reason))
     }
 
+    let context: ToolExecutionContext
+
     @Dependency(\.server) private var server
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-    private let context: ToolExecutionContext
 
   }
 

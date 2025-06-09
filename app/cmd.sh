@@ -45,7 +45,10 @@ clean_command() {
 	cd "$(git rev-parse --show-toplevel)/app/modules" &&
 		swift package clean &&
 		find . -not -path './.git/*' 2>/dev/null |
-		git check-ignore --stdin |
+		# Don't remove files in ./services/ServerService/Sources/Resources
+		grep -v 'services/ServerService/Sources/Resources' |
+			# Remove all git-ignored files
+			git check-ignore --stdin |
 			while read file; do rm -rf "$file"; done
 	# Reset xcode state
 	cd "$(git rev-parse --show-toplevel)/app" &&
@@ -54,7 +57,6 @@ clean_command() {
 
 test_swift_command() {
 	cd modules && swift test -Xswiftc -suppress-warnings --quiet
-	clean_command
 }
 
 # Main command dispatcher
@@ -67,7 +69,6 @@ lint:swift)
 	;;
 test:swift)
 	test_swift_command "$@"
-	clean_command
 	;;
 sync:dependencies)
 	sync_dependencies_command "$@"

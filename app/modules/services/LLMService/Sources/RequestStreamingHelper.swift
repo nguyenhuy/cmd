@@ -95,17 +95,23 @@ final class RequestStreamingHelper: Sendable {
         switch event {
         case .ping:
           break
+
         case .textDelta(let textDelta):
           handle(textDelta: textDelta)
+
         case .toolUseDelta(let toolUseDelta):
           await handle(toolUseDelta: toolUseDelta)
+
         case .toolUseRequest(let toolUseRequest):
           await handle(toolUseRequest: toolUseRequest)
+
         case .responseError(let error):
           // We received an error from the server.
           err = err ?? AppError(message: error.message)
+
         case .reasoningDelta(let reasoningDelta):
           handle(reasoningDelta: reasoningDelta)
+
         case .reasoningSignature(let reasoningSignature):
           handle(reasoningSignature: reasoningSignature)
         }
@@ -272,6 +278,7 @@ final class RequestStreamingHelper: Sendable {
       toolUseId: toolUseRequest.toolUseId,
       idx: toolUseRequest.idx)
 
+    let toolExecutionContext = ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)
     if let tool = tools.first(where: { $0.name == request.toolName }) {
       do {
         let data = try JSONEncoder().encode(request.input)
@@ -279,7 +286,7 @@ final class RequestStreamingHelper: Sendable {
           toolUseId: request.toolUseId,
           input: data,
           isInputComplete: true,
-          context: ToolExecutionContext(project: context.project, projectRoot: context.projectRoot))
+          context: toolExecutionContext)
 
         if !toolUse.isReadonly {
           await context.prepareForWriteToolUse()
@@ -301,14 +308,14 @@ final class RequestStreamingHelper: Sendable {
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
           toolName: request.toolName,
-          error: Self.failedToParseToolInputError(toolName: request.toolName, error: error)))
+          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription))
       }
     } else {
       // Tool not found
       content.append(toolUse: FailedToolUse(
         toolUseId: request.toolUseId,
         toolName: request.toolName,
-        error: Self.missingToolError(toolName: request.toolName)))
+        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription))
     }
     result.update(with: AssistantMessage(content: content))
   }
@@ -324,7 +331,7 @@ final class RequestStreamingHelper: Sendable {
       content.append(toolUse: FailedToolUse(
         toolUseId: streamingToolUse.toolUseId,
         toolName: streamingToolUse.toolName,
-        error: error))
+        errorDescription: error.localizedDescription))
       result.update(with: AssistantMessage(content: content))
     }
 

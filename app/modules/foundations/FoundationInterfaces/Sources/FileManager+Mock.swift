@@ -10,7 +10,6 @@ import ThreadSafe
 
 @ThreadSafe
 public final class MockFileManager: FileManagerI {
-
   public convenience init(files: [String: String] = [:], directories: [String] = []) {
     self.init(
       files: Dictionary(uniqueKeysWithValues: files.map { key, value in (URL(fileURLWithPath: key), value) }),
@@ -27,6 +26,8 @@ public final class MockFileManager: FileManagerI {
       $0.directories = directories
     }
   }
+
+  public var homeDirectoryForCurrentUser = URL(fileURLWithPath: "/mock/home")
 
   public func isDirectory(at path: URL) -> Bool {
     directories.map(\.standardized.path).contains(path.standardized.path)
@@ -92,6 +93,9 @@ public final class MockFileManager: FileManagerI {
       while !url.lastPathComponent.isEmpty {
         url = url.deletingLastPathComponent()
         let filePath = url.path() // URL is not Sendable, so use a String to silence the warning.
+        if filePath.starts(with: "/") {
+          break
+        }
         inLock { $0.directories.append(URL(filePath: filePath)) }
       }
     }

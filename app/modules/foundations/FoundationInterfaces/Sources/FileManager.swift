@@ -57,6 +57,9 @@ public protocol FileManagerI: Sendable {
 
   /// Returns a file handle for writing to the specified URL.
   func fileHandle(forWritingTo: URL) throws -> FileHandle
+
+  /// The home directory for the current user.
+  var homeDirectoryForCurrentUser: URL { get }
 }
 
 extension FileManagerI {

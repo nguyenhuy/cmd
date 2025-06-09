@@ -50,6 +50,27 @@ public func testDecodingEncodingOf<T: Codable>(_ json: String, with _: T.Type) t
   #expect(expected == value)
 }
 
+/// Test that encoding the value gives the expected json, and that decoding the json and re-encoding it doesn't change the value.
+public func testDecodingEncoding<T: Codable>(
+  of value: T,
+  _ json: String,
+  decoder: JSONDecoder = JSONDecoder(),
+  encoder: JSONEncoder = JSONEncoder())
+  throws
+{
+  // Validate that encoding the value gives the expected json
+  try testEncoding(value, json)
+
+  // Validate that decoding the json and re-encoding it gives the same json
+  let decoded = try decoder.decode(T.self, from: json.utf8Data)
+  let encoded = try encoder.encode(decoded)
+
+  let value = encoded.jsonString()
+  let expected = json.utf8Data.jsonString()
+
+  #expect(expected == value)
+}
+
 /// Test that encoding the value gives the expected json.
 public func testEncoding(_ value: some Encodable, _ json: String) throws {
   let encoded = try JSONEncoder().encode(value)

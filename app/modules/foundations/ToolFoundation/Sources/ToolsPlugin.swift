@@ -7,7 +7,11 @@ import ThreadSafe
 @ThreadSafe
 public final class ToolsPlugin: Sendable {
 
+  #if DEBUG
+  public init() { }
+  #else
   init() { }
+  #endif
 
   public var tools: [any Tool] {
     Array(registry.values)

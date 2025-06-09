@@ -18,15 +18,22 @@ public final class ReadFileTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    init(callingTool: ReadFileTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
+    init(
+      callingTool: ReadFileTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
+      self.context = context
       self.input = Input(
         path: input.path.resolvePath(from: context.projectRoot).path(),
         lineRange: input.lineRange)
       filePath = URL(fileURLWithPath: self.input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -50,7 +57,6 @@ public final class ReadFileTool: NonStreamableTool {
     public let callingTool: ReadFileTool
     public let toolUseId: String
     public let input: Input
-
     public let status: Status
 
     public func startExecuting() {
@@ -77,6 +83,8 @@ public final class ReadFileTool: NonStreamableTool {
     }
 
     let filePath: URL
+
+    let context: ToolExecutionContext
 
     @Dependency(\.server) private var server
     @Dependency(\.fileManager) private var fileManager

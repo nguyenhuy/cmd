@@ -20,7 +20,13 @@ public final class ExecuteCommandTool: NonStreamableTool {
   @ThreadSafe
   public final class Use: ToolUse, @unchecked Sendable {
 
-    init(callingTool: ExecuteCommandTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
+    init(
+      callingTool: ExecuteCommandTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
@@ -30,7 +36,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
         canModifySourceFiles: input.canModifySourceFiles,
         canModifyDerivedFiles: input.canModifyDerivedFiles)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
 
@@ -108,6 +114,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
     let setStdoutStream: (BroadcastedStream<Data>) -> Void
     let setStderrStream: (BroadcastedStream<Data>) -> Void
 
+    let context: ToolExecutionContext
+
     func killRunningProcess() async {
       commandWasManuallyInterrupted = true
       await runningProcess?.tearDown()
@@ -118,7 +126,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     @Dependency(\.shellService) private var shellService
 
-    private let context: ToolExecutionContext
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }

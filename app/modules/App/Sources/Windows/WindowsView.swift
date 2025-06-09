@@ -18,7 +18,7 @@ final class WindowsView {
       to: viewModel.state,
       from: .init(
         isSidePanelVisible: false,
-        isOnbardingVisible: false))
+        isOnboardingVisible: false))
     startObservations(of: viewModel)
   }
 
@@ -34,8 +34,8 @@ final class WindowsView {
   private var setupWindow: SetupWindow?
 
   private func update(to newState: WindowsViewModel.State, from oldState: WindowsViewModel.State) {
-    if newState.isOnbardingVisible != oldState.isOnbardingVisible {
-      if newState.isOnbardingVisible {
+    if newState.isOnboardingVisible != oldState.isOnboardingVisible {
+      if newState.isOnboardingVisible {
         showSetupWindow()
         hideSidePanel()
       } else {
@@ -49,7 +49,7 @@ final class WindowsView {
     }
     if newState.isSidePanelVisible != oldState.isSidePanelVisible {
       if newState.isSidePanelVisible {
-        if newState.isOnbardingVisible == false {
+        if newState.isOnboardingVisible == false {
           showSidePanel()
         }
       } else {

@@ -1,0 +1,54 @@
+// Copyright command. All rights reserved.
+// Licensed under the XXX License. See License.txt in the project root for license information.
+
+import ChatFeatureInterface
+import ChatHistoryServiceInterface
+import Foundation
+import SwiftTesting
+import Testing
+@testable import ChatFeature
+
+// MARK: - ChatModelConversionsTests
+
+struct ChatModelConversionsTests {
+
+  @MainActor
+  @Test("test model creation and conversion")
+  func testModelCreationAndConversion() async {
+    // Test ChatTabViewModel to ChatThreadModel conversion
+    let originalTab = ChatTabViewModel(name: "Test Tab")
+    let persistentModel = originalTab.persistentModel
+
+    #expect(persistentModel.name == "Test Tab")
+    #expect(persistentModel.id == originalTab.id)
+
+    // Test ChatThreadModel to ChatTabViewModel conversion
+    let loadedTab = await ChatTabViewModel(from: persistentModel)
+    #expect(loadedTab.name == "Test Tab")
+    #expect(loadedTab.messages.isEmpty)
+    #expect(loadedTab.events.isEmpty)
+  }
+
+  @MainActor
+  @Test("test chat message model conversion")
+  func testChatMessageModelConversion() throws {
+    let textContent = ChatMessageTextContent(text: "Hello world", isStreaming: false)
+    let message = ChatMessageViewModel(content: [.text(textContent)], role: .user)
+
+    // Convert to persistent model
+    let persistentMessage = message.persistentModel
+    #expect(persistentMessage.role == .user)
+    #expect(persistentMessage.content.count == 1)
+
+    // Test content conversion
+    let persistentContent = try #require(persistentMessage.content.first)
+    #expect(persistentContent.asText?.text == "Hello world")
+  }
+}
+
+extension ChatMessageContentModel {
+  var asText: ChatMessageTextContentModel? {
+    guard case .text(let textContent) = self else { return nil }
+    return textContent
+  }
+}

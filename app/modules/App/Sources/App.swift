@@ -52,8 +52,20 @@ public struct commandApp: App {
 
   public var body: some Scene {
     MenuBarExtra {
-      Button("Show \(windowsViewModel.isOnbardingVisible ? "onboarding" : "chat")") {
-        windowsViewModel.handle(.showApplication)
+      if windowsViewModel.state.isSidePanelVisible {
+        Button("Hide chat (⌘␛)") {
+          windowsViewModel.handle(.closeSidePanel)
+        }
+        .keyboardShortcut(.escape, modifiers: .command)
+      } else if windowsViewModel.state.isOnboardingVisible {
+        Button("Show onboarding") {
+          windowsViewModel.handle(.showApplication)
+        }
+      } else {
+        Button("Show chat (⌘I)") {
+          windowsViewModel.handle(.showApplication)
+        }
+        .keyboardShortcut("I", modifiers: .command)
       }
       Divider()
       Button("Quit") { NSApplication.shared.terminate(nil) }

@@ -18,7 +18,7 @@ import XcodeObserverServiceInterface
 final class WindowsViewModel {
 
   init() {
-    state = .init(isSidePanelVisible: false, isOnbardingVisible: false)
+    state = .init(isSidePanelVisible: false, isOnboardingVisible: false)
 
     appEventHandlerRegistry.registerHandler { [weak self] event in
       await self?.handle(appEvent: event) ?? false
@@ -30,16 +30,16 @@ final class WindowsViewModel {
 
   struct State {
     let isSidePanelVisible: Bool
-    let isOnbardingVisible: Bool
+    let isOnboardingVisible: Bool
 
     func with(
       isSidePanelVisible: Bool? = nil,
-      isOnbardingVisible: Bool? = nil)
+      isOnboardingVisible: Bool? = nil)
       -> State
     {
       State(
         isSidePanelVisible: isSidePanelVisible ?? self.isSidePanelVisible,
-        isOnbardingVisible: isOnbardingVisible ?? self.isOnbardingVisible)
+        isOnboardingVisible: isOnboardingVisible ?? self.isOnboardingVisible)
     }
   }
 
@@ -47,14 +47,13 @@ final class WindowsViewModel {
     case onboardingDidComplete
     case showApplication
     case closeSidePanel
-    case stopChat
     case accessibilityPermissionChanged(isGranted: Bool?)
   }
 
   private(set) var state: State
 
   /// Whether the onboarding should be visible.
-  var isOnbardingVisible: Bool {
+  var isOnboardingVisible: Bool {
     if userDefaults.bool(forKey: .hasCompletedOnboardingUserDefaultsKey) != true {
       // Show onboarding at least once
       return true
@@ -75,17 +74,14 @@ final class WindowsViewModel {
     case .closeSidePanel:
       state = state.with(isSidePanelVisible: false)
 
-    case .stopChat:
-      state = state.with(isSidePanelVisible: false)
-
     case .accessibilityPermissionChanged(let isGranted):
       guard let isGranted else { return }
 
       isAccessibilityPermissionGranted = isGranted
-      state = state.with(isOnbardingVisible: isOnbardingVisible)
+      state = state.with(isOnboardingVisible: isOnboardingVisible)
 
     case .onboardingDidComplete:
-      state = state.with(isOnbardingVisible: isOnbardingVisible)
+      state = state.with(isOnboardingVisible: isOnboardingVisible)
     }
   }
 
@@ -106,7 +102,7 @@ final class WindowsViewModel {
       // for instance to add code to the chat
       return false
     } else if appEvent is HideChatEvent {
-      handle(.stopChat)
+      handle(.closeSidePanel)
       // TODO: reset Xcode position
     }
     return false

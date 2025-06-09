@@ -27,7 +27,8 @@ public final class EditFilesTool: Tool {
       toolUseId: String,
       input: Data,
       isInputComplete: Bool,
-      context: ToolExecutionContext)
+      context: ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
       throws
     {
       self.callingTool = callingTool
@@ -37,7 +38,7 @@ public final class EditFilesTool: Tool {
       let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
       _input = Atomic(input)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -139,6 +140,8 @@ public final class EditFilesTool: Tool {
 
     let isInputComplete: Atomic<Bool>
 
+    let context: ToolExecutionContext
+
     @MainActor
     var viewModel: ToolUseViewModel {
       if let _viewModel {
@@ -158,7 +161,6 @@ public final class EditFilesTool: Tool {
     @MainActor private var _viewModel: ToolUseViewModel?
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-    private let context: ToolExecutionContext
 
   }
 
@@ -267,6 +269,14 @@ public final class EditFilesTool: Tool {
     """
   }
 
+  public var shortDescription: String {
+    if shouldAutoApply {
+      "Replace existing code using search/replace blocks in a list of files and create new files."
+    } else {
+      "Suggest to replace existing code using search/replace blocks in a list of files and to create new files."
+    }
+  }
+
   public func isAvailable(in mode: ChatMode) -> Bool {
     switch mode {
     case .agent:
@@ -292,13 +302,5 @@ public final class EditFilesTool: Tool {
   }
 
   private let shouldAutoApply: Bool
-
-  public var shortDescription: String {
-    if shouldAutoApply {
-      "Replace existing code using search/replace blocks in a list of files and create new files."
-    } else {
-      "Suggest to replace existing code using search/replace blocks in a list of files and to create new files."
-    }
-  }
 
 }

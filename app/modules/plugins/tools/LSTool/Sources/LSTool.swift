@@ -18,7 +18,13 @@ public final class LSTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   public final class Use: ToolUse, @unchecked Sendable {
-    init(callingTool: LSTool, toolUseId: String, input: Input, context: ToolExecutionContext) {
+    init(
+      callingTool: LSTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolExecutionContext,
+      initialStatus: Status.Element? = nil)
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
@@ -27,7 +33,7 @@ public final class LSTool: NonStreamableTool {
         recursive: input.recursive)
       directoryPath = URL(fileURLWithPath: self.input.path)
 
-      let (stream, updateStatus) = Status.makeStream(initial: .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
       status = stream
       self.updateStatus = updateStatus
     }
@@ -90,8 +96,9 @@ public final class LSTool: NonStreamableTool {
 
     let directoryPath: URL
 
+    let context: ToolExecutionContext
+
     @Dependency(\.server) private var server
-    private let context: ToolExecutionContext
 
     private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 

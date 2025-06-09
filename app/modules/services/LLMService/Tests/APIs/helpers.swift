@@ -1,6 +1,7 @@
 // Copyright command. All rights reserved.
 // Licensed under the XXX License. See License.txt in the project root for license information.
 
+import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import FoundationInterfaces
@@ -93,7 +94,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
 
   // MARK: - TestToolUse
 
-  struct Use: ToolUse {
+  @ThreadSafe
+  struct Use: ToolUse, Codable {
 
     init(callingTool: TestTool<Input, Output>, toolUseId: String, input: Input, output: Result<Output, Error>, isReadonly: Bool) {
       self.toolUseId = toolUseId
@@ -102,6 +104,10 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
       self.output = output
       self.isReadonly = isReadonly
       status = .Just(.completed(output))
+    }
+
+    init(from _: Decoder) throws {
+      fatalError("Decoding not implemented for TestTool.Use")
     }
 
     let callingTool: TestTool<Input, Output>
@@ -115,6 +121,11 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
     func startExecuting() { }
 
     func reject(reason _: String?) { }
+
+    func encode(to _: Encoder) throws {
+      fatalError("Decoding not implemented for TestTool.Use")
+    }
+
   }
 
   let name: String
@@ -122,10 +133,10 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
   let isAvailableInChatMode: @Sendable (ChatMode) -> Bool
 
   var displayName: String { name }
+  var shortDescription: String { "tool for testing" }
 
   var description: String { "tool for testing" }
   var inputSchema: JSON { .object([:]) }
-  var displayName: String { name }
 
   func isAvailable(in _: ChatFoundation.ChatMode) -> Bool {
     true
@@ -157,32 +168,45 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
   }
 
   @ThreadSafe
-  final class Use: ToolUse {
+  final class Use: ToolUse, Codable {
     init(
       callingTool: TestStreamingTool<Input, Output>,
       toolUseId: String,
       input: Input,
       output: Result<Output, Error>,
-      isReadonly: Bool)
+      isReadonly: Bool,
+      hasReceivedAllInput: Bool = false)
     {
       self.toolUseId = toolUseId
       self.callingTool = callingTool
       self.input = input
       self.output = output
       self.isReadonly = isReadonly
+      self.hasReceivedAllInput = hasReceivedAllInput
+      onReceiveInput = { }
+      receivedInputs = [input]
       status = .Just(.completed(output))
-      receivedInputs.append(input)
-      onReceiveInput()
+    }
+
+    convenience init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: String.self)
+      try self.init(
+        callingTool: container.decode(TestStreamingTool<Input, Output>.self, forKey: "callingTool"),
+        toolUseId: container.decode(String.self, forKey: "toolUseId"),
+        input: container.decode(Input.self, forKey: "input"),
+        output: container.decode(Result<Output, Error>.self, forKey: "output"),
+        isReadonly: container.decode(Bool.self, forKey: "isReadonly"),
+        hasReceivedAllInput: container.decodeIfPresent(Bool.self, forKey: "hasReceivedAllInput") ?? false)
     }
 
     let callingTool: TestStreamingTool<Input, Output>
     let toolUseId: String
     let isReadonly: Bool
-    var hasReceivedAllInput = false
+    var hasReceivedAllInput: Bool
     var input: Input
     let output: Result<Output, Error>
-    var onReceiveInput: @Sendable () -> Void = { }
-    var receivedInputs: [Input] = []
+    var onReceiveInput: @Sendable () -> Void
+    var receivedInputs: [Input]
 
     let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<Output>>
 
@@ -197,6 +221,11 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
     func startExecuting() { }
 
     func reject(reason _: String?) { }
+
+    func encode(to _: Encoder) throws {
+      fatalError("Decoding not implemented for TestStreamingTool.Use")
+    }
+
   }
 
   let canInputBeStreamed = true
@@ -206,10 +235,10 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
   let isAvailableInChatMode: @Sendable (ChatMode) -> Bool
 
   var displayName: String { name }
+  var shortDescription: String { "tool for testing" }
 
   var description: String { "tool for testing" }
   var inputSchema: JSON { .object([:]) }
-  var displayName: String { name }
 
   func use(
     toolUseId: String,
@@ -272,5 +301,4 @@ struct TestChatContext: ChatContext {
   let chatMode: ChatMode
 
   let prepareForWriteToolUse: @Sendable () async -> Void
-  let requestToolApproval: @Sendable (any ToolUse) async throws -> Void
 }

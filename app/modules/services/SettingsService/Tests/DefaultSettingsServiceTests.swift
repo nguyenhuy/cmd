@@ -259,7 +259,8 @@ struct DefaultSettingsServiceTests {
         "automaticallyCheckForUpdates": true,
         "preferedProviders" : {},
         "reasoningModels" : {},
-        "inactiveModels" : []
+        "inactiveModels" : [],
+        "toolPreferences" : []
       }
       """)
     _ = cancellable
