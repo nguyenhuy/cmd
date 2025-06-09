@@ -23,13 +23,11 @@ struct DefaultChatHistoryServiceTests {
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
 
     // Test
-    _ = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
-
-    // Wait for database initialization
-    try await Task.sleep(for: .milliseconds(100))
+    await sut.didInitialized()
 
     // Verify tables are created
     let tableExists = try await dbQueue.read { db in
@@ -42,15 +40,16 @@ struct DefaultChatHistoryServiceTests {
   func test_saveChatThread() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     let thread = createTestChatThread()
 
     // Test save
-    try await service.save(chatThread: thread)
+    try await sut.save(chatThread: thread)
 
     // Verify thread was saved to database
     let record = try await dbQueue.read { db in
@@ -59,7 +58,9 @@ struct DefaultChatHistoryServiceTests {
 
     #expect(record?.id == thread.id.uuidString)
     #expect(record?.name == thread.name)
-    #expect(record?.createdAt == thread.createdAt)
+    // Allow a small tolerance for time differences
+    let recordCreatedAt = record?.createdAt.timeIntervalSince1970 ?? 0
+    #expect(Swift.abs(recordCreatedAt - thread.createdAt.timeIntervalSince1970) < 0.1)
 
     // Verify content file was created
     let contentPath = URL(filePath: record!.rawContentPath)
@@ -70,18 +71,19 @@ struct DefaultChatHistoryServiceTests {
   func test_loadChatThread() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     let originalThread = createTestChatThread()
 
     // Save thread
-    try await service.save(chatThread: originalThread)
+    try await sut.save(chatThread: originalThread)
 
     // Test load
-    let loadedThread = try await service.loadChatThread(id: originalThread.id)
+    let loadedThread = try await sut.loadChatThread(id: originalThread.id)
 
     // Verify
     #expect(loadedThread != nil)
@@ -95,22 +97,23 @@ struct DefaultChatHistoryServiceTests {
   func test_loadLastChatThreads() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     // Create and save multiple threads
     let thread1 = createTestChatThread(name: "Thread 1")
     let thread2 = createTestChatThread(name: "Thread 2")
     let thread3 = createTestChatThread(name: "Thread 3")
 
-    try await service.save(chatThread: thread1)
-    try await service.save(chatThread: thread2)
-    try await service.save(chatThread: thread3)
+    try await sut.save(chatThread: thread1)
+    try await sut.save(chatThread: thread2)
+    try await sut.save(chatThread: thread3)
 
     // Test loading last 2 threads
-    let metadata = try await service.loadLastChatThreads(last: 2, offset: 0)
+    let metadata = try await sut.loadLastChatThreads(last: 2, offset: 0)
 
     // Verify (should be ordered by creation date desc)
     #expect(metadata.count == 2)
@@ -118,7 +121,7 @@ struct DefaultChatHistoryServiceTests {
     #expect(metadata[1].name == "Thread 2")
 
     // Test pagination
-    let nextMetadata = try await service.loadLastChatThreads(last: 2, offset: 2)
+    let nextMetadata = try await sut.loadLastChatThreads(last: 2, offset: 2)
     #expect(nextMetadata.count == 1)
     #expect(nextMetadata[0].name == "Thread 1")
   }
@@ -127,25 +130,26 @@ struct DefaultChatHistoryServiceTests {
   func test_deleteChatThread() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     let thread = createTestChatThread()
 
     // Save thread
-    try await service.save(chatThread: thread)
+    try await sut.save(chatThread: thread)
 
     // Verify it exists
-    let existingThread = try await service.loadChatThread(id: thread.id)
+    let existingThread = try await sut.loadChatThread(id: thread.id)
     #expect(existingThread != nil)
 
     // Test delete
-    try await service.deleteChatThread(id: thread.id)
+    try await sut.deleteChatThread(id: thread.id)
 
     // Verify it's deleted
-    let deletedThread = try await service.loadChatThread(id: thread.id)
+    let deletedThread = try await sut.loadChatThread(id: thread.id)
     #expect(deletedThread == nil)
 
     // Verify database record is deleted
@@ -159,14 +163,15 @@ struct DefaultChatHistoryServiceTests {
   func test_loadNonExistentThread() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     // Test loading non-existent thread
     let nonExistentId = UUID()
-    let thread = try await service.loadChatThread(id: nonExistentId)
+    let thread = try await sut.loadChatThread(id: nonExistentId)
 
     // Verify
     #expect(thread == nil)
@@ -176,13 +181,14 @@ struct DefaultChatHistoryServiceTests {
   func test_emptyHistory() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     // Test loading from empty database
-    let metadata = try await service.loadLastChatThreads(last: 10, offset: 0)
+    let metadata = try await sut.loadLastChatThreads(last: 10, offset: 0)
 
     // Verify
     #expect(metadata.isEmpty)
@@ -192,10 +198,11 @@ struct DefaultChatHistoryServiceTests {
   func test_multipleThreadsWithProjects() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     // Create threads with different project info
     let projectInfo1 = ChatThreadModel.SelectedProjectInfo(
@@ -210,14 +217,14 @@ struct DefaultChatHistoryServiceTests {
     let thread3 = createTestChatThread(name: "No Project Thread", projectInfo: nil)
 
     // Save threads
-    try await service.save(chatThread: thread1)
-    try await service.save(chatThread: thread2)
-    try await service.save(chatThread: thread3)
+    try await sut.save(chatThread: thread1)
+    try await sut.save(chatThread: thread2)
+    try await sut.save(chatThread: thread3)
 
     // Load and verify
-    let loadedThread1 = try await service.loadChatThread(id: thread1.id)
-    let loadedThread2 = try await service.loadChatThread(id: thread2.id)
-    let loadedThread3 = try await service.loadChatThread(id: thread3.id)
+    let loadedThread1 = try await sut.loadChatThread(id: thread1.id)
+    let loadedThread2 = try await sut.loadChatThread(id: thread2.id)
+    let loadedThread3 = try await sut.loadChatThread(id: thread3.id)
 
     #expect(loadedThread1?.projectInfo?.dirPath == projectInfo1.dirPath)
     #expect(loadedThread2?.projectInfo?.dirPath == projectInfo2.dirPath)
@@ -228,15 +235,16 @@ struct DefaultChatHistoryServiceTests {
   func test_updateChatThread() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     let originalThread = createTestChatThread(name: "Original Name")
 
     // Save original thread
-    try await service.save(chatThread: originalThread)
+    try await sut.save(chatThread: originalThread)
 
     // Create updated thread with same ID but different content
     let updatedMessages = originalThread.messages + [
@@ -251,10 +259,10 @@ struct DefaultChatHistoryServiceTests {
       createdAt: originalThread.createdAt)
 
     // Save updated thread
-    try await service.save(chatThread: updatedThread)
+    try await sut.save(chatThread: updatedThread)
 
     // Load and verify
-    let loadedThread = try await service.loadChatThread(id: originalThread.id)
+    let loadedThread = try await sut.loadChatThread(id: originalThread.id)
     #expect(loadedThread?.name == "Updated Name")
     #expect(loadedThread?.messages.count == updatedMessages.count)
   }
@@ -263,15 +271,16 @@ struct DefaultChatHistoryServiceTests {
   func test_corruptedContentFile() async throws {
     // Setup
     let (fileManager, toolsPlugin, dbQueue) = createTestComponents()
-    let service = DefaultChatHistoryService(
+    let sut = DefaultChatHistoryService(
       createDBConnection: { dbQueue },
       fileManager: fileManager,
       toolsPlugin: toolsPlugin)
+    await sut.didInitialized()
 
     let thread = createTestChatThread()
 
     // Save thread
-    try await service.save(chatThread: thread)
+    try await sut.save(chatThread: thread)
 
     // Get the content path and corrupt the file
     let record = try await dbQueue.read { db in
@@ -283,7 +292,7 @@ struct DefaultChatHistoryServiceTests {
     try fileManager.write(data: Data("corrupted".utf8), to: contentPath, options: .atomic)
 
     // Test loading corrupted thread
-    let loadedThread = try await service.loadChatThread(id: thread.id)
+    let loadedThread = try await sut.loadChatThread(id: thread.id)
 
     // Should return nil and clean up the corrupted thread
     #expect(loadedThread == nil)

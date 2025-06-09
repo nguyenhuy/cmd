@@ -3,6 +3,7 @@
 
 import ChatFeatureInterface
 import ChatHistoryServiceInterface
+@preconcurrency import Combine
 import CryptoKit
 import DependencyFoundation
 import Foundation
@@ -10,13 +11,15 @@ import FoundationInterfaces
 import GRDB
 import LLMServiceInterface
 import LoggingServiceInterface
+import ThreadSafe
 import ToolFoundation
 
 let logger = defaultLogger.subLogger(subsystem: "chatHistoryService")
 
 // MARK: - DefaultChatHistoryService
 
-final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
+///@ThreadSafe
+final class DefaultChatHistoryService: ChatHistoryService, Sendable {
   init(
     createDBConnection: () -> DatabaseQueue,
     fileManager: FileManagerI,
@@ -26,16 +29,14 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     self.toolsPlugin = toolsPlugin
     dbQueue = createDBConnection()
 
-    Task {
-      do {
-        try await dbQueue.write { db in
-          try self.createTables(db)
-        }
-        logger.log("Database tables created successfully")
-      } catch {
-        logger.error("Database tables could not be created. Chat history will not work", error)
-      }
-    }
+    let (hasInitialize, fulfill) = Future<Void, Never>.make()
+    self.hasInitialize = hasInitialize
+
+    initializeTables(fulfill: fulfill)
+  }
+
+  func didInitialized() async {
+    await hasInitialize.value
   }
 
   // MARK: - Chat Thread Operations
@@ -121,6 +122,8 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
     }
   }
 
+  // Used for testing purposes to ensure tables are created before any operations
+  private let hasInitialize: Future<Void, Never>
   private let toolsPlugin: ToolsPlugin
 
   private let fileManager: FileManagerI
@@ -128,6 +131,20 @@ final class DefaultChatHistoryService: ChatHistoryService, @unchecked Sendable {
   // MARK: - Atomic Operations
 
   private let dbQueue: DatabaseQueue
+
+  private func initializeTables(fulfill: @escaping @Sendable (Result<Void, Never>) -> Void) {
+    Task {
+      do {
+        try await dbQueue.write { db in
+          try self.createTables(db)
+        }
+        fulfill(.success(()))
+        logger.log("Database tables created successfully")
+      } catch {
+        logger.error("Database tables could not be created. Chat history will not work", error)
+      }
+    }
+  }
 
   private func createTables(_ db: Database) throws {
     // Create chat_threads table

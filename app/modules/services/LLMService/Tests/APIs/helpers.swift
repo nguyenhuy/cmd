@@ -94,7 +94,8 @@ struct TestTool<Input: Codable & Sendable, Output: Codable & Sendable>: NonStrea
 
   // MARK: - TestToolUse
 
-  struct Use: ToolUse, Codable, @unchecked Sendable {
+  @ThreadSafe
+  struct Use: ToolUse, Codable {
 
     init(callingTool: TestTool<Input, Output>, toolUseId: String, input: Input, output: Result<Output, Error>, isReadonly: Bool) {
       self.toolUseId = toolUseId
@@ -166,7 +167,8 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
     self.init(name: name, output: .success(output))
   }
 
-  final class Use: ToolUse, Codable, @unchecked Sendable {
+  @ThreadSafe
+  final class Use: ToolUse, Codable {
     init(
       callingTool: TestStreamingTool<Input, Output>,
       toolUseId: String,
@@ -186,24 +188,34 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
       status = .Just(.completed(output))
     }
 
-    init(from _: Decoder) throws {
-      fatalError("Decoding not implemented for TestStreamingTool.Use")
+    convenience init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: String.self)
+      try self.init(
+        callingTool: container.decode(TestStreamingTool<Input, Output>.self, forKey: "callingTool"),
+        toolUseId: container.decode(String.self, forKey: "toolUseId"),
+        input: container.decode(Input.self, forKey: "input"),
+        output: container.decode(Result<Output, Error>.self, forKey: "output"),
+        isReadonly: container.decode(Bool.self, forKey: "isReadonly"),
+        hasReceivedAllInput: container.decodeIfPresent(Bool.self, forKey: "hasReceivedAllInput") ?? false)
     }
 
     let callingTool: TestStreamingTool<Input, Output>
     let toolUseId: String
     let isReadonly: Bool
-    let hasReceivedAllInput: Bool
-    let input: Input
+    var hasReceivedAllInput: Bool
+    var input: Input
     let output: Result<Output, Error>
     var onReceiveInput: @Sendable () -> Void
-    let receivedInputs: [Input]
+    var receivedInputs: [Input]
 
     let status: CurrentValueStream<ToolFoundation.ToolUseExecutionStatus<Output>>
 
-    func receive(inputUpdate: Data, isLast _: Bool) throws {
-      let _ = try JSONDecoder().decode(Input.self, from: inputUpdate)
-      // Test helper - properties are immutable
+    func receive(inputUpdate: Data, isLast: Bool) throws {
+      let newInput = try JSONDecoder().decode(Input.self, from: inputUpdate)
+      receivedInputs.append(newInput)
+      input = newInput
+      hasReceivedAllInput = isLast
+      onReceiveInput()
     }
 
     func startExecuting() { }
@@ -236,13 +248,11 @@ struct TestStreamingTool<Input: Codable & Sendable, Output: Codable & Sendable>:
     throws -> Use
   {
     let input = try JSONDecoder().decode(Input.self, from: input)
-    return Use(
-      callingTool: self,
-      toolUseId: toolUseId,
-      input: input,
-      output: output,
-      isReadonly: isReadonly,
-      hasReceivedAllInput: isInputComplete)
+    let toolUse = Use(callingTool: self, toolUseId: toolUseId, input: input, output: output, isReadonly: isReadonly)
+    if isInputComplete {
+      toolUse.hasReceivedAllInput = true
+    }
+    return toolUse
   }
 
   func isAvailable(in _: ChatFoundation.ChatMode) -> Bool {

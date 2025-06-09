@@ -4,6 +4,7 @@
 import Foundation
 import LLMFoundation
 import ServerServiceInterface
+import SettingsServiceInterface
 import SwiftTesting
 import Testing
 @testable import LLMService
@@ -171,8 +172,65 @@ struct APIParamsEncodingTests {
         """)
   }
 
-  @Test("EnableReasoning parameter set to true for reasoning-capable models")
-  func testEnableReasoningTrueForReasoningModels() async throws {
+  @Test("EnableReasoning parameter set to true for enabled reasoning-capable models")
+  func testEnableReasoningTrueForEnableReasoningModels() async throws {
+    let requestCompleted = expectation(description: "Request completed")
+    let mockServer = MockServer()
+    let settingsService = MockSettingsService(.init(
+      pointReleaseXcodeExtensionToDebugApp: false,
+      llmProviderSettings: [
+        .openAI: LLMProviderSettings(
+          apiKey: "openai-key",
+          baseUrl: nil,
+          createdOrder: 2),
+      ],
+      reasoningModels: [.claudeSonnet_4_0: .init(isEnabled: true)]))
+    let service = DefaultLLMService(server: mockServer, settingsService: settingsService)
+
+    mockServer.onPostRequest = { path, data, _ in
+      #expect(path == "sendMessage")
+      data.expectToMatch("""
+        {
+          "messages" : [
+            {
+              "content" : [
+                {
+                  "text" : "Hello",
+                  "type" : "text"
+                }
+              ],
+              "role" : "user"
+            }
+          ],
+          "model" : "claude-sonnet-4-20250514",
+          "enableReasoning": true,
+          "provider" : {
+            "name" : "anthropic",
+            "settings" : { "apiKey" : "anthropic-key" }
+          },
+          "tools" : [],
+          "projectRoot" : "/test"
+        }
+        """, ignoring: "system")
+      requestCompleted.fulfill()
+      return okServerResponse
+    }
+
+    // Use a model that supports reasoning
+    let reasoningModel = LLMModel.claudeSonnet_4_0
+    #expect(reasoningModel.canReason == true)
+
+    _ = try await service.sendMessage(
+      messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
+      tools: [],
+      model: reasoningModel,
+      context: TestChatContext(projectRoot: URL(filePath: "/test"))) { _ in }
+
+    try await fulfillment(of: [requestCompleted])
+  }
+
+  @Test("EnableReasoning parameter set to true for non-enabled reasoning-capable models")
+  func testEnableReasoningTrueForNonEnableReasoningModels() async throws {
     let requestCompleted = expectation(description: "Request completed")
     let mockServer = MockServer()
     let service = DefaultLLMService(server: mockServer)
@@ -262,102 +320,6 @@ struct APIParamsEncodingTests {
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
       tools: [],
       model: nonReasoningModel,
-      context: TestChatContext(projectRoot: URL(filePath: "/test"))) { _ in }
-
-    try await fulfillment(of: [requestCompleted])
-  }
-
-  @Test("EnableReasoning parameter correctly set for OpenAI reasoning models")
-  func testEnableReasoningForOpenAIModels() async throws {
-    let requestCompleted = expectation(description: "Request completed")
-    let mockServer = MockServer()
-    let service = DefaultLLMService(server: mockServer)
-
-    mockServer.onPostRequest = { path, data, _ in
-      #expect(path == "sendMessage")
-      data.expectToMatch("""
-        {
-          "messages" : [
-            {
-              "content" : [
-                {
-                  "text" : "Hello",
-                  "type" : "text"
-                }
-              ],
-              "role" : "user"
-            }
-          ],
-          "model" : "o3",
-          "enableReasoning": false,
-          "provider" : {
-            "name" : "openai",
-            "settings" : { "apiKey" : "openai-key" }
-          },
-          "tools" : [],
-          "projectRoot" : "/test"
-        }
-        """, ignoring: "system")
-      requestCompleted.fulfill()
-      return okServerResponse
-    }
-
-    // Test OpenAI reasoning model
-    let o3Model = LLMModel.o3
-    #expect(o3Model.canReason == true)
-
-    _ = try await service.sendMessage(
-      messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
-      tools: [],
-      model: o3Model,
-      context: TestChatContext(projectRoot: URL(filePath: "/test"))) { _ in }
-
-    try await fulfillment(of: [requestCompleted])
-  }
-
-  @Test("EnableReasoning parameter correctly set for OpenAI non-reasoning models")
-  func testEnableReasoningForNonReasoningOpenAIModels() async throws {
-    let requestCompleted = expectation(description: "Request completed")
-    let mockServer = MockServer()
-    let service = DefaultLLMService(server: mockServer)
-
-    mockServer.onPostRequest = { path, data, _ in
-      #expect(path == "sendMessage")
-      data.expectToMatch("""
-        {
-          "messages" : [
-            {
-              "content" : [
-                {
-                  "text" : "Hello",
-                  "type" : "text"
-                }
-              ],
-              "role" : "user"
-            }
-          ],
-          "model" : "gpt-4o",
-          "enableReasoning": false,
-          "provider" : {
-            "name" : "openai",
-            "settings" : { "apiKey" : "openai-key" }
-          },
-          "tools" : [],
-          "projectRoot" : "/test"
-        }
-        """, ignoring: "system")
-      requestCompleted.fulfill()
-      return okServerResponse
-    }
-
-    // Test OpenAI non-reasoning model
-    let gpt4Model = LLMModel.gpt_4o
-    #expect(gpt4Model.canReason == false)
-
-    _ = try await service.sendMessage(
-      messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "Hello"))])],
-      tools: [],
-      model: gpt4Model,
       context: TestChatContext(projectRoot: URL(filePath: "/test"))) { _ in }
 
     try await fulfillment(of: [requestCompleted])

@@ -283,7 +283,8 @@ struct SettingsCodableTests {
           "gpt-4o" : {
             "isEnabled" : false
           }
-        }
+        },
+        "toolPreferences": []
       }
       """
 
@@ -541,6 +542,7 @@ struct SettingsCodableTests {
         "preferedProviders" : {
           "claude-haiku-35" : "anthropic"
         },
+        "reasoningModels": {},
         "toolPreferences" : [
           {
             "alwaysApprove" : true,

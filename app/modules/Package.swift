@@ -1000,6 +1000,7 @@ targets.append(contentsOf: Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "LoggingServiceInterface",
+    "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [

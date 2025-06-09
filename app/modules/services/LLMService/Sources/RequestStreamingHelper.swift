@@ -91,7 +91,6 @@ final class RequestStreamingHelper: Sendable {
         if event.idx <= previousChunkIdx {
           defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
         }
-        print("handle")
 
         switch event {
         case .ping:
@@ -101,7 +100,6 @@ final class RequestStreamingHelper: Sendable {
           handle(textDelta: textDelta)
 
         case .toolUseDelta(let toolUseDelta):
-          print("handle toolUseDelta")
           await handle(toolUseDelta: toolUseDelta)
 
         case .toolUseRequest(let toolUseRequest):

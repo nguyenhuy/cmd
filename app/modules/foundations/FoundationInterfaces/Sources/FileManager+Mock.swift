@@ -93,6 +93,9 @@ public final class MockFileManager: FileManagerI {
       while !url.lastPathComponent.isEmpty {
         url = url.deletingLastPathComponent()
         let filePath = url.path() // URL is not Sendable, so use a String to silence the warning.
+        if filePath.starts(with: "/") {
+          break
+        }
         inLock { $0.directories.append(URL(filePath: filePath)) }
       }
     }
