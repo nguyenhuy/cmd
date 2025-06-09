@@ -1,9 +1,2 @@
-// Copyright cmd app, Inc. All rights reserved.
-// Licensed under the MIT License. See License.txt in the project root for license information.
-
-//
-//  Test.swift
-//
-//  Copyright cmd app, Inc. All rights reserved.
-//  Licensed under the MIT License. See License.txt in the project root for license information.
-//
+// Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0

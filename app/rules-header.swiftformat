@@ -4,8 +4,7 @@
 --exclude Carthage,Pods,.build,**/Module.swift,**/Package.swift,build
 
 # options
---header Copyright cmd app, Inc. All rights reserved.\nLicensed under the MIT License. See License.txt in the project root for license information.
-
+--header Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.\nYou may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 # rules
 --rules fileHeader
