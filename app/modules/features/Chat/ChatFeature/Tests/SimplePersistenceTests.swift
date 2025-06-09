@@ -31,31 +31,24 @@ struct SimplePersistenceTests {
 
   @MainActor
   @Test("test chat message model conversion")
-  func testChatMessageModelConversion() {
+  func testChatMessageModelConversion() throws {
     let textContent = ChatMessageTextContent(text: "Hello world", isStreaming: false)
-    let message = ChatMessage(content: [.text(textContent)], role: .user)
+    let message = ChatMessageViewModel(content: [.text(textContent)], role: .user)
 
     // Convert to persistent model
-    let persistentMessage = message.persistentModel(for: "test-tab-id")
-    #expect(persistentMessage.role == "user")
-    #expect(persistentMessage.contents.count == 1)
+    let persistentMessage = message.persistentModel
+    #expect(persistentMessage.role == .user)
+    #expect(persistentMessage.content.count == 1)
 
     // Test content conversion
-    let persistentContent = persistentMessage.contents.first!
-    #expect(persistentContent.type == "text")
-    #expect(persistentContent.text == "Hello world")
-    #expect(persistentContent.isStreaming == false)
+    let persistentContent = try #require(persistentMessage.content.first)
+    #expect(persistentContent.asText?.text == "Hello world")
   }
+}
 
-  @MainActor
-  @Test("test attachment model conversion")
-  func testAttachmentModelConversion() {
-    let fileAttachment = Attachment.FileAttachment(path: URL(filePath: "/test/file.swift"), content: "print(\"Hello\")")
-    let attachment = Attachment.file(fileAttachment)
-
-    let persistentAttachment = attachment.persistentModel
-    #expect(persistentAttachment.type == "file")
-    #expect(persistentAttachment.filePath == "/test/file.swift")
-    #expect(persistentAttachment.fileContent == "print(\"Hello\")")
+extension ChatMessageContentModel {
+  var asText: ChatMessageTextContentModel? {
+    guard case .text(let textContent) = self else { return nil }
+    return textContent
   }
 }

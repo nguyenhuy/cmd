@@ -27,12 +27,12 @@ public final class AskFollowUpTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable, Equatable {
+    public struct Input: Codable, Sendable {
       public let question: String
       public let followUp: [String]
     }
 
-    public struct Output: Codable, Sendable, Equatable {
+    public struct Output: Codable, Sendable {
       public let response: String
     }
 

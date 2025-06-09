@@ -38,16 +38,16 @@ public final class ReadFileTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable, Equatable {
+    public struct Input: Codable, Sendable {
       public let path: String
       public let lineRange: Range?
-      public struct Range: Codable, Sendable, Equatable {
+      public struct Range: Codable, Sendable {
         public let start: Int
         public let end: Int
       }
     }
 
-    public struct Output: Codable, Sendable, Equatable {
+    public struct Output: Codable, Sendable {
       public let content: String
       public let uri: String
     }

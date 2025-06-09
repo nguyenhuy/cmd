@@ -20,11 +20,11 @@ struct ChatInputViewModelFileHandlingTests {
     let viewModel = ChatInputViewModel()
 
     // Create file attachments
-    let fileAttachment1 = Attachment.file(.init(
+    let fileAttachment1 = AttachmentModel.file(.init(
       path: URL(filePath: "/path/to/file1.swift"),
       content: "// Test file content"))
 
-    let fileAttachment2 = Attachment.file(.init(
+    let fileAttachment2 = AttachmentModel.file(.init(
       path: URL(filePath: "/path/to/file2.swift"),
       content: "// Another test file"))
 

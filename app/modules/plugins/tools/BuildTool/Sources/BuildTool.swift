@@ -39,7 +39,7 @@ public final class BuildTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable, Equatable {
+    public struct Input: Codable, Sendable {
       public let `for`: BuildType
 
       public init(`for`: BuildType) {
@@ -47,7 +47,7 @@ public final class BuildTool: NonStreamableTool {
       }
     }
 
-    public struct Output: Codable, Sendable, Equatable {
+    public struct Output: Codable, Sendable {
       let buildResult: BuildSection
       let isSuccess: Bool
     }

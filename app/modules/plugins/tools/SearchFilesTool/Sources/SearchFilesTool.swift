@@ -40,7 +40,7 @@ public final class SearchFilesTool: NonStreamableTool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable, Equatable {
+    public struct Input: Codable, Sendable {
       public let directoryPath: String
       public let regex: String
       public let filePattern: String?

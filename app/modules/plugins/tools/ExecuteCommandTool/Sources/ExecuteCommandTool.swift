@@ -48,14 +48,14 @@ public final class ExecuteCommandTool: NonStreamableTool {
       setStderrStream = { stream in setStderr(.success(stream)) }
     }
 
-    public struct Input: Codable, Sendable, Equatable {
+    public struct Input: Codable, Sendable {
       public let command: String
       public let cwd: String?
       public let canModifySourceFiles: Bool
       public let canModifyDerivedFiles: Bool
     }
 
-    public struct Output: Codable, Sendable, Equatable {
+    public struct Output: Codable, Sendable {
       public let output: String?
       public let exitCode: Int32
     }

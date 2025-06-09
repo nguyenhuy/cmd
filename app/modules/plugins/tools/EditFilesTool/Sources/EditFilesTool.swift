@@ -43,7 +43,7 @@ public final class EditFilesTool: Tool {
       self.updateStatus = updateStatus
     }
 
-    public struct Input: Codable, Sendable, Equatable {
+    public struct Input: Codable, Sendable {
       init(files: [FileChange]) {
         self.files = files
       }
@@ -54,8 +54,8 @@ public final class EditFilesTool: Tool {
         files = try container.resilientlyDecode([FileChange].self, forKey: "files")
       }
 
-      public struct FileChange: Codable, Sendable, Equatable {
-        public struct Change: Codable, Sendable, Equatable {
+      public struct FileChange: Codable, Sendable {
+        public struct Change: Codable, Sendable {
           public let search: String
           public let replace: String
 
@@ -90,7 +90,7 @@ public final class EditFilesTool: Tool {
       }
     }
 
-    public struct Output: Codable, Sendable, Equatable {
+    public struct Output: Codable, Sendable {
       public let result: JSON
     }
 
