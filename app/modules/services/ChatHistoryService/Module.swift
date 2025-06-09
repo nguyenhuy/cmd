@@ -9,7 +9,6 @@ Target.module(
     "FoundationInterfaces",
     "LLMServiceInterface",
     "LoggingServiceInterface",
-    "ThreadSafe",
     "ToolFoundation",
   ],
   testDependencies: [

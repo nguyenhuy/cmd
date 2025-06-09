@@ -11,14 +11,12 @@ import FoundationInterfaces
 import GRDB
 import LLMServiceInterface
 import LoggingServiceInterface
-import ThreadSafe
 import ToolFoundation
 
 let logger = defaultLogger.subLogger(subsystem: "chatHistoryService")
 
 // MARK: - DefaultChatHistoryService
 
-///@ThreadSafe
 final class DefaultChatHistoryService: ChatHistoryService, Sendable {
   init(
     createDBConnection: () -> DatabaseQueue,
