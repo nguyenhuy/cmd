@@ -128,6 +128,8 @@ public class ChatViewModel {
   private func selectChatThread(id: UUID) async {
     do {
       guard let thread = try await chatHistoryService.loadChatThread(id: id) else {
+        defaultLogger.error("Could not find chat thread \(id)")
+        showChatHistory = false
         return
       }
 

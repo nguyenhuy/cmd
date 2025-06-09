@@ -75,45 +75,50 @@ final class RequestStreamingHelper: Sendable {
   func processStream() async throws {
     do {
       for try await chunk in stream {
-        #if DEBUG
-        repeatDebugHelper.receive(chunk: chunk)
-        #endif
-        guard !isTaskCancelled() else {
-          // This should not be necessary. Cancelling the task should make the post request fail with an error.
-          // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
-          finish()
-          break
-        }
+        do {
+          #if DEBUG
+          repeatDebugHelper.receive(chunk: chunk)
+          #endif
+          guard !isTaskCancelled() else {
+            // This should not be necessary. Cancelling the task should make the post request fail with an error.
+            // TODO: look at removing this, which can also lead to `.finish()` being called twice on the stream.
+            finish()
+            break
+          }
 
-        let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
+          let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
 
-        let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: event.idx)
-        if event.idx <= previousChunkIdx {
-          defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
-        }
+          let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: event.idx)
+          if event.idx <= previousChunkIdx {
+            defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
+          }
 
-        switch event {
-        case .ping:
-          break
+          switch event {
+          case .ping:
+            break
 
-        case .textDelta(let textDelta):
-          handle(textDelta: textDelta)
+          case .textDelta(let textDelta):
+            handle(textDelta: textDelta)
 
-        case .toolUseDelta(let toolUseDelta):
-          await handle(toolUseDelta: toolUseDelta)
+          case .toolUseDelta(let toolUseDelta):
+            await handle(toolUseDelta: toolUseDelta)
 
-        case .toolUseRequest(let toolUseRequest):
-          await handle(toolUseRequest: toolUseRequest)
+          case .toolUseRequest(let toolUseRequest):
+            await handle(toolUseRequest: toolUseRequest)
 
-        case .responseError(let error):
-          // We received an error from the server.
-          err = err ?? AppError(message: error.message)
+          case .responseError(let error):
+            // We received an error from the server.
+            err = err ?? AppError(message: error.message)
 
-        case .reasoningDelta(let reasoningDelta):
-          handle(reasoningDelta: reasoningDelta)
+          case .reasoningDelta(let reasoningDelta):
+            handle(reasoningDelta: reasoningDelta)
 
-        case .reasoningSignature(let reasoningSignature):
-          handle(reasoningSignature: reasoningSignature)
+          case .reasoningSignature(let reasoningSignature):
+            handle(reasoningSignature: reasoningSignature)
+          }
+        } catch {
+          defaultLogger.error("Failed to process chunk \(String(data: chunk, encoding: .utf8) ?? "<corrupted>"): \(error)")
+          throw error
         }
       }
       try Task.checkCancellation()

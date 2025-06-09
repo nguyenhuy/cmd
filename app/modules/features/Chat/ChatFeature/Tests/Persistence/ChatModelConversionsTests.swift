@@ -23,7 +23,7 @@ struct ChatModelConversionsTests {
     #expect(persistentModel.id == originalTab.id)
 
     // Test ChatThreadModel to ChatTabViewModel conversion
-    let loadedTab = await ChatTabViewModel(from: persistentModel)
+    let loadedTab = ChatTabViewModel(from: persistentModel)
     #expect(loadedTab.name == "Test Tab")
     #expect(loadedTab.messages.isEmpty)
     #expect(loadedTab.events.isEmpty)
