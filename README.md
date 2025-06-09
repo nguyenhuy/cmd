@@ -34,7 +34,7 @@ Sharing feedback or opening a well documented issue is also greatly helpful.
 - MCP integration
 - Web search
 - Auto context condensing
-- Visiblity in API cost
+- Visibility in API cost
 - Task / sub-task orchestration
 - Increase LLM provider support
 - Integration with UI previews
