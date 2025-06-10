@@ -196,20 +196,20 @@ final class RequestStreamingHelper: Sendable {
     streamingToolUseInput += toolUseDelta.inputDelta
 
     do {
-      let (data, isInputComplete) = try streamingToolUseInput.extractPartialJSON()
+      let (data, _) = try streamingToolUseInput.extractPartialJSON()
       var content = result.content
       if let streamingToolUse {
         assert(
           streamingToolUse.toolUseId == toolUseId,
           "Received a tool input while a different tool use is still streaming.")
         // If we already have an existing instance for this tool use, update it with the newly received data.
-        try streamingToolUse.receive(inputUpdate: data, isLast: isInputComplete)
+        try streamingToolUse.receive(inputUpdate: data, isLast: false)
       } else {
         // ready to start streaming a new tool use
         let toolUse = try tool.use(
           toolUseId: toolUseId,
           input: data,
-          isInputComplete: isInputComplete,
+          isInputComplete: false,
           context: ToolExecutionContext(
             project: context.project,
             projectRoot: context.projectRoot))
@@ -222,25 +222,6 @@ final class RequestStreamingHelper: Sendable {
         result.update(with: AssistantMessage(content: content))
       }
 
-      if isInputComplete {
-        // Request approval before executing the tool
-        if let toolUse = streamingToolUse {
-          endStreamedToolUse()
-          Task { [weak self] in
-            guard let self else { return }
-            do {
-              try await context.requestToolApproval(toolUse)
-              toolUse.startExecuting()
-            } catch {
-              defaultLogger.error("Tool approval denied or cancelled: \(error)")
-              // Reject the tool use instead of replacing it
-              toolUse.reject(reason: error.localizedDescription)
-            }
-          }
-        } else {
-          endStreamedToolUse()
-        }
-      }
     } catch {
       // If the above fails, this is because the input could not be parsed by the tool.
       // While we are receiving the input, it can happen that we don't have enough data to parse the input well
@@ -249,19 +230,41 @@ final class RequestStreamingHelper: Sendable {
     }
   }
 
+  private func startExecution(of toolUse: any ToolUse) async {
+    do {
+      try await context.requestToolApproval(toolUse)
+      toolUse.startExecuting()
+    } catch {
+      defaultLogger.error("Tool approval denied or cancelled: \(error)")
+      // Reject the tool use instead of replacing it
+      toolUse.reject(reason: error.localizedDescription)
+    }
+  }
+
   private func handle(toolUseRequest: Schema.ToolUseRequest) async {
     endPreviousContent()
 
-    if let streamingToolUse {
-      if streamingToolUse.toolUseId != toolUseRequest.toolUseId {
+    if let toolUse = streamingToolUse {
+      if toolUse.toolUseId != toolUseRequest.toolUseId {
         assertionFailure("Received a tool use request for a different tool use ID while already streaming a tool use.")
       }
-      // If the streamed tool use is still pending data, this is becase an error happened wihle processing the tool use request.
-      // We'll clear the partial input and set the tool use to a failed state.
-
-      endStreamedToolUse(withFailure: Self.failedToParseToolInputError(
-        toolName: toolUseRequest.toolName,
-        error: err ?? AppError(message: "Tool use request failed")))
+      do {
+        try toolUse.receive(inputUpdate: toolUseRequest.input.asJSONData(), isLast: true)
+      } catch {
+        // If the above fails, this is because the input could not be parsed by the tool.
+        var content = result.content
+        assert(
+          content.last?.asToolUseRequest?.toolUse.toolUseId == toolUse.toolUseId,
+          "The last content should be the tool use request we are ending.")
+        content.removeLast()
+        content.append(toolUse: FailedToolUse(
+          toolUseId: toolUse.toolUseId,
+          toolName: toolUse.toolName,
+          errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription))
+        result.update(with: AssistantMessage(content: content))
+      }
+      endStreamedToolUse()
+      await startExecution(of: toolUse)
       return
     }
 
@@ -293,15 +296,7 @@ final class RequestStreamingHelper: Sendable {
         }
         content.append(toolUse: toolUse)
 
-        // Request approval before executing the tool
-        do {
-          try await context.requestToolApproval(toolUse)
-          toolUse.startExecuting()
-        } catch {
-          defaultLogger.error("Tool approval denied or cancelled: \(error)")
-          // Reject the tool use instead of replacing it
-          toolUse.reject(reason: error.localizedDescription)
-        }
+        await startExecution(of: toolUse)
 
       } catch {
         // If the above fails, this is because the input could not be parsed by the tool.
@@ -320,22 +315,8 @@ final class RequestStreamingHelper: Sendable {
     result.update(with: AssistantMessage(content: content))
   }
 
-  private func endStreamedToolUse(withFailure error: Error? = nil) {
-    guard let streamingToolUse else { return }
-    if let error {
-      var content = result.content
-      assert(
-        content.last?.asToolUseRequest?.toolUse.toolUseId == streamingToolUse.toolUseId,
-        "The last content should be the tool use request we are ending.")
-      content.removeLast()
-      content.append(toolUse: FailedToolUse(
-        toolUseId: streamingToolUse.toolUseId,
-        toolName: streamingToolUse.toolName,
-        errorDescription: error.localizedDescription))
-      result.update(with: AssistantMessage(content: content))
-    }
-
-    self.streamingToolUse = nil
+  private func endStreamedToolUse() {
+    streamingToolUse = nil
     streamingToolUseInput = ""
   }
 

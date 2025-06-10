@@ -398,6 +398,7 @@ final class SendOneMessageTests {
     let chunk2Validated = expectation(description: "Second chunk validated")
     let chunk3Validated = expectation(description: "Third chunk validated")
     let chunk4Validated = expectation(description: "Fourth chunk validated")
+    let toolCallValidated = expectation(description: "Tool call validated")
 
     let server = MockServer()
     let sut = DefaultLLMService(server: server)
@@ -444,6 +445,20 @@ final class SendOneMessageTests {
           "toolUseId": "123",
           "inputDelta": "r\\"]}",
           "idx": 3
+        }
+        """.utf8Data)
+
+      try await fulfillment(of: chunk4Validated)
+      sendChunk?("""
+        {
+          "type": "tool_call",
+          "toolName": "TestStreamingTool",
+          "toolUseId": "123",
+          "input": {
+            "file": "file.txt",
+            "keywords": ["foo", "bar"]
+          },
+          "idx": 4
         }
         """.utf8Data)
       return okServerResponse
@@ -499,21 +514,27 @@ final class SendOneMessageTests {
         #expect(toolUse.receivedInputs.count == 4)
         #expect(toolUse.receivedInputs.last?.file == "file.txt")
         #expect(toolUse.receivedInputs.last?.keywords == ["foo", "bar"])
-        #expect(toolUse.hasReceivedAllInput == true)
+        #expect(toolUse.hasReceivedAllInput == false)
         chunk4Validated.fulfill()
+
+      case 5:
+        #expect(toolUse.receivedInputs.count == 5)
+        #expect(toolUse.receivedInputs.last?.file == "file.txt")
+        #expect(toolUse.receivedInputs.last?.keywords == ["foo", "bar"])
+        #expect(toolUse.hasReceivedAllInput == true)
+        toolCallValidated.fulfill()
 
       default:
         Issue.record("Received unexpected input update #\(i)")
       }
     }
 
-    try await fulfillment(of: [messagesReceived, chunk4Validated])
+    try await fulfillment(of: [messagesReceived, toolCallValidated])
   }
 
   @Test("SendOneMessage with streamed tool call works if some updates can't be parsed")
   func test_sendOneMessage_withStreamedToolCall_worksIfSomeUpdateCantBeParsed() async throws {
     let initialStreamExpectationValidated = expectation(description: "initial stream expectation validated")
-    let toolCallReceived = expectation(description: "tool Call received")
     let messagesReceived = expectation(description: "All message update received")
 
     let server = MockServer()
@@ -540,6 +561,18 @@ final class SendOneMessageTests {
           "idx": 1
         }
         """.utf8Data)
+
+      sendChunk?("""
+        {
+          "type": "tool_call",
+          "toolName": "TestStreamingTool",
+          "toolUseId": "123",
+          "input": {
+            "file": "file.txt"
+          },
+          "idx": 2
+        }
+        """.utf8Data)
       return okServerResponse
     }
     let updatingMessage = try await sut.sendOneMessage(
@@ -560,18 +593,15 @@ final class SendOneMessageTests {
         #expect(toolUse.callingTool.name == "TestStreamingTool")
         #expect(toolUse.toolUseId == "123")
         _toolUse = toolUse
-        toolCallReceived.fulfill()
       }
       messagesReceived.fulfill()
     }
 
-    try await fulfillment(of: [toolCallReceived])
+    try await fulfillment(of: [messagesReceived])
     let toolUse = try #require(_toolUse)
 
-    #expect(toolUse.receivedInputs.count == 1)
+    #expect(toolUse.receivedInputs.count == 2)
     #expect(toolUse.receivedInputs.last?.file == "file.txt")
     #expect(toolUse.hasReceivedAllInput == true)
-
-    try await fulfillment(of: [messagesReceived])
   }
 }
