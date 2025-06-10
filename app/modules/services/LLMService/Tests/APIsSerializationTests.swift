@@ -179,8 +179,8 @@ struct APIParamsEncodingTests {
     let settingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .openAI: LLMProviderSettings(
-          apiKey: "openai-key",
+        .anthropic: LLMProviderSettings(
+          apiKey: "anthropic-key",
           baseUrl: nil,
           createdOrder: 2),
       ],
