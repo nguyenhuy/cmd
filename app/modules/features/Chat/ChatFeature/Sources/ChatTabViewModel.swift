@@ -24,7 +24,7 @@ import XcodeObserverServiceInterface
 final class ChatTabViewModel: Identifiable, Equatable {
 
   #if DEBUG
-  convenience init(name: String = "New Chat", messages: [ChatMessageViewModel] = []) {
+  convenience init(name: String? = nil, messages: [ChatMessageViewModel] = []) {
     self.init(
       id: UUID(),
       name: name,
@@ -35,13 +35,13 @@ final class ChatTabViewModel: Identifiable, Equatable {
   convenience init() {
     self.init(
       id: UUID(),
-      name: "New Chat",
+      name: nil,
       messages: [])
   }
 
   init(
     id: UUID,
-    name: String,
+    name: String?,
     messages: [ChatMessageViewModel],
     events: [ChatEvent]? = nil,
     projectInfo: SelectedProjectInfo? = nil,
@@ -55,6 +55,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
     self.events = events ?? messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
+
+    @Dependency(\.chatHistoryService) var chatHistoryService
+    self.chatHistoryService = chatHistoryService
 
     input = ChatInputViewModel()
 
@@ -87,7 +90,9 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
   private(set) var projectInfo: SelectedProjectInfo?
 
-  var name: String {
+  private(set) var isShowingChatHistory = false
+
+  private(set) var name: String? {
     didSet {
       if name != oldValue {
         hasChangedSinceLastSave = true
@@ -110,6 +115,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
     streamingTask?.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
+  }
+
+  func handleToggleChatHistory() {
+    isShowingChatHistory.toggle()
   }
 
   /// Are we queing too much on the main thread?
@@ -146,6 +155,13 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     events.append(.message(.init(content: messageContent, role: .user)))
     messages.append(userMessage)
+
+    if !textInput.string.string.isEmpty, name == nil {
+      name = textInput.string.string
+    }
+    Task {
+      await persistThread()
+    }
 
     // Send the message to the server and stream the response.
     do {
@@ -221,12 +237,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
-  // MARK: - Persistence Methods
-
   /// Persist the current chat thread to the chat history service, so that it can be reloaded at the next app launch.
   func persistThread() async {
-    @Dependency(\.chatHistoryService) var chatHistoryService: ChatHistoryService
-
     // Check if there are any changes to save
     let hasNewMessages = messages.count > lastSavedMessageCount
     let hasNewEvents = events.count > lastSavedEventCount
@@ -247,9 +259,13 @@ final class ChatTabViewModel: Identifiable, Equatable {
       lastSavedEventCount = events.count
       hasChangedSinceLastSave = false
     } catch {
-      defaultLogger.error("Failed to save chat tab: \(name)", error)
+      defaultLogger.error("Failed to save chat tab: \(name ?? "unnamed")", error)
     }
   }
+
+  // MARK: - Persistence Methods
+
+  private let chatHistoryService: ChatHistoryService
 
   // MARK: - Change Tracking
 
