@@ -45,7 +45,6 @@ struct ChatHistoryView: View {
         .padding(4)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-//        .padding(.horizontal, 16)
     .padding(.vertical, 12)
   }
 
