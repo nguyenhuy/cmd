@@ -202,13 +202,13 @@ final class DefaultServer: Server {
         ConnectionResponse,
         Error
       >) in
-        var hasResponded = false
+        let hasResponded = Atomic(false)
 
         Task {
           for await data in stdout.fileHandleForReading.dataStream {
-            guard !hasResponded else { return }
+            let hadAlreadyResponded = hasResponded.set(to: true)
+            guard !hadAlreadyResponded else { return }
             if let response = try? JSONDecoder().decode(ConnectionResponse.self, from: data) {
-              hasResponded = true
               continuation.resume(returning: response)
 
               listenToExtension(port: response.port)
@@ -229,11 +229,11 @@ final class DefaultServer: Server {
             }
           }
         } catch {
-          guard !hasResponded else {
+          let hadAlreadyResponded = hasResponded.set(to: true)
+          guard !hadAlreadyResponded else {
             assertionFailure("Error running executable: \(error.localizedDescription)")
             return
           }
-          hasResponded = true
           continuation.resume(throwing: error)
         }
       }

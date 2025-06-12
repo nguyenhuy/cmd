@@ -1,6 +1,9 @@
 # Setup
 
 ```
+# install brew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
 brew install nvm
 # complete nvm installation as per instructions
 
@@ -28,6 +31,7 @@ echo '
 function cmd {
   (cd $(git rev-parse --show-toplevel)/app && ./cmd.sh "$@")
 }' >> ~/.zshrc
+```
 
 ## App developement
 See the [app's development guide](./app/contributing.md) for more details.

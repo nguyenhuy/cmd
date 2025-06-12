@@ -193,7 +193,7 @@ platform :mac do
     set_github_release(
       api_token: load_secret("GITHUB_TOKEN"),
       server_url: "https://api.github.com",
-      repository_name: "gsabran/cmd",
+      repository_name: "getcmd-dev/cmd",
       name: "v#{version}",
       tag_name: "v#{version}",
       description: "test release",

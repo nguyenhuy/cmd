@@ -30,7 +30,9 @@ struct ImageAttachmentPickerView: View {
 
     panel.begin { response in
       if response == .OK {
-        handleSelectedImages(panel.urls)
+        Task { @MainActor in
+          handleSelectedImages(panel.urls)
+        }
       }
     }
   }
