@@ -19,7 +19,7 @@ done
 
 # When run as a build phase in Xcode, the environment is not set up correctly.
 # Add Homebrew to the path to support yarn.
-export PATH="$PATH:/opt/homebrew/bin"
+export PATH="$PATH:/opt/homebrew/bin:$HOME/.nvm/versions/node/v22.13.1/bin"
 
 current_dir=$(pwd)
 file_directory="$(realpath "$(dirname "$0")")"
