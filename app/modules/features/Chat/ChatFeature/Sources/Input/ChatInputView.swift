@@ -269,7 +269,7 @@ struct ChatInputView: View {
       request: pendingToolApproval,
       suggestedResult: $inputViewModel.pendingToolApprovalSuggestedResult,
       onApprovalResult: { result in
-        inputViewModel.handleApproval(of: pendingToolApproval, result: result)
+        inputViewModel.handleApproval(of: pendingToolApproval)
       })
       .with(
         cornerRadius: Self.cornerRadius,
@@ -284,6 +284,11 @@ struct ChatInputView: View {
   }
 
   private func sendIfReady() {
+      if let pendingToolApproval = inputViewModel.pendingToolApproval {
+        inputViewModel.handleApproval(of: pendingToolApproval)
+        return
+      }
+      
     guard isInputReady else {
       return
     }

@@ -379,14 +379,14 @@ final class ChatInputViewModel {
   }
 
   /// Handle the user's approval response.
-  func handleApproval(of request: ToolApprovalRequest, result: ToolApprovalResult) {
+  func handleApproval(of request: ToolApprovalRequest) {
     guard let index = toolCallsPendingApproval.firstIndex(where: { $0.request.id == request.id }) else {
       defaultLogger.error("Could not find pending tool approval request with ID: \(request.id)")
       return
     }
     let pendingToolApproval = toolCallsPendingApproval.remove(at: index)
     pendingToolApprovalSuggestedResult = .alwaysApprove
-    pendingToolApproval.continuation.resume(returning: result)
+    pendingToolApproval.continuation.resume(returning: pendingToolApprovalSuggestedResult)
   }
 
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"
