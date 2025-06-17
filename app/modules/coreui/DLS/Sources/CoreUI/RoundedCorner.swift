@@ -4,22 +4,43 @@
 import SwiftUI
 
 extension View {
-  /// Adds a rounded corner with a border to the view.
-  public func roundedCornerWithBorder(lineWidth: CGFloat = 1, borderColor: Color, radius: CGFloat) -> some View {
-    clipShape(RoundedCorner(radius: radius))
+
+  /// Adds a rounded corner to the view.
+  @ViewBuilder
+  public func with(
+    cornerRadius radius: CGFloat? = nil,
+    corners: Corners = [.topLeft, .topRight, .bottomLeft, .bottomRight],
+    backgroundColor: Color? = nil,
+    borderColor: Color? = nil,
+    borderWidth: CGFloat = 1)
+    -> some View
+  {
+    if let backgroundColor {
+      background(
+        Rectangle()
+          .fill(backgroundColor))
+        .clipped(cornerRadius: radius, corners: corners, borderColor: borderColor, borderWidth: borderWidth)
+    } else {
+      clipShape(RoundedCornerShape(radius: radius ?? 0, corners: corners))
+        .overlay(
+          RoundedCornerShape(radius: radius ?? 0, corners: corners)
+            .fill(backgroundColor ?? .clear)
+            .stroke(borderColor ?? .clear, lineWidth: borderWidth))
+    }
+  }
+
+  /// Adds a rounded corner to the view.
+  public func clipped(
+    cornerRadius radius: CGFloat? = nil,
+    corners: Corners = [.topLeft, .topRight, .bottomLeft, .bottomRight],
+    borderColor: Color? = nil,
+    borderWidth: CGFloat = 1)
+    -> some View
+  {
+    clipShape(RoundedCornerShape(radius: radius ?? 0, corners: corners))
       .overlay(
-        RoundedCorner(radius: radius)
-          .stroke(borderColor, lineWidth: lineWidth))
-  }
-
-  /// Adds a rounded corner to the view.
-  public func roundedCorner(radius: CGFloat) -> some View {
-    clipShape(RoundedCorner(radius: radius))
-  }
-
-  /// Adds a rounded corner to the view.
-  public func roundedCorner(radius: CGFloat, corners: Corners) -> some View {
-    clipShape(RoundedCornerShape(radius: radius, corners: corners))
+        RoundedCornerShape(radius: radius ?? 0, corners: corners)
+          .stroke(borderColor ?? .clear, lineWidth: borderWidth))
   }
 }
 

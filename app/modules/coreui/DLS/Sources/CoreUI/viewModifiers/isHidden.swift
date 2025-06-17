@@ -11,6 +11,7 @@ struct IsHidden: ViewModifier {
   func body(content: Content) -> some View {
     if hidden {
       if remove {
+        // Nothing
       } else {
         content.hidden()
       }
