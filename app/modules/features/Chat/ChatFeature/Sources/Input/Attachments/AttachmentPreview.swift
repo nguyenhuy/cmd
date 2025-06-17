@@ -68,9 +68,9 @@ struct AttachmentPreview: View {
             startLine: buildError.line,
             endLine: buildError.line,
             content: content)
-            .roundedCornerWithBorder(
-              borderColor: colorScheme.textAreaBorderColor,
-              radius: Constants.codePreviewCornerRadius)
+            .with(
+              cornerRadius: Constants.codePreviewCornerRadius,
+              borderColor: colorScheme.textAreaBorderColor)
         }
       }
     }

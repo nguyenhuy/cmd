@@ -20,13 +20,11 @@ struct ChatInputView: View {
   init(
     inputViewModel: ChatInputViewModel,
     isStreamingResponse: Binding<Bool>,
-    didTapCancel: @escaping () -> Void,
-    didSend: @escaping () -> Void)
+    didTapCancel: @escaping () -> Void)
   {
     self.inputViewModel = inputViewModel
     _isStreamingResponse = isStreamingResponse
     self.didTapCancel = didTapCancel
-    self.didSend = didSend
     #if DEBUG
     _debugTextViewHandler = nil
     #endif
@@ -37,13 +35,11 @@ struct ChatInputView: View {
     _debugTextViewHandler: @escaping @Sendable (NSTextView) -> Void,
     inputViewModel: ChatInputViewModel,
     isStreamingResponse: Binding<Bool>,
-    didTapCancel: @escaping () -> Void,
-    didSend: @escaping () -> Void)
+    didTapCancel: @escaping () -> Void)
   {
     self.inputViewModel = inputViewModel
     _isStreamingResponse = isStreamingResponse
     self.didTapCancel = didTapCancel
-    self.didSend = didSend
     self._debugTextViewHandler = _debugTextViewHandler
   }
   #endif
@@ -56,22 +52,8 @@ struct ChatInputView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      if let pendingApproval = inputViewModel.pendingApproval {
-        ToolApprovalView(
-          request: pendingApproval,
-          onApprove: {
-            inputViewModel.handleApproval(of: pendingApproval, result: .approved)
-          },
-          onDeny: {
-            inputViewModel.handleApproval(of: pendingApproval, result: .denied)
-          },
-          onAlwaysApprove: {
-            inputViewModel.handleApproval(of: pendingApproval, result: .alwaysApprove(toolName: pendingApproval.toolName))
-          })
-          .transition(
-            .asymmetric(
-              insertion: .move(edge: .bottom).combined(with: .opacity),
-              removal: .move(edge: .bottom).combined(with: .opacity)))
+      if let pendingToolApproval = inputViewModel.pendingToolApproval {
+        approvalView(for: pendingToolApproval)
       }
       VStack(alignment: .leading, spacing: 0) {
         HStack(spacing: 8) {
@@ -80,24 +62,24 @@ struct ChatInputView: View {
             attachments: $inputViewModel.attachments)
         }
         .padding(.horizontal, sidePadding)
-        .padding(.vertical, sidePadding)
+        .padding(.top, sidePadding)
+        .isHidden(!enableAttachments, remove: true)
         textInput
         Rectangle()
           .foregroundColor(.clear)
           .frame(height: 6)
         bottomRow
       }
+      .overlay {
+        DragDropAreaView(
+          shape: AnyShape(RoundedRectangle(cornerRadius: Self.cornerRadius)),
+          handleDrop: inputViewModel.handleDrop)
+      }
+      .with(
+        cornerRadius: Self.cornerRadius,
+        backgroundColor: colorScheme.xcodeInputBackground,
+        borderColor: colorScheme.textAreaBorderColor)
     }
-    .overlay {
-      DragDropAreaView(shape: AnyShape(RoundedRectangle(cornerRadius: Self.cornerRadius)), handleDrop: inputViewModel.handleDrop)
-    }
-    .background(
-      RoundedRectangle(cornerRadius: Self.cornerRadius)
-        .fill(colorScheme.xcodeInputBackground)
-        .overlay(
-          RoundedRectangle(cornerRadius: Self.cornerRadius)
-            .stroke(colorScheme.textAreaBorderColor, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius)))
     .overlay(alignment: .top) {
       if let searchResults = inputViewModel.searchResults {
         SearchResultsView(
@@ -119,7 +101,7 @@ struct ChatInputView: View {
           .offset(y: -30)
       }
     }
-    .animation(.easeInOut, value: inputViewModel.pendingApproval != nil)
+    .animation(.easeInOut, value: hasPendingToolApproval)
     .onTapGesture {
       inputViewModel.textInputNeedsFocus = true
     }
@@ -140,7 +122,9 @@ struct ChatInputView: View {
 
   private var didTapCancel: () -> Void
 
-  private var didSend: () -> Void
+  private var enableAttachments: Bool {
+    inputViewModel.pendingToolApproval == nil
+  }
 
   private var isInputReady: Bool {
     !inputViewModel.textInput.isEmpty
@@ -185,7 +169,8 @@ struct ChatInputView: View {
 
         ImageAttachmentPickerView(attachments: $inputViewModel.attachments)
           .frame(width: 14, height: 14)
-        if !isStreamingResponse {
+          .isHidden(!enableAttachments, remove: true)
+        if !isStreamingResponse || hasPendingToolApproval {
           sendButton
         }
       }
@@ -218,7 +203,7 @@ struct ChatInputView: View {
           .onAppear {
             inputViewModel.textInputNeedsFocus = true
           }
-          .padding(.bottom, 8)
+          .padding(.vertical, 8)
           .onGeometryChange(for: CGSize.self) { proxy in
             proxy.size
           } action: { size in
@@ -238,14 +223,30 @@ struct ChatInputView: View {
       sendIfReady()
     }) {
       HStack(spacing: 2) {
+        if hasPendingToolApproval {
+          switch inputViewModel.pendingToolApprovalSuggestedResult {
+          case .alwaysApprove:
+            Text("Always")
+          case .approved:
+            Text("Once")
+          case .denied:
+            Text("Deny")
+          case .cancelled:
+            Text("Cancel")
+          }
+        }
         Image(systemName: "return")
       }
       .tappableTransparentBackground()
     }
     .acceptClickThrough()
     .buttonStyle(.plain)
-    .foregroundColor(isInputReady ? .primary : .secondary)
+    .foregroundColor(isInputReady || hasPendingToolApproval ? .primary : .secondary)
     .id("chat button")
+  }
+
+  private var hasPendingToolApproval: Bool {
+    inputViewModel.pendingToolApproval != nil
   }
 
   private var stopStreamButton: some View {
@@ -263,11 +264,35 @@ struct ChatInputView: View {
     }
   }
 
+  private func approvalView(for pendingToolApproval: ToolApprovalRequest) -> some View {
+    ToolApprovalView(
+      request: pendingToolApproval,
+      suggestedResult: $inputViewModel.pendingToolApprovalSuggestedResult,
+      onApprovalResult: { result in
+        inputViewModel.handleApproval(of: pendingToolApproval)
+      })
+      .with(
+        cornerRadius: Self.cornerRadius,
+        corners: [.topLeft, .topRight],
+        backgroundColor: colorScheme.xcodeInputBackground,
+        borderColor: colorScheme.textAreaBorderColor)
+      .padding(.horizontal, 10)
+      .transition(
+        .asymmetric(
+          insertion: .move(edge: .bottom).combined(with: .opacity),
+          removal: .move(edge: .bottom).combined(with: .opacity)))
+  }
+
   private func sendIfReady() {
+      if let pendingToolApproval = inputViewModel.pendingToolApproval {
+        inputViewModel.handleApproval(of: pendingToolApproval)
+        return
+      }
+      
     guard isInputReady else {
       return
     }
-    didSend()
+    inputViewModel.handleDidTapSend()
   }
 
   private func onKeyDown(key: KeyEquivalent, modifiers: NSEvent.ModifierFlags) -> Bool {

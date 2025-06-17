@@ -72,6 +72,27 @@ public protocol ToolUse: Sendable, Codable {
   func startExecuting()
   /// Reject the tool use with an optional reason.
   func reject(reason: String?)
+  /// Cancel the tool use, stopping any pending execution if possible.
+  func cancel()
+}
+
+extension ToolUseExecutionStatus {
+  var asOutput: Output? {
+    get throws {
+      if case .completed(let result) = self {
+        return try result.get()
+      }
+      if case .approvalRejected(let reason) = self {
+        if let reason, !reason.isEmpty {
+          throw AppError(
+            message: "User denied permission to execute this tool with the following explanation: `\(reason)`. Follow the user's direction or ask for clarification.")
+        }
+        throw AppError(
+          message: "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification.")
+      }
+      return nil
+    }
+  }
 }
 
 extension ToolUse {
@@ -80,30 +101,25 @@ extension ToolUse {
 
   public var toolDisplayName: String { callingTool.displayName }
 
-  public var result: Output {
+  public var output: Output {
     get async throws {
       //       TODO: check why the iterator doesn't work nor completes if the value has already been set.
-      if case .completed(let result) = status.value {
-        return try result.get()
-      }
-      if case .rejected(let reason) = status.value {
-        throw AppError(message: reason ?? "Tool use was rejected")
+      if let result = try status.value.asOutput {
+        return result
       }
       for await value in status {
-        if case .completed(let result) = value {
-          return try result.get()
-        }
-        if case .rejected(let reason) = value {
-          throw AppError(message: reason ?? "Tool use was rejected")
+        if let result = try value.asOutput {
+          return result
         }
       }
       throw AppError(message: "The tool use completed with no result.")
     }
   }
 
-  public var currentResult: Output? {
-    guard case .completed(let result) = status.value else { return nil }
-    return try? result.get()
+  public var currentOutput: Output? {
+    get throws {
+      try status.value.asOutput
+    }
   }
 
 }
@@ -157,7 +173,7 @@ public struct ToolExecutionContext: Sendable, Codable {
 
 public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
   case pendingApproval
-  case rejected(reason: String?)
+  case approvalRejected(reason: String?)
   case notStarted
   case running
   case completed(Result<Output, Error>)

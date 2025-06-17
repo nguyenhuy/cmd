@@ -83,7 +83,7 @@ struct SearchResultsView: View {
         }
         .frame(height: height)
         .cornerRadius(0)
-        .roundedCornerWithBorder(borderColor: .gray, radius: 6)
+        .with(cornerRadius: 6, borderColor: .gray)
         .onChange(of: selectedRowIndex) {
           handleSelectionChanged(using: scrollProxy)
         }

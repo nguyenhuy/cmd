@@ -25,7 +25,8 @@ struct AccessibilityPermissionView: View {
           .frame(width: 30, height: 30)
           .foregroundStyle(.white)
           .padding(5)
-          .background(.blue).roundedCorner(radius: 8)
+          .background(.blue)
+          .with(cornerRadius: 8)
           .padding(.trailing, 8)
         Text("**cmd** needs accessibility permissions to interact with Xcode")
         if isAccessibilityPermissionGranted {

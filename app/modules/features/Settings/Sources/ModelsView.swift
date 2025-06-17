@@ -218,7 +218,7 @@ private struct ModelCard: View {
     }
     .padding(16)
     .background(Color(NSColor.controlBackgroundColor))
-    .roundedCornerWithBorder(borderColor: Color.gray.opacity(0.2), radius: 6)
+    .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.2))
   }
 
   @Binding private var provider: LLMProvider

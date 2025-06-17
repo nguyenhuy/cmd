@@ -17,6 +17,7 @@ public struct HoveredButton<Content: View>: View {
   ///   - isEnable: Whether the button is enabled and interactive.
   ///   - disableClickThrough: Whether to disable click-through behavior.
   ///   Because it uses an NSHosting view, this might cause issues in some cases with dynamic content size.
+  ///   - onHover: A closure called when the hover state changes.
   ///   - content: A closure that returns the content of the button.
   public init(
     action: @escaping () -> Void,
@@ -26,6 +27,7 @@ public struct HoveredButton<Content: View>: View {
     cornerRadius: CGFloat = 4,
     isEnable: Bool = true,
     disableClickThrough: Bool = false,
+    onHover: (@MainActor (Bool) -> Void)? = nil,
     @ViewBuilder content: @escaping () -> Content)
   {
     self.action = action
@@ -35,6 +37,7 @@ public struct HoveredButton<Content: View>: View {
     self.cornerRadius = cornerRadius
     self.isEnable = isEnable
     self.disableClickThrough = disableClickThrough
+    self.onHover = onHover
     self.content = { _ in content() }
   }
 
@@ -48,6 +51,7 @@ public struct HoveredButton<Content: View>: View {
   ///   - isEnable: Whether the button is enabled and interactive.
   ///   - disableClickThrough: Whether to disable click-through behavior.
   ///   Because it uses an NSHosting view, this might cause issues in some cases with dynamic content size.
+  ///   - onHover: A closure called when the hover state changes.
   ///   - content: A closure that returns the content of the button, receiving hover state as parameter.
   public init(
     action: @escaping () -> Void,
@@ -57,6 +61,7 @@ public struct HoveredButton<Content: View>: View {
     cornerRadius: CGFloat = 4,
     isEnable: Bool = true,
     disableClickThrough: Bool = false,
+    onHover: (@MainActor (Bool) -> Void)? = nil,
     @ViewBuilder content: @escaping (Bool) -> Content)
   {
     self.action = action
@@ -67,6 +72,7 @@ public struct HoveredButton<Content: View>: View {
     self.content = content
     self.isEnable = isEnable
     self.disableClickThrough = disableClickThrough
+    self.onHover = onHover
   }
 
   public var body: some View {
@@ -81,6 +87,7 @@ public struct HoveredButton<Content: View>: View {
     .acceptClickThrough(disabled: disableClickThrough)
     .onHover(perform: { isHovered in
       self.isHovered = isHovered
+      onHover?(isHovered)
     })
     .allowsHitTesting(isEnable)
   }
@@ -95,6 +102,7 @@ public struct HoveredButton<Content: View>: View {
   private let content: (Bool) -> Content
   private let isEnable: Bool
   private let disableClickThrough: Bool
+  private let onHover: (@MainActor (Bool) -> Void)?
 
 }
 

@@ -60,6 +60,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
     self.chatHistoryService = chatHistoryService
 
     input = ChatInputViewModel()
+    input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
 
     workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
       guard state.focusedWorkspace != nil else { return }
@@ -126,9 +127,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
 
-    guard streamingTask == nil else {
-      defaultLogger.error("not sending as already streaming")
-      return
+    if let streamingTask {
+      defaultLogger.info("Cancelling current chat streaming task")
+      streamingTask.cancel()
+      self.streamingTask = nil
     }
 
     // Cancel any pending tool approvals from previous messages
@@ -311,12 +313,16 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     switch approvalResult {
     case .denied:
-      throw LLMServiceError.toolUsageDenied
+      let reason = input.textInput.string.string
+      input.textInput = TextInput() // Clear input after denial
+      throw LLMServiceError.toolUsageDenied(reason: reason)
+
     case .approved:
       break // Continue execution
-    case .alwaysApprove(let toolName):
+    case .alwaysApprove:
       // Store preference and continue
-      storeAlwaysApprovePreference(for: toolName)
+      storeAlwaysApprovePreference(for: toolUse.toolName)
+
     case .cancelled:
       throw CancellationError()
     }

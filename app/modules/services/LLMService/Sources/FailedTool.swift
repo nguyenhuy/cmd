@@ -38,6 +38,8 @@ struct FailedToolUse: ToolUse {
   func startExecuting() { }
 
   func reject(reason _: String?) { }
+
+  func cancel() { }
 }
 
 // MARK: - FailedTool

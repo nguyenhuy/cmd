@@ -42,7 +42,7 @@ public protocol LLMService: Sendable {
 // MARK: - LLMServiceError
 
 public enum LLMServiceError: Error {
-  case toolUsageDenied
+  case toolUsageDenied(reason: String)
 }
 
 // MARK: LocalizedError
@@ -50,8 +50,12 @@ public enum LLMServiceError: Error {
 extension LLMServiceError: LocalizedError {
   public var errorDescription: String? {
     switch self {
-    case .toolUsageDenied:
-      "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification."
+    case .toolUsageDenied(let reason):
+      if reason.isEmpty {
+        "User denied permission to execute this tool."
+      } else {
+        "User denied permission to execute this tool with the following explanation: \(reason)."
+      }
     }
   }
 }

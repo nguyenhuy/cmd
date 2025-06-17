@@ -239,8 +239,17 @@ final class RequestStreamingHelper: Sendable {
     do {
       try await context.requestToolApproval(toolUse)
       toolUse.startExecuting()
+    } catch is CancellationError {
+      defaultLogger.error("Tool use is cancelled")
+      toolUse.cancel()
+    } catch let error as LLMServiceError {
+      defaultLogger.error("Tool approval is denied: \(error)")
+      switch error {
+      case .toolUsageDenied(let reason):
+        toolUse.reject(reason: reason)
+      }
     } catch {
-      defaultLogger.error("Tool approval denied or cancelled: \(error)")
+      defaultLogger.error("Tool approval is denied: \(error)")
       // Reject the tool use instead of replacing it
       toolUse.reject(reason: error.localizedDescription)
     }

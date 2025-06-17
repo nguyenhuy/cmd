@@ -5,6 +5,7 @@
 import Combine
 import Foundation
 import Observation
+import SwiftUI
 
 // MARK: - ObservableValue
 
@@ -67,4 +68,12 @@ public class ObservableValue<Value: Sendable>: @unchecked Sendable, Identifiable
 
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
+}
+
+extension ObservableValue {
+  public var binding: Binding<Value> {
+    Binding(
+      get: { self.value },
+      set: { self.value = $0 })
+  }
 }
