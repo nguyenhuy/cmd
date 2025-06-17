@@ -33,7 +33,7 @@ struct XcodeExtensionPermissionView: View {
             .foregroundStyle(.primary)
             .padding(5)
             .background(.blue)
-            .roundedCorner(radius: 8)
+            .with(cornerRadius: 8)
             .padding(.trailing, 8)
         }
         Text("**cmd** works better when it can modify source code through Xcode")

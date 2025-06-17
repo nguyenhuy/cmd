@@ -85,7 +85,7 @@ struct VisibleAppUpdateWidget: View {
       }
       .padding(10)
       .frame(maxWidth: .infinity, alignment: .leading)
-      .roundedCornerWithBorder(borderColor: colorScheme.textAreaBorderColor, radius: 6)
+      .with(cornerRadius: 6, borderColor: colorScheme.textAreaBorderColor)
       .padding()
     }
   }

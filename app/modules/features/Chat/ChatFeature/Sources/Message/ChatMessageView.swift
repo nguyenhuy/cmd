@@ -66,7 +66,7 @@ struct ChatMessageView: View {
         Spacer(minLength: 0)
       }
       .background(message.role == .user ? colorScheme.secondarySystemBackground : .clear)
-      .roundedCorner(radius: Constants.cornerRadius)
+      .with(cornerRadius: Constants.cornerRadius)
 
       if let failureReason = message.failureReason {
         Text(failureReason)
@@ -275,7 +275,7 @@ struct CodeBlockContentView: View {
       }
     }
     .background(colorScheme.primaryBackground)
-    .roundedCornerWithBorder(borderColor: colorScheme.textAreaBorderColor, radius: Constants.codePreviewCornerRadius)
+    .with(cornerRadius: Constants.codePreviewCornerRadius, borderColor: colorScheme.textAreaBorderColor)
     .foregroundColor(role == .user ? .white : .primary)
   }
 

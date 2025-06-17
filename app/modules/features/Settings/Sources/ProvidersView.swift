@@ -161,7 +161,7 @@ private struct ProviderCard: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color(NSColor.textBackgroundColor))
-        .roundedCornerWithBorder(borderColor: Color.gray.opacity(0.3), radius: 6)
+        .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
 
         Text("API keys are stored securely in the keychain")
           .font(.footnote)
@@ -180,13 +180,13 @@ private struct ProviderCard: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(Color(NSColor.textBackgroundColor))
-            .roundedCornerWithBorder(borderColor: Color.gray.opacity(0.3), radius: 6)
+            .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.3))
         }
       }
     }
     .padding(16)
     .background(Color(NSColor.controlBackgroundColor))
-    .roundedCornerWithBorder(borderColor: Color.gray.opacity(0.2), radius: 12)
+    .with(cornerRadius: 12, borderColor: Color.gray.opacity(0.2))
     .onAppear {
       loadCurrentSettings()
     }

@@ -251,10 +251,7 @@ struct FileChangeView: View {
           expandedHeight: nil)
       }
     }
-    .roundedCorner(radius: Constants.cornerRadius, corners: [.topLeft, .topRight, .bottomLeft, .bottomRight])
-    .overlay(
-      RoundedCornerShape(radius: Constants.cornerRadius, corners: [.topLeft, .topRight, .bottomLeft, .bottomRight])
-        .stroke(colorScheme.textAreaBorderColor, lineWidth: 1))
+    .with(cornerRadius: Constants.cornerRadius, borderColor: colorScheme.textAreaBorderColor)
     .padding(.horizontal, 4)
     .padding(.vertical, 2)
   }

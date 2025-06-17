@@ -60,7 +60,7 @@ struct ToolUseView: View {
   private var stdoutView: some View {
     if let std = toolUse.std, !std.isEmpty {
       CodePreview(filePath: nil, content: std)
-        .roundedCornerWithBorder(borderColor: colorScheme.textAreaBorderColor, radius: 5)
+        .with(cornerRadius: 5, borderColor: colorScheme.textAreaBorderColor)
     }
   }
 
