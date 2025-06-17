@@ -48,6 +48,8 @@ struct TestTool: NonStreamableTool {
 
     func reject(reason _: String?) { }
 
+    func cancel() { }
+
   }
 
   var inputSchema = JSON.object([:])
@@ -58,6 +60,10 @@ struct TestTool: NonStreamableTool {
   var shortDescription: String { description }
 
   func use(toolUseId _: String, input _: String, context _: ToolExecutionContext) -> Use {
+    Use()
+  }
+
+  func use() -> Use {
     Use()
   }
 

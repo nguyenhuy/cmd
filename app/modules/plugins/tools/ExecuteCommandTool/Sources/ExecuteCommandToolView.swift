@@ -32,7 +32,7 @@ struct ToolUseView: View {
       VStack { }
     case .pendingApproval:
       content(statusDescription: "Waiting for approval: \(toolUse.command)")
-    case .rejected:
+    case .approvalRejected:
       content(statusDescription: "Rejected: \(toolUse.command)")
     case .running:
       content(statusDescription: "Running \(toolUse.command)...")

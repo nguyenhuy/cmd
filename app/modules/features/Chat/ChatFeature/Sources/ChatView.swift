@@ -48,11 +48,6 @@ public struct ChatView: View {
           isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse,
           didTapCancel: { [weak viewModel] in
             viewModel?.tab.cancelCurrentMessage()
-          },
-          didSend: { [weak viewModel] in
-            Task {
-              await viewModel?.tab.sendMessage()
-            }
           }).id("ChatInputView-\(viewModel.tab.id)")
       }
       if viewModel.showChatHistory {

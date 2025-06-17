@@ -29,7 +29,7 @@ struct ToolUseView: View {
       EmptyView()
     case .pendingApproval:
       pendingApprovalView
-    case .rejected:
+    case .approvalRejected:
       rejectedView
     case .running:
       followUpView(selection: nil)

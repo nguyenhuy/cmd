@@ -212,34 +212,34 @@ extension ChatMessageContent {
 
     case .toolUse(let toolUse):
       do {
+        let toolResult: Schema.ToolResultMessage.Result = {
+          do {
+            guard let output = try toolUse.toolUse.currentOutput else {
+              // The tool use has not completed yet.
+              // We need to represent a result to be able to continue the conversation.
+              // As sending a new message will cancel any in-flight tool use, we represent it as failed due to cancellation.
+              return .toolResultFailureMessage(.init(failure: ["error": .string("The tool use has been cancelled.")]))
+            }
+            let data = try JSONEncoder().encode(output)
+            let jsonResult = try JSONDecoder().decode(JSON.Value.self, from: data)
+            return .toolResultSuccessMessage(.init(success: jsonResult))
+          } catch {
+            return .toolResultFailureMessage(.init(failure: ["error": .string(error.localizedDescription)]))
+          }
+        }()
+
         let request = try Schema.MessageContent.toolUseRequest(Schema.ToolUseRequest(
           name: toolUse.toolUse.toolName,
           anyInput: toolUse.toolUse.input,
           id: toolUse.toolUse.toolUseId))
-
-        guard let result = toolUse.toolUse.currentResult else {
-          // The tool use has not completed yet.
-          // We need to represent a result to be able to continue the conversation.
-          // As sending a new message will cancel any in-flight tool use, we represent it as failed due to cancellation.
-          return [
-            (.assistant, request),
-            (.tool, .toolResultMessage(.init(
-              toolUseId: toolUse.toolUse.toolUseId,
-              toolName: toolUse.toolUse.toolName,
-              result: .toolResultFailureMessage(.init(failure: ["error": .string("The tool use has been cancelled.")]))))),
-          ]
-        }
-        let data = try JSONEncoder().encode(result)
-        let jsonResult = try JSONDecoder().decode(JSON.Value.self, from: data)
         return [
           (.assistant, request),
           (.tool, .toolResultMessage(.init(
             toolUseId: toolUse.toolUse.toolUseId,
             toolName: toolUse.toolUse.toolName,
-            result: .toolResultSuccessMessage(.init(success: jsonResult))))),
+            result: toolResult))),
         ]
       } catch {
-        // Unable to serialize the tool use request.
         defaultLogger.error("Unable to serialize the tool use request.")
         return []
       }

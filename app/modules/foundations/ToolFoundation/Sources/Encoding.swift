@@ -100,7 +100,7 @@ extension ToolUseExecutionStatus: Codable {
 
     case "rejected":
       let reason = try container.decode(String?.self, forKey: .value)
-      self = .rejected(reason: reason)
+      self = .approvalRejected(reason: reason)
 
     case "completed":
       let result = try container.decode(Result<Output, Error>.self, forKey: .value)
@@ -126,7 +126,7 @@ extension ToolUseExecutionStatus: Codable {
     case .running:
       try container.encode("running", forKey: .status)
 
-    case .rejected(reason: let reason):
+    case .approvalRejected(reason: let reason):
       try container.encode("rejected", forKey: .status)
       try container.encode(reason, forKey: .value)
 

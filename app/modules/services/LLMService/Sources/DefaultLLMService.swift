@@ -176,7 +176,7 @@ final class DefaultLLMService: LLMService {
     let toolUse = toolUseRequest.toolUse
 
     do {
-      let toolOutput = try await toolUse.result
+      let toolOutput = try await toolUse.output
 
       // TODO: try to avoid this.
       let data = try JSONEncoder().encode(toolOutput)

@@ -30,7 +30,7 @@ struct ToolUseView: View {
       EmptyView()
     case .pendingApproval:
       pendingApprovalContent
-    case .rejected:
+    case .approvalRejected:
       rejectedContent
     case .running:
       buildingContent

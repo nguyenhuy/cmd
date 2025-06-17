@@ -105,7 +105,11 @@ public final class ExecuteCommandTool: NonStreamableTool {
     }
 
     public func reject(reason: String?) {
-      updateStatus.yield(.rejected(reason: reason))
+      updateStatus.yield(.approvalRejected(reason: reason))
+    }
+
+    public func cancel() {
+      updateStatus.yield(.completed(.failure(CancellationError())))
     }
 
     let stdoutStream: Future<BroadcastedStream<Data>, Never>

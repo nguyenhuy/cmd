@@ -38,7 +38,7 @@ struct ToolApprovalRequest: Identifiable {
 enum ToolApprovalResult {
   case approved
   case denied
-  case alwaysApprove(toolName: String)
+  case alwaysApprove
   case cancelled
 }
 
@@ -141,8 +141,13 @@ final class ChatInputViewModel {
   /// When searching for references, the index of the selected search result (at this point the selection has not yet been confirmed).
   var selectedSearchResultIndex = 0
 
+  /// The suggested result for the current pending tool approval request.
+  var pendingToolApprovalSuggestedResult = ToolApprovalResult.alwaysApprove
+
+  var didTapSendMessage: @MainActor () -> Void = { }
+
   /// The current tool approval request pending user response.
-  var pendingApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
+  var pendingToolApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
 
   /// Which LLM model is selected to respond to the next message.
   var selectedModel: LLMModel? {
@@ -196,8 +201,8 @@ final class ChatInputViewModel {
   }
 
   /// Create a deep copy of the view model.
-  func copy() -> ChatInputViewModel {
-    .init(
+  func copy(didTapSendMessage: @escaping @MainActor () -> Void) -> ChatInputViewModel {
+    let model = ChatInputViewModel(
       textInput: TextInput(textInput.string),
       selectedModel: selectedModel,
       // Pass nil here to signal that the value from settings should be observed.
@@ -205,6 +210,8 @@ final class ChatInputViewModel {
       activeModels: nil,
       mode: mode,
       attachments: attachments)
+    model.didTapSendMessage = didTapSendMessage
+    return model
   }
 
   func handleStartExternalSearch(isSearching: Bool) {
@@ -219,6 +226,11 @@ final class ChatInputViewModel {
     clearSearchResults()
   }
 
+  /// Handle sending the message.
+  func handleDidTapSend() {
+    didTapSendMessage()
+  }
+
   /// Add an attachment to the input.
   @MainActor
   func add(attachment: AttachmentModel) {
@@ -228,6 +240,36 @@ final class ChatInputViewModel {
 
   @MainActor
   func handleOnKeyDown(key: KeyEquivalent, modifiers: NSEvent.ModifierFlags) -> Bool {
+    // Tool approval
+    if let pendingToolApproval {
+      if key == .upArrow {
+        switch pendingToolApprovalSuggestedResult {
+        case .approved:
+          pendingToolApprovalSuggestedResult = .alwaysApprove
+        case .denied:
+          pendingToolApprovalSuggestedResult = .approved
+        default:
+          break
+        }
+        return true
+      } else if key == .downArrow {
+        switch pendingToolApprovalSuggestedResult {
+        case .alwaysApprove:
+          pendingToolApprovalSuggestedResult = .approved
+        case .approved:
+          pendingToolApprovalSuggestedResult = .denied
+        default:
+          break
+        }
+        return true
+      } else if key == .return, !modifiers.contains(.shift) {
+        handleApproval(of: pendingToolApproval, result: pendingToolApprovalSuggestedResult)
+        return true
+      }
+      return false
+    }
+
+    // Search navigation
     guard let searchResults else {
       return false
     }
@@ -329,6 +371,7 @@ final class ChatInputViewModel {
 
     let pendingItems = toolCallsPendingApproval
     toolCallsPendingApproval.removeAll()
+    pendingToolApprovalSuggestedResult = .alwaysApprove
 
     for item in pendingItems {
       item.continuation.resume(returning: .cancelled)
@@ -341,8 +384,9 @@ final class ChatInputViewModel {
       defaultLogger.error("Could not find pending tool approval request with ID: \(request.id)")
       return
     }
-    let pendingApproval = toolCallsPendingApproval.remove(at: index)
-    pendingApproval.continuation.resume(returning: result)
+    let pendingToolApproval = toolCallsPendingApproval.remove(at: index)
+    pendingToolApprovalSuggestedResult = .alwaysApprove
+    pendingToolApproval.continuation.resume(returning: result)
   }
 
   private static let userDefaultsSelectLLMModelKey = "selectedLLMModel"

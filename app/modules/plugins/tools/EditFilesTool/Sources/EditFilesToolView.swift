@@ -31,7 +31,7 @@ struct ToolUseView: View {
       VStack { }
     case .pendingApproval:
       pendingApprovalView
-    case .rejected:
+    case .approvalRejected:
       rejectedView
     case .running, .completed:
       ScrollView {
