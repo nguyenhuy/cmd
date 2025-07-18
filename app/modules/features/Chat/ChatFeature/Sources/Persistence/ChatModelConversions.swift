@@ -86,6 +86,12 @@ extension ChatMessageContent {
       self = .toolUse(.init(
         id: toolUseContent.id,
         toolUse: toolUseContent.toolUse))
+
+    case .conversationSummary(let summary):
+      self = .conversationSummary(.init(
+        id: summary.id,
+        projectRoot: nil,
+        deltas: [summary.text]))
     }
   }
 
@@ -111,6 +117,13 @@ extension ChatMessageContent {
 
     case .toolUse(let toolUseContent):
       .toolUse(.init(id: toolUseContent.id, toolUse: toolUseContent.toolUse))
+
+    case .conversationSummary(let summary):
+      .conversationSummary(ChatMessageTextContentModel(
+        id: summary.id,
+        projectRoot: nil,
+        text: summary.text,
+        attachments: []))
     }
   }
 
@@ -130,7 +143,7 @@ extension ChatEvent {
         taskId: checkpoint.taskId))
 
     case .message(let message):
-      self = .message(.init(content: .init(from: message.content), role: message.role, failureReason: message.failureReason))
+      self = .message(.init(content: .init(from: message.content), role: message.role, info: message.info))
     }
   }
 
@@ -138,7 +151,7 @@ extension ChatEvent {
   var persistentModel: ChatEventModel {
     switch self {
     case .message(let message):
-      .message(.init(content: message.content.persistentModel, role: message.role, failureReason: message.failureReason))
+      .message(.init(content: message.content.persistentModel, role: message.role, info: message.info))
 
     case .checkpoint(let checkpoint):
       .checkpoint(.init(

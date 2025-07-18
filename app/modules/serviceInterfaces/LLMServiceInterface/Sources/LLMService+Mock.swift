@@ -19,9 +19,11 @@ public final class MockLLMService: LLMService {
     LLMModel,
     ChatContext,
     (UpdateStream) -> Void)
-    -> [AssistantMessage])?
+  async throws -> SendMessageResponse)?
 
   public var onNameConversation: (@Sendable (String) async throws -> String)?
+
+  public var onSummarizeConversation: (@Sendable ([Schema.Message], LLMModel) async throws -> String)?
 
   // MARK: - LLMService
 
@@ -31,14 +33,14 @@ public final class MockLLMService: LLMService {
     model: LLMModel,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
-    async throws -> [AssistantMessage]
+    async throws -> SendMessageResponse
   {
     if let onSendMessage {
-      return onSendMessage(messageHistory, tools, model, context, handleUpdateStream)
+      return try await onSendMessage(messageHistory, tools, model, context, handleUpdateStream)
     }
 
     // Default implementation returning empty array if no handler is set
-    return []
+    return SendMessageResponse(newMessages: [], usageInfo: nil)
   }
 
   public func nameConversation(firstMessage: String) async throws -> String {
@@ -46,6 +48,17 @@ public final class MockLLMService: LLMService {
       return try await onNameConversation(firstMessage)
     }
     return "Unnamed Conversation"
+  }
+
+  public func summarizeConversation(
+    messageHistory: [Schema.Message],
+    model: LLMModel)
+    async throws -> String
+  {
+    if let onSummarizeConversation {
+      return try await onSummarizeConversation(messageHistory, model)
+    }
+    return "Mock conversation summary"
   }
 
 }

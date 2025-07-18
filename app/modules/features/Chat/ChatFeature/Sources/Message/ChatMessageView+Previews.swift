@@ -189,8 +189,9 @@ struct DebugStreamingMessage: View {
     }
   }
 
-  private let message: ChatMessageViewModel
   @Bindable private var currentMessage: ChatMessageViewModel
+
+  private let message: ChatMessageViewModel
 }
 
 #Preview("Failed user message") {
@@ -198,7 +199,18 @@ struct DebugStreamingMessage: View {
     ChatMessageView(message: ChatMessageContentWithRole(
       content: .text(.init(text: "Help me!")),
       role: .user,
-      failureReason: "No more API credits"))
+      info: .init(info: "No more API credits", level: .error)))
+  }
+  .frame(width: 400)
+  .padding()
+}
+
+#Preview("Cancelled user message") {
+  ScrollView {
+    ChatMessageView(message: ChatMessageContentWithRole(
+      content: .text(.init(text: "Help me!")),
+      role: .user,
+      info: .init(info: "Cancelled", level: .info)))
   }
   .frame(width: 400)
   .padding()

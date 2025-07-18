@@ -61,6 +61,9 @@ struct ChatMessageView: View {
             ReasoningMessageView(reasoning: reasoningContent)
               .padding(.horizontal, horizontalPadding)
               .padding(.vertical, Constants.textVerticalPadding)
+
+          case .conversationSummary:
+            EmptyView()
           }
         }
         Spacer(minLength: 0)
@@ -68,11 +71,11 @@ struct ChatMessageView: View {
       .background(message.role == .user ? colorScheme.secondarySystemBackground : .clear)
       .with(cornerRadius: Constants.cornerRadius)
 
-      if let failureReason = message.failureReason {
-        Text(failureReason)
+      if let info = message.info {
+        Text(info.info)
           .textSelection(.enabled)
           .font(.system(size: 11))
-          .foregroundColor(.red)
+          .foregroundColor(infoColor(for: info.level))
       }
     }
   }
@@ -87,6 +90,17 @@ struct ChatMessageView: View {
 
   private var horizontalPadding: CGFloat {
     message.role == .user ? Constants.userTextHorizontalPadding : 0
+  }
+
+  private func infoColor(for level: ChatMessageContentWithRoleModel.Info.InfoLevel) -> SwiftUI.Color {
+    switch level {
+    case .info:
+      .secondary
+    case .warning:
+      .orange
+    case .error:
+      .red
+    }
   }
 
   @ViewBuilder
@@ -162,6 +176,7 @@ struct ToolUseView: View {
           withCheckMark: true)
           .frame(width: 10, height: 10)
           .font(.system(size: 10))
+          .foregroundColor(.orange)
         #endif
       }
     }

@@ -135,8 +135,9 @@ extension ChatTabViewModel {
         * macOS Version: \((try? macOSVersion)?.stdout ?? "unkonwn")
         * Default Xcode Version: \((try? defaultXcodeVersion.stdout)?.split(separator: "\n").first ?? "unknown")
         * Swift Version: \((try? swiftVersion.stdout)?.split(separator: "\n")
-      .first ?? "unknown")\(hasXcPretty ?
-      "\n  * xcpretty is installed. Make sure to use it when relevant to improve build outputs" : "")
+      .first ?? "unknown")\(hasXcPretty
+      ? "\n  * xcpretty is installed. Make sure to use it when relevant to improve build outputs"
+      : "")
         * Current Workspace Directory: \(workspace.url.path)
         * Project root (root of all relative path): \(projectRoot.path)
         * Files (first \(fileLimit)):
@@ -168,7 +169,14 @@ extension [ChatMessageViewModel] {
   /// Converts the content to the API format.
   @MainActor
   var apiFormat: [Schema.Message] {
-    flatMap(\.apiFormat)
+    let lastSummaryIdx = lastIndex(where: { message in
+      if case .conversationSummary = message.content.first {
+        return true
+      }
+      return false
+    })
+
+    return suffix(from: lastSummaryIdx ?? 0).flatMap(\.apiFormat)
   }
 }
 
@@ -243,6 +251,9 @@ extension ChatMessageContent {
         defaultLogger.error("Unable to serialize the tool use request.")
         return []
       }
+
+    case .conversationSummary(let summary):
+      return [(nil, .textMessage(.init(text: summary.text)))]
     }
   }
 }

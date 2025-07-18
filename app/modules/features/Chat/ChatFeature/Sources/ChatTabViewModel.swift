@@ -7,9 +7,11 @@ import ChatFoundation
 import ChatHistoryServiceInterface
 import CheckpointServiceInterface
 import Combine
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import FoundationInterfaces
+import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import Observation
@@ -127,6 +129,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
 
+    if let summarizationTask {
+      try? await summarizationTask.value
+    }
+
     if let streamingTask {
       defaultLogger.info("Cancelling current chat streaming task")
       streamingTask.cancel()
@@ -157,6 +163,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
     events.append(.message(.init(content: messageContent, role: .user)))
     messages.append(userMessage)
+    let messages = messages.apiFormat
 
     if !textInput.string.string.isEmpty, name == nil {
       Task { [weak self] in
@@ -173,9 +180,10 @@ final class ChatTabViewModel: Identifiable, Equatable {
     // Send the message to the server and stream the response.
     do {
       let tools: [any Tool] = toolsPlugin.tools(for: input.mode)
+      let usageInfo = Atomic<LLMUsageInfo?>(nil)
       streamingTask = Task {
-        async let done = llmService.sendMessage(
-          messageHistory: messages.apiFormat,
+        async let response = llmService.sendMessage(
+          messageHistory: messages,
           tools: tools,
           model: selectedModel,
           context: DefaultChatContext(
@@ -197,7 +205,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
                   let newMessageState = ChatMessageViewModel(
                     content: newMessage.content.map { $0.domainFormat(projectRoot: projectInfo?.dirPath) },
                     role: .assistant)
-                  messages.append(newMessageState)
+                  self.messages.append(newMessageState)
 
                   for await update in newMessage.updates {
                     // new message content was received
@@ -213,7 +221,8 @@ final class ChatTabViewModel: Identifiable, Equatable {
               }
             }
           })
-        _ = try await done
+
+        try await usageInfo.set(to: response.usageInfo)
       }
 
       try await streamingTask?.value
@@ -221,12 +230,26 @@ final class ChatTabViewModel: Identifiable, Equatable {
 
       // Save the conversation after successful completion
       await persistThread()
+
+      if let usageInfo = usageInfo.value {
+        do {
+          try await handle(usageInfo: usageInfo, model: selectedModel)
+        } catch {
+          defaultLogger.error("Failed to handle usage info", error)
+        }
+      }
     } catch {
       defaultLogger.error("Error sending message", error)
       streamingTask = nil
 
       if case .message(let lastEvent) = events.last {
-        events[events.count - 1] = .message(lastEvent.with(failureReason: "Error sending message: \(error.localizedDescription)"))
+        if error is CancellationError {
+          events[events.count - 1] = .message(lastEvent.with(info: .init(info: "Cancelled", level: .info)))
+        } else {
+          events[events.count - 1] = .message(lastEvent.with(info: .init(
+            info: "Error sending message: \(error.localizedDescription)",
+            level: .error)))
+        }
       }
 
       // Save even after error to preserve the failure state
@@ -301,9 +324,30 @@ final class ChatTabViewModel: Identifiable, Equatable {
   @Dependency(\.checkpointService) private var checkpointService: CheckpointService
   @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
+  private var summarizationTask: Task<Void, any Error>? = nil
+
   private var streamingTask: Task<Void, any Error>? = nil {
     didSet {
       isStreamingResponse = streamingTask != nil
+    }
+  }
+
+  private func handle(usageInfo: LLMUsageInfo, model: LLMModel) async throws {
+    // Handle usage info, including if the conversation needs compatcing
+    if usageInfo.inputTokens + usageInfo.outputTokens > Int(Float(model.contextSize) * 0.8) {
+      defaultLogger.log("Summarizing conversation")
+
+      summarizationTask = Task {
+        let conversationSummary = try await llmService.summarizeConversation(
+          messageHistory: messages.apiFormat,
+          model: model)
+        messages.append(.init(content: [.conversationSummary(.init(
+          projectRoot: nil,
+          deltas: [conversationSummary],
+          attachments: []))], role: .user))
+      }
+      try await summarizationTask?.value
+      summarizationTask = nil
     }
   }
 

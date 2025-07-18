@@ -382,7 +382,8 @@ final class SendMessageTests {
       _ = try await sut.sendMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         model: .claudeSonnet_4_0,
-        context: TestChatContext(projectRoot: URL(filePath: "/path/to/root"))) { _ in }
+        context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
+        handleUpdateStream: { _ in })
       Issue.record("Expected sendMessage to throw error")
     } catch {
       #expect(error.localizedDescription == "Unsupported model claude-4-sonnet")
