@@ -12,7 +12,7 @@ import ServerServiceInterface
 import ShellServiceInterface
 import XcodeObserverServiceInterface
 
-extension ChatTabViewModel {
+extension ChatThreadViewModel {
 
   /// Converts a flat list of file information into a hierarchical string representation.
   ///

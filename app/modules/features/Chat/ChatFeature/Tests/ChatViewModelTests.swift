@@ -48,7 +48,7 @@ struct ChatViewModelTests {
   @MainActor
   @Test("debug initializer with custom tabs and selected tab")
   func test_debugInitializer_withCustomTabsAndSelectedTab() {
-    let tab = ChatTabViewModel()
+    let tab = ChatThreadViewModel()
 
     let viewModel = ChatViewModel(
       defaultMode: .ask,
@@ -578,7 +578,7 @@ struct ChatViewModelTests {
       withDependencies {
         $0.llmService = mockLLMService
       } operation: {
-        ChatTabViewModel()
+        ChatThreadViewModel()
       }
     }
 
@@ -628,7 +628,7 @@ struct ChatViewModelTests {
       withDependencies {
         $0.llmService = mockLLMService
       } operation: {
-        ChatTabViewModel()
+        ChatThreadViewModel()
       }
     }
 
@@ -680,7 +680,7 @@ struct ChatViewModelTests {
       withDependencies {
         $0.llmService = mockLLMService
       } operation: {
-        ChatTabViewModel()
+        ChatThreadViewModel()
       }
     }
 
@@ -719,7 +719,7 @@ struct ChatViewModelTests {
       withDependencies {
         $0.llmService = mockLLMService
       } operation: {
-        ChatTabViewModel()
+        ChatThreadViewModel()
       }
     }
 
@@ -793,7 +793,7 @@ struct ChatViewModelTests {
       withDependencies {
         $0.llmService = mockLLMService
       } operation: {
-        ChatTabViewModel()
+        ChatThreadViewModel()
       }
     }
 

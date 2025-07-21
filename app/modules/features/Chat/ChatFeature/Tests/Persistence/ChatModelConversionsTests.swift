@@ -15,15 +15,15 @@ struct ChatModelConversionsTests {
   @MainActor
   @Test("test model creation and conversion")
   func testModelCreationAndConversion() async {
-    // Test ChatTabViewModel to ChatThreadModel conversion
-    let originalTab = ChatTabViewModel(name: "Test Tab")
+    // Test ChatThreadViewModel to ChatThreadModel conversion
+    let originalTab = ChatThreadViewModel(name: "Test Tab")
     let persistentModel = originalTab.persistentModel
 
     #expect(persistentModel.name == "Test Tab")
     #expect(persistentModel.id == originalTab.id)
 
-    // Test ChatThreadModel to ChatTabViewModel conversion
-    let loadedTab = ChatTabViewModel(from: persistentModel)
+    // Test ChatThreadModel to ChatThreadViewModel conversion
+    let loadedTab = ChatThreadViewModel(from: persistentModel)
     #expect(loadedTab.name == "Test Tab")
     #expect(loadedTab.messages.isEmpty)
     #expect(loadedTab.events.isEmpty)

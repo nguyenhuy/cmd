@@ -13,9 +13,9 @@ import Testing
 import XcodeObserverServiceInterface
 @testable import ChatFeature
 
-// MARK: - ChatTabViewModelHelpersTests
+// MARK: - ChatThreadViewModelHelpersTests
 
-struct ChatTabViewModelHelpersTests {
+struct ChatThreadViewModelHelpersTests {
 
   // MARK: - Tests
 
@@ -58,7 +58,7 @@ struct ChatTabViewModelHelpersTests {
       $0.llmService = mockLLMService
       $0.checkpointService = mockCheckpointService
     } operation: {
-      ChatTabViewModel()
+      ChatThreadViewModel()
     }
 
     let exp = expectation(description: "Messages updated")
@@ -103,7 +103,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -126,7 +126,7 @@ struct ChatTabViewModelHelpersTests {
     let files: [Schema.ListedFileInfo] = []
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -142,7 +142,7 @@ struct ChatTabViewModelHelpersTests {
     let files = [Schema.ListedFileInfo(path: "/project/main.swift")]
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -163,7 +163,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -186,7 +186,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -213,7 +213,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -243,7 +243,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -267,7 +267,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -293,7 +293,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """
@@ -321,7 +321,7 @@ struct ChatTabViewModelHelpersTests {
     ].map { Schema.ListedFileInfo(path: $0.0, hasMoreContent: $0.1) }
 
     // Test
-    let result = ChatTabViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
+    let result = ChatThreadViewModel.formatFileListAsHierarchy(filesInfo: files, projectRoot: URL(filePath: "/project"))
 
     // Assert
     let expected = """

@@ -19,7 +19,7 @@ struct ChatMessageList: View {
   }
   #endif
 
-  init(viewModel: ChatTabViewModel) {
+  init(viewModel: ChatThreadViewModel) {
     events = viewModel.events
     onRestoreTapped = { [weak viewModel] checkpoint in
       viewModel?.handleRestore(checkpoint: checkpoint)

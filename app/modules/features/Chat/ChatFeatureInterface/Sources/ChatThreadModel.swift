@@ -3,7 +3,7 @@
 
 import Foundation
 
-// MARK: - ChatTabViewModel
+// MARK: - ChatThreadViewModel
 
 public struct ChatThreadModel: Sendable {
   public init(

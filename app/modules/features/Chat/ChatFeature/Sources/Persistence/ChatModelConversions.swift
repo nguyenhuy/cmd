@@ -11,9 +11,9 @@ import Foundation
 import JSONFoundation
 import LLMServiceInterface
 
-// MARK: - ChatTabViewModel Extensions
+// MARK: - ChatThreadViewModel Extensions
 
-extension ChatTabViewModel {
+extension ChatThreadViewModel {
   convenience init(from persistentModel: ChatThreadModel) {
     self.init(
       id: persistentModel.id,

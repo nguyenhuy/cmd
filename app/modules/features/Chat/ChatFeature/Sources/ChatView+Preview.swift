@@ -8,7 +8,7 @@ import SwiftUI
 #Preview {
   ChatView(viewModel: ChatViewModel(
     tab:
-    ChatTabViewModel(messages: [
+    ChatThreadViewModel(messages: [
       ChatMessageViewModel(
         content: [.text(.init(
           projectRoot: URL(filePath: "/"),

@@ -20,10 +20,10 @@ import SettingsServiceInterface
 import ToolFoundation
 import XcodeObserverServiceInterface
 
-// MARK: - ChatTabViewModel
+// MARK: - ChatThreadViewModel
 
 @MainActor @Observable
-final class ChatTabViewModel: Identifiable, Equatable {
+final class ChatThreadViewModel: Identifiable, Equatable {
 
   #if DEBUG
   convenience init(name: String? = nil, messages: [ChatMessageViewModel] = []) {
@@ -103,7 +103,7 @@ final class ChatTabViewModel: Identifiable, Equatable {
     }
   }
 
-  nonisolated static func ==(lhs: ChatTabViewModel, rhs: ChatTabViewModel) -> Bool {
+  nonisolated static func ==(lhs: ChatThreadViewModel, rhs: ChatThreadViewModel) -> Bool {
     lhs.id == rhs.id
   }
 
@@ -494,7 +494,7 @@ enum ChatEvent: Identifiable {
   }
 }
 
-extension ChatTabViewModel.SelectedProjectInfo {
+extension ChatThreadViewModel.SelectedProjectInfo {
   /// Whether the project is a Swift package
   var isSwiftPackage: Bool {
     dirPath != path

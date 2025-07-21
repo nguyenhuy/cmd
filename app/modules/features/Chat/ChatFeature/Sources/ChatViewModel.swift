@@ -24,7 +24,7 @@ public class ChatViewModel {
   #if DEBUG
   convenience init(
     defaultMode: ChatMode? = nil,
-    tab: ChatTabViewModel = ChatTabViewModel())
+    tab: ChatThreadViewModel = ChatThreadViewModel())
   {
     self.init(
       defaultMode: defaultMode ?? .agent,
@@ -36,13 +36,13 @@ public class ChatViewModel {
   public convenience init(defaultMode: ChatMode? = nil) {
     self.init(
       defaultMode: defaultMode ?? .agent,
-      tab: ChatTabViewModel(),
+      tab: ChatThreadViewModel(),
       currentModel: .claudeSonnet_4_0)
   }
 
   private init(
     defaultMode: ChatMode,
-    tab: ChatTabViewModel,
+    tab: ChatThreadViewModel,
     currentModel: LLMModel)
   {
     self.tab = tab
@@ -62,7 +62,7 @@ public class ChatViewModel {
     }
   }
 
-  private(set) var tab: ChatTabViewModel
+  private(set) var tab: ChatThreadViewModel
   var currentModel: LLMModel
   var selectedFile: URL?
 
@@ -92,7 +92,7 @@ public class ChatViewModel {
   /// Create a new tab/thread.
   /// - Parameter copyingCurrentInput: Whether the current input content should be ported to the new tab.
   func addTab(copyingCurrentInput: Bool = false) {
-    let newTab = ChatTabViewModel()
+    let newTab = ChatThreadViewModel()
     let currentTab = tab
     tab = newTab
     if copyingCurrentInput {
@@ -110,9 +110,9 @@ public class ChatViewModel {
       else {
         return
       }
-      let chatTab = ChatTabViewModel(from: thread)
+      let ChatThread = ChatThreadViewModel(from: thread)
 
-      tab = chatTab
+      tab = ChatThread
 
       defaultLogger.log("Loaded chat tabs from database")
     } catch {
@@ -134,7 +134,7 @@ public class ChatViewModel {
         return
       }
 
-      tab = ChatTabViewModel(from: thread)
+      tab = ChatThreadViewModel(from: thread)
       showChatHistory = false
     } catch {
       showChatHistory = false
