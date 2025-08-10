@@ -41,7 +41,8 @@ final class SendOneMessageTests {
             "settings" : { "apiKey" : "anthropic-key" }
           },
           "tools" : [],
-          "projectRoot" : "/path/to/root"
+          "projectRoot" : "/path/to/root",
+          "threadId" : "mock-thread-id"
         }
         """, ignoring: "system")
       requestCompleted.fulfill()
@@ -308,7 +309,8 @@ final class SendOneMessageTests {
       try await sut.sendOneMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet_4_0,
+        model: .claudeSonnet,
+        chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -363,7 +365,8 @@ final class SendOneMessageTests {
       try await sut.sendOneMessage(
         messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
         tools: [],
-        model: .claudeSonnet_4_0,
+        model: .claudeSonnet,
+        chatMode: .ask,
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
@@ -467,7 +470,7 @@ final class SendOneMessageTests {
     }
     let updatingMessage = try await sut.sendOneMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-      tools: [TestStreamingTool<TestToolInput, EmptyObject>(name: "TestStreamingTool", output: EmptyObject())])
+      tools: [TestStreamingTool<TestToolInput, EmptyObject>(name: "TestStreamingTool")])
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
@@ -516,14 +519,14 @@ final class SendOneMessageTests {
         #expect(toolUse.receivedInputs.count == 4)
         #expect(toolUse.receivedInputs.last?.file == "file.txt")
         #expect(toolUse.receivedInputs.last?.keywords == ["foo", "bar"])
-        #expect(toolUse.hasReceivedAllInput == false)
+        #expect(toolUse.isInputComplete == false)
         chunk4Validated.fulfill()
 
       case 5:
         #expect(toolUse.receivedInputs.count == 5)
         #expect(toolUse.receivedInputs.last?.file == "file.txt")
         #expect(toolUse.receivedInputs.last?.keywords == ["foo", "bar"])
-        #expect(toolUse.hasReceivedAllInput == true)
+        #expect(toolUse.isInputComplete == true)
         toolCallValidated.fulfill()
 
       default:
@@ -579,7 +582,7 @@ final class SendOneMessageTests {
     }
     let updatingMessage = try await sut.sendOneMessage(
       messageHistory: [.init(role: .user, content: [.textMessage(.init(text: "hello"))])],
-      tools: [TestStreamingTool<TestToolInput, EmptyObject>(name: "TestStreamingTool", output: EmptyObject())])
+      tools: [TestStreamingTool<TestToolInput, EmptyObject>(name: "TestStreamingTool")])
     #expect(updatingMessage.content.count == 0)
     initialStreamExpectationValidated.fulfill()
 
@@ -604,6 +607,6 @@ final class SendOneMessageTests {
 
     #expect(toolUse.receivedInputs.count == 2)
     #expect(toolUse.receivedInputs.last?.file == "file.txt")
-    #expect(toolUse.hasReceivedAllInput == true)
+    #expect(toolUse.isInputComplete == true)
   }
 }

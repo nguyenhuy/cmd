@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ServerServiceInterface
+import SwiftUI
 import ToolFoundation
 
 // MARK: - LSTool
@@ -17,12 +18,13 @@ public final class LSTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
-    init(
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+    public init(
       callingTool: LSTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -34,10 +36,12 @@ public final class LSTool: NonStreamableTool {
       directoryPath = URL(fileURLWithPath: self.input.path)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }
 
+    public typealias InternalState = EmptyObject
     public struct Input: Codable, Sendable {
       public let path: String
       public let recursive: Bool?
@@ -51,9 +55,9 @@ public final class LSTool: NonStreamableTool {
         /// The full path of the file
         public let path: String
         /// The attributes of the file, e.g. like `drwxr-xr-x`.
-        public let attr: String
+        public let attr: String?
         /// The size of the file in human-readable format.
-        public let size: String
+        public let size: String?
       }
     }
 
@@ -65,13 +69,17 @@ public final class LSTool: NonStreamableTool {
 
     public let status: Status
 
+    public let context: ToolExecutionContext
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
 
       guard let projectRoot = context.projectRoot else {
-        updateStatus.yield(.completed(.failure(AppError("Cannot list files without a project"))))
+        updateStatus.complete(with: .failure(AppError("Cannot list files without a project")))
         return
       }
       Task {
@@ -83,28 +91,20 @@ public final class LSTool: NonStreamableTool {
 
           let data = try JSONEncoder().encode(fullInput)
           let response: Schema.ListFilesToolOutput = try await server.postRequest(path: "listFiles", data: data)
-          updateStatus.yield(.completed(.success(response.transformed(with: context))))
+          updateStatus.complete(with: .success(response.transformed(with: context)))
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let directoryPath: URL
 
-    let context: ToolExecutionContext
-
     @Dependency(\.server) private var server
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -144,30 +144,6 @@ public final class LSTool: NonStreamableTool {
     true
   }
 
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-  }
-
-}
-
-// MARK: - ToolUseViewModel
-
-@Observable
-@MainActor
-final class ToolUseViewModel {
-
-  init(status: LSTool.Use.Status, directoryPath: URL) {
-    self.status = status.value
-    self.directoryPath = directoryPath
-    Task {
-      for await status in status {
-        self.status = status
-      }
-    }
-  }
-
-  let directoryPath: URL
-  var status: ToolUseExecutionStatus<LSTool.Use.Output>
 }
 
 extension Schema.ListFilesToolOutput {
@@ -179,5 +155,16 @@ extension Schema.ListFilesToolOutput {
           attr: file.permissions,
           size: ByteCountFormatter.string(fromByteCount: Int64(file.byteSize), countStyle: .file))
       }, hasMore: files.contains(where: { $0.hasMoreContent == true }))
+  }
+}
+
+// MARK: - LSTool.Use + DisplayableToolUse
+
+extension LSTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    let viewModel = ToolUseViewModel(
+      status: status,
+      directoryPath: directoryPath)
+    return AnyView(ToolUseView(viewModel: viewModel))
   }
 }

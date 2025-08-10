@@ -1,13 +1,17 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
+import ChatServiceInterface
 @preconcurrency import Combine
+import ConcurrencyFoundation
 import Dependencies
-import DLS
 import Foundation
 import FoundationInterfaces
-import HighlighterServiceInterface
 import JSONFoundation
+import LoggingServiceInterface
+import SwiftUI
+import ThreadSafe
 import ToolFoundation
 
 // MARK: - ReadFileTool
@@ -17,27 +21,31 @@ public final class ReadFileTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
-    init(
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+    public init(
       callingTool: ReadFileTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.context = context
-      self.input = Input(
-        path: input.path.resolvePath(from: context.projectRoot).path(),
+      self.input = input
+      self.internalState = internalState ?? Input(
+        path: input.path.resolvePath(from: context.projectRoot).path,
         lineRange: input.lineRange)
-      filePath = URL(fileURLWithPath: self.input.path)
+      filePath = URL(fileURLWithPath: self.internalState.path)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }
 
+    public typealias InternalState = Input
     public struct Input: Codable, Sendable {
       public let path: String
       public let lineRange: Range?
@@ -52,12 +60,18 @@ public final class ReadFileTool: NonStreamableTool {
       public let uri: String
     }
 
+    public let internalState: InternalState
+
     public let isReadonly = true
 
     public let callingTool: ReadFileTool
     public let toolUseId: String
     public let input: Input
     public let status: Status
+
+    public let context: ToolExecutionContext
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
@@ -66,34 +80,35 @@ public final class ReadFileTool: NonStreamableTool {
 
       do {
         var content = try fileManager.read(contentsOf: filePath)
+        do {
+          try chatContextRegistry.context(for: context.threadId).set(knownFileContent: content, for: filePath)
+        } catch {
+          defaultLogger.error("Failed to register file content for path \(filePath)", error)
+        }
+
         if let lineRange = input.lineRange {
           let lines = content.components(separatedBy: .newlines)
           let selectedLines = lines[safe: (lineRange.start - 1)..<(lineRange.end)]
           content = selectedLines?.joined(separator: "\n") ?? content
         }
 
-        updateStatus.yield(.completed(.success(Output(content: content, uri: filePath.absoluteString))))
+        updateStatus.complete(with: .success(Output(content: content, uri: filePath.absoluteString)))
       } catch {
-        updateStatus.yield(.completed(.failure(error)))
+        updateStatus.complete(with: .failure(error))
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     let filePath: URL
 
-    let context: ToolExecutionContext
+    var mappedInput: Input { internalState }
 
     @Dependency(\.server) private var server
     @Dependency(\.fileManager) private var fileManager
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
 
   }
 
@@ -148,45 +163,15 @@ public final class ReadFileTool: NonStreamableTool {
   public func isAvailable(in _: ChatMode) -> Bool {
     true
   }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-  }
-
 }
 
-// MARK: - ToolUseViewModel
+// MARK: - ReadFileTool.Use + DisplayableToolUse
 
-@Observable
-@MainActor
-final class ToolUseViewModel {
-
-  init(status: ReadFileTool.Use.Status, input: ReadFileTool.Use.Input) {
-    self.status = status.value
-    self.input = input
-    Task { [weak self] in
-      for await status in status {
-        self?.status = status
-        if case .completed(.success(let output)) = status {
-          Task {
-            guard let self else { return }
-            let highlightedContent = try await self.highlighter.attributedText(
-              output.content,
-              language: FileIcon.language(for: URL(fileURLWithPath: output.uri)),
-              colors: .codeHighlight)
-            self.highlightedContent = highlightedContent
-          }
-        }
-      }
-    }
+extension ReadFileTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+      status: status, input: mappedInput)))
   }
-
-  let input: ReadFileTool.Use.Input
-  var status: ToolUseExecutionStatus<ReadFileTool.Use.Output>
-  var highlightedContent: AttributedString?
-
-  @ObservationIgnored
-  @Dependency(\.highlighter) private var highlighter
 }
 
 extension [String] {

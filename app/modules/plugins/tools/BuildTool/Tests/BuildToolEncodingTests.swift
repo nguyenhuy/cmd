@@ -18,15 +18,19 @@ struct BuildToolEncodingTests {
   func test_toolUseEncodingDecodingTest() throws {
     let tool = BuildTool()
     let input = BuildTool.Use.Input(for: .test)
-    let use = tool.use(toolUseId: "build-test-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "build-test-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "build",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "for": "test"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -39,15 +43,19 @@ struct BuildToolEncodingTests {
   func test_toolUseEncodingDecodingRun() throws {
     let tool = BuildTool()
     let input = BuildTool.Use.Input(for: .run)
-    let use = tool.use(toolUseId: "build-run-101", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "build-run-101", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "build",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "for": "run"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -57,9 +65,7 @@ struct BuildToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

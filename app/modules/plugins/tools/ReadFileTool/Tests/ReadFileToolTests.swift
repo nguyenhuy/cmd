@@ -19,7 +19,8 @@ struct ReadFileToolTests {
       let toolUse = ReadFileTool().use(
         toolUseId: "123",
         input: .init(path: "path/to/file.txt", lineRange: nil),
-        context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+        isInputComplete: true,
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }
@@ -29,7 +30,7 @@ struct ReadFileToolTests {
 
   @Test
   func completesWithAFailureWhenSomethingWentWrong() async throws {
-    let fileManager = MockFileManager(files: [:])
+    let fileManager = MockFileManager()
 
     let toolUse = withDependencies {
       $0.fileManager = fileManager
@@ -37,7 +38,8 @@ struct ReadFileToolTests {
       let toolUse = ReadFileTool().use(
         toolUseId: "123",
         input: .init(path: "path/to/file.txt", lineRange: nil),
-        context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+        isInputComplete: true,
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }

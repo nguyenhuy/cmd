@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import CheckpointServiceInterface
+import DLS
 import SwiftUI
 
 // MARK: - CheckpointView
@@ -18,28 +19,44 @@ struct CheckpointView: View {
   let onRestoreTapped: ((Checkpoint) -> Void)?
 
   var body: some View {
-    HStack(spacing: 8) {
-      CircleWithLine(circleRadiusRatio: 0.25, lineWidthRatio: 0.15)
-        .fill(Color.blue)
-        .frame(width: 20, height: 20)
-        .scaledToFit()
+    HStack(spacing: 0) {
+      HStack(spacing: 8) {
+        CircleWithLine(circleRadiusRatio: 0.25, lineWidthRatio: 0.15)
+          .fill(Color.blue)
+          .frame(square: 16)
+          .scaledToFit()
+          .frame(width: ChatView.Constants.chatPadding)
 
-      Text("Checkpoint")
-        .fontWeight(.medium)
-        .foregroundColor(.primary)
+        if isHovered {
+          HoveredButton(
+            action: {
+              onRestoreTapped?(checkpoint)
+            },
+            onHover: { isHovered in
+              isButtonHovered = isHovered
+            },
+            content: {
+              Text("Restore checkpoint")
+                .foregroundColor(isButtonHovered ? Color.primary : Color.gray)
+            })
+        }
+      }
+      .onHover(perform: { isHovered in
+        self.isHovered = isHovered
+      })
 
       Spacer()
-
-      Button(action: {
-        onRestoreTapped?(checkpoint)
-      }) {
-        Text("Restore")
-          .foregroundColor(Color.gray)
-      }
-      .buttonStyle(PlainButtonStyle())
     }
-    .padding(ChatMessageView.Constants.checkpointPadding)
+    .frame(height: height)
   }
+
+  @State private var isHovered = false
+  @State private var isButtonHovered = false
+
+  private var height: CGFloat {
+    isHovered ? 25 : 10
+  }
+
 }
 
 // MARK: - CircleWithLine
@@ -54,17 +71,17 @@ struct CircleWithLine: Shape {
     let height = rect.height
 
     let circleRadius = min(width, height) * circleRadiusRatio
-    let lineWidth = width * lineWidthRatio
+    let lineHeight = height * lineWidthRatio
     let centerX = rect.midX
     let centerY = rect.midY
 
     var path = Path()
 
-    path.addRect(CGRect(
-      x: centerX - lineWidth / 2,
+    path.addRoundedRect(in: CGRect(
+      x: centerX - lineHeight / 2,
       y: rect.minY,
-      width: lineWidth,
-      height: height))
+      width: lineHeight,
+      height: height), cornerSize: CGSize(width: lineHeight / 2, height: lineHeight / 2))
 
     path.addEllipse(in: CGRect(
       x: centerX - circleRadius,

@@ -2,12 +2,15 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import ChatServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import Dependencies
 import FileDiffFoundation
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
+import SwiftUI
 import ThreadSafe
 import ToolFoundation
 
@@ -20,27 +23,99 @@ public final class EditFilesTool: Tool {
   }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
-
-    init(
+  public final class Use: UpdatableToolUse, @unchecked Sendable {
+    public init(
       callingTool: EditFilesTool,
       toolUseId: String,
-      input: Data,
+      input: Input,
       isInputComplete: Bool,
       context: ToolExecutionContext,
-      initialStatus: Status.Element? = nil)
-      throws
+      internalState: InternalState? = nil,
+      initialStatus: Status.Element?)
     {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
-      self.isInputComplete = Atomic(isInputComplete)
+      _isInputComplete = Atomic(isInputComplete)
       self.context = context
-      let input = try JSONDecoder().decode(Input.self, from: input).withPathsResolved(from: context.projectRoot)
+
       _input = Atomic(input)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
+
+      let (mappedInput, error) = context.mappedInput(persistedInput: internalState?.convertedInput, rawInput: input)
+      self.mappedInput = Atomic(mappedInput)
+
+      // Initialize or update formatted output
+      if let internalState {
+        formattedOutput = Atomic(internalState.formattedOutput)
+      } else {
+        let initialOutput = FormattedOutput(
+          fileChanges: mappedInput.map { fileChange in
+            FileChangeInfo(
+              path: fileChange.path.path,
+              isNewFile: fileChange.isNewFile ?? false,
+              changeCount: fileChange.changes.count,
+              status: .pending)
+          })
+        formattedOutput = Atomic(initialOutput)
+      }
+
+      if let error, isInputComplete {
+        updateStatus.complete(with: .failure(error))
+      }
+    }
+
+    public struct InternalState: Codable, Sendable {
+      let convertedInput: [FileChange]
+      let formattedOutput: FormattedOutput
+
+      public init(convertedInput: [FileChange], formattedOutput: FormattedOutput) {
+        self.convertedInput = convertedInput
+        self.formattedOutput = formattedOutput
+      }
+    }
+
+    public struct FormattedOutput: Codable, Sendable {
+      let fileChanges: [FileChangeInfo]
+
+      public init(fileChanges: [FileChangeInfo]) {
+        self.fileChanges = fileChanges
+      }
+    }
+
+    public enum FileChangeStatus: Codable, Sendable {
+      case pending
+      case rejected
+      case error(_ error: AppError)
+      case applied
+    }
+
+    public struct FileChangeInfo: Codable, Sendable {
+      let path: String
+      let isNewFile: Bool
+      let changeCount: Int
+      let status: FileChangeStatus
+
+      public init(path: String, isNewFile: Bool, changeCount: Int, status: FileChangeStatus) {
+        self.path = path
+        self.isNewFile = isNewFile
+        self.changeCount = changeCount
+        self.status = status
+      }
+    }
+
+    /// Similar to `Input.FileChange` but with added computed properties that need to be persisted.
+    public struct FileChange: Codable, Sendable {
+
+      let path: URL
+      let isNewFile: Bool?
+      let changes: [Input.FileChange.Change]
+      /// Baseline content is a property set locally, not sent by the LLM.
+      /// It is used to help persist the content of the file before applying changes, so that the change is correctly displayed even after the file has changed.
+      var baseLineContent: String?
     }
 
     public struct Input: Codable, Sendable {
@@ -75,80 +150,92 @@ public final class EditFilesTool: Tool {
         public let path: String
         public let isNewFile: Bool?
         public let changes: [Change]
-        /// Baseline content is a property set locally, not sent by the LLM.
-        /// It is used to help persist the content of the file before applying changes, so that the change is correctly displayed even after the file has changed.
-        public fileprivate(set) var baseLineContent: String?
-
       }
 
       public fileprivate(set) var files: [FileChange]
 
-      func withPathsResolved(from root: URL?) -> Input {
-        Input(files: files.map { fileChange in
-          FileChange(
-            path: fileChange.path.resolvePath(from: root).path(),
-            isNewFile: fileChange.isNewFile,
-            changes: fileChange.changes,
-            baseLineContent: fileChange.baseLineContent)
-        })
-      }
     }
 
-    public struct Output: Codable, Sendable {
-      public let result: JSON
-    }
+    public typealias Output = String
 
     public let isReadonly = false
 
     public let callingTool: EditFilesTool
     public let toolUseId: String
-    public let _input: Atomic<Input>
     public let status: Status
+    public let context: ToolExecutionContext
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
     public var input: Input { _input.value }
 
-    public func receive(inputUpdate data: Data, isLast: Bool) throws {
-      let input = try JSONDecoder().decode(Input.self, from: data).withPathsResolved(from: context.projectRoot)
-      _input.set(to: input)
-      isInputComplete.set(to: isLast)
+    public var isInputComplete: Bool { _isInputComplete.value }
 
-      Task { @MainActor [weak self] in
-        self?._viewModel?.input = input
-        self?._viewModel?.isInputComplete = isLast
+    public var internalState: InternalState {
+      InternalState(
+        convertedInput: mappedInput.value,
+        formattedOutput: formattedOutput.value)
+    }
+
+    public func receive(inputUpdate data: Data, isLast: Bool) throws {
+      let input = try JSONDecoder().decode(Input.self, from: data)
+      _input.set(to: input)
+      _isInputComplete.set(to: isLast)
+
+      let (mappedInput, error) = context.mappedInput(persistedInput: nil, rawInput: input)
+      self.mappedInput.set(to: mappedInput)
+
+      // Update formatted output with new input
+      let updatedOutput = FormattedOutput(
+        fileChanges: mappedInput.map { fileChange in
+          FileChangeInfo(
+            path: fileChange.path.path,
+            isNewFile: fileChange.isNewFile ?? false,
+            changeCount: fileChange.changes.count,
+            status: .pending)
+        })
+      formattedOutput.set(to: updatedOutput)
+      if let error, isLast {
+        updateStatus.complete(with: .failure(error))
+      }
+
+      Task { @MainActor in
+        self._viewModel?.input = self.mappedInput.value
+        self._viewModel?.isInputComplete = isLast
+        self._viewModel?.toolUseResult = self.formattedOutput.value
       }
     }
 
     public func startExecuting() {
-      // Transition from pendingApproval to notStarted to running
+      if case .completed = status.value {
+        // Already completed (likely failed due to bad input).
+        return
+      }
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
-      guard isInputComplete.value else {
-        updateStatus.yield(.completed(.failure(AppError("Started executing before the input was entirely received"))))
+      guard _isInputComplete.value else {
+        updateStatus.complete(with: .failure(AppError("Started executing before the input was entirely received")))
         return
       }
 
-      if callingTool.shouldAutoApply {
-        Task { @MainActor in
-          await viewModel.applyAllChanges()
-        }
-      } else {
-        Task { @MainActor in
-          viewModel.acknowledgeSuggestionReceived()
+      Task { @MainActor in
+        do {
+          if callingTool.shouldAutoApply {
+            // Apply the changes.
+            await viewModel.applyAllChanges()
+          } else {
+            // Wait for the user to accept the changes.
+            viewModel.acknowledgeSuggestionReceived()
+          }
         }
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
-    let isInputComplete: Atomic<Bool>
-
-    let context: ToolExecutionContext
+    let _isInputComplete: Atomic<Bool>
 
     @MainActor
     var viewModel: ToolUseViewModel {
@@ -157,30 +244,35 @@ public final class EditFilesTool: Tool {
       }
       let viewModel = ToolUseViewModel(
         status: status,
-        input: input,
-        isInputComplete: isInputComplete.value,
-        updateToolStatus: { [weak self] newStatus in
-          self?.updateStatus.yield(newStatus)
-        },
-        syncBaselineContent: { [weak self] filePath, content in
-          self?._input.mutate { input in
-            input.files = input.files.map { fileChange in
-              var fileChange = fileChange
-              if fileChange.path == filePath {
-                fileChange.baseLineContent = fileChange.baseLineContent ?? content
+        input: mappedInput.value,
+        isInputComplete: isInputComplete,
+        setResult: { [weak self, mappedInput, context] toolUseResult in
+          self?.updateStatus.yield(.completed(toolUseResult.asToolUseResult))
+          // Update tracked content for successfully applied files
+          let appliedFiles = toolUseResult.fileChanges
+            .filter { fileChange in
+              switch fileChange.status {
+              case .applied:
+                true
+              default:
+                false
               }
-              return fileChange
             }
-          }
-        })
+            .compactMap { fileChange in
+              mappedInput.value.first { $0.path.path == fileChange.path }
+            }
+          context.updateFilesContent(for: appliedFiles)
+        },
+        toolUseResult: formattedOutput.value)
       _viewModel = viewModel
       return viewModel
     }
 
+    private let _input: Atomic<Input>
+    private let mappedInput: Atomic<[FileChange]>
+    private let formattedOutput: Atomic<FormattedOutput>
+
     @MainActor private var _viewModel: ToolUseViewModel?
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
-
   }
 
   public let inputSchema: JSON =
@@ -251,6 +343,7 @@ public final class EditFilesTool: Tool {
     When applying the diffs, be extra careful to remember to change any closing brackets or other syntax that may be affected by the diff farther down in the file.
     ALWAYS make as many changes in a single 'apply_diff' request as possible using multiple SEARCH/REPLACE blocks.
     ALWAYS try to minimize duplicate content in search/replace block and use several blocks instead when possible.
+    ONLY modify files that have already been read. If a file you want to modify has not been read yet, use the read_file tool first to read it.
 
     example:
 
@@ -305,21 +398,14 @@ public final class EditFilesTool: Tool {
     }
   }
 
-  public func use(
-    toolUseId: String,
-    input: Data,
-    isInputComplete: Bool,
-    context: ToolExecutionContext)
-    throws -> Use
-  {
-    try Use(
-      callingTool: self,
-      toolUseId: toolUseId,
-      input: input,
-      isInputComplete: isInputComplete,
-      context: context)
-  }
-
   private let shouldAutoApply: Bool
 
+}
+
+// MARK: - EditFilesTool.Use + DisplayableToolUse
+
+extension EditFilesTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: viewModel))
+  }
 }

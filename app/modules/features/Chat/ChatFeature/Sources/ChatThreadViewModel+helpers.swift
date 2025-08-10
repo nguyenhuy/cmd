@@ -3,6 +3,7 @@
 
 import AppFoundation
 import ChatFeatureInterface
+import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
@@ -10,6 +11,7 @@ import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
 import ShellServiceInterface
+import ToolFoundation
 import XcodeObserverServiceInterface
 
 extension ChatThreadViewModel {
@@ -254,6 +256,9 @@ extension ChatMessageContent {
 
     case .conversationSummary(let summary):
       return [(nil, .textMessage(.init(text: summary.text)))]
+
+    case .internalContent(let content):
+      return [(nil, .internalContent(content.value))]
     }
   }
 }
@@ -334,6 +339,35 @@ extension AssistantMessageContent {
         content.finishStreaming()
       }
       return .reasoning(content)
+
+    case .internalContent(let content):
+      return .internalContent(.init(content))
     }
+  }
+}
+
+extension ToolUse {
+
+  var hasCompleted: Bool {
+    if case .completed = status.value {
+      return true
+    }
+    return false
+  }
+
+  var updates: AsyncStream<ToolUseExecutionStatus<EmptyObject>> {
+    status.updates.map { event -> ToolUseExecutionStatus<EmptyObject> in
+      switch event {
+      case .notStarted: return .notStarted
+      case .running: return .running
+      case .pendingApproval: return .pendingApproval
+      case .approvalRejected(reason: let reason): return .approvalRejected(reason: reason)
+      case .completed(let result):
+        switch result {
+        case .success: return .completed(.success(EmptyObject()))
+        case .failure(let error): return .completed(.failure(error))
+        }
+      }
+    }.eraseToStream()
   }
 }

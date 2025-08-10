@@ -20,13 +20,13 @@ public final class BuildTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
-
-    init(
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+    public init(
       callingTool: BuildTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -35,9 +35,12 @@ public final class BuildTool: NonStreamableTool {
       self.input = input
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let `for`: BuildType
@@ -61,13 +64,17 @@ public final class BuildTool: NonStreamableTool {
 
     public let status: Status
 
+    public let context: ToolExecutionContext
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
 
       guard let project = context.project else {
-        updateStatus.yield(.completed(.failure(AppError("No project selected to run build"))))
+        updateStatus.complete(with: .failure(AppError("No project selected to run build")))
         return
       }
 
@@ -77,26 +84,18 @@ public final class BuildTool: NonStreamableTool {
           let buildResult = try await xcodeController.build(project: project, buildType: buildType)
 
           let isSuccess = buildResult.maxSeverity != .error
-          updateStatus.yield(.completed(.success(Output(buildResult: buildResult, isSuccess: isSuccess))))
+          updateStatus.complete(with: .success(Output(buildResult: buildResult, isSuccess: isSuccess)))
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
-
-    let context: ToolExecutionContext
 
     @Dependency(\.xcodeController) private var xcodeController
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -133,10 +132,6 @@ public final class BuildTool: NonStreamableTool {
 
   public func isAvailable(in chatMode: ChatMode) -> Bool {
     chatMode == .agent
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 }
 

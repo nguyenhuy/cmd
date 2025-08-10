@@ -27,6 +27,10 @@ public enum JSON: Codable, Equatable, Sendable {
 
 extension JSON: ExpressibleByDictionaryLiteral {
   public init(dictionaryLiteral elements: (String, JSON.Value)...) {
+    self.init(dictionaryLiteral: elements)
+  }
+
+  public init(dictionaryLiteral elements: [(String, JSON.Value)]) {
     var object = [String: JSON.Value]()
 
     for element in elements {
@@ -34,6 +38,10 @@ extension JSON: ExpressibleByDictionaryLiteral {
     }
 
     self = .object(object)
+  }
+
+  public init(_ dictionary: [String: some JSONValueConvertible]) {
+    self.init(dictionaryLiteral: dictionary.map { k, v in (k, v.asJSONValue) })
   }
 }
 
@@ -357,4 +365,31 @@ extension String: @retroactive CodingKey {
 
   public var stringValue: String { self }
   public var intValue: Int? { Int(self) }
+}
+
+public protocol JSONValueConvertible {
+  var asJSONValue: JSON.Value { get }
+}
+
+extension String: JSONValueConvertible {
+  public var asJSONValue: JSON.Value { .string(self) }
+}
+
+extension Int: JSONValueConvertible {
+  public var asJSONValue: JSON.Value { .number(Double(self)) }
+}
+
+extension Bool: JSONValueConvertible {
+  public var asJSONValue: JSON.Value { .bool(self) }
+}
+
+extension Optional: JSONValueConvertible where Wrapped: JSONValueConvertible {
+  public var asJSONValue: JSON.Value {
+    switch self {
+    case .none:
+      .null
+    case .some(let value):
+      value.asJSONValue
+    }
+  }
 }

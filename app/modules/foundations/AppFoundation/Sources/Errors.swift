@@ -6,12 +6,23 @@ import Foundation
 // MARK: - AppError
 
 public struct AppError: LocalizedError {
-  public init(message: String, debugDescription: String? = nil) {
+  public init(
+    message: String,
+    llmMessage: String? = nil,
+    debugDescription: String? = nil,
+    underlyingError: Error? = nil)
+  {
     self.message = message
+    self.llmMessage = llmMessage ?? message
+    self.underlyingError = underlyingError
     _debugDescription = debugDescription
   }
 
   public init(_ error: Error) {
+    if let appError = error as? AppError {
+      self = appError
+      return
+    }
     self.init(message: error.localizedDescription, debugDescription: (error as CustomDebugStringConvertible).debugDescription)
   }
 
@@ -19,7 +30,12 @@ public struct AppError: LocalizedError {
     self.init(message: message, debugDescription: nil)
   }
 
+  /// A user facing message describing the error.
   public let message: String
+  /// A message that can be sent to an LLM to help it understand/fix the error.
+  public let llmMessage: String
+  public let underlyingError: Error?
+
   private let _debugDescription: String?
 }
 
@@ -42,6 +58,7 @@ extension AppError: CustomNSError {
 // MARK: CustomDebugStringConvertible
 
 extension AppError: CustomDebugStringConvertible {
+  /// A detailed description of the error.
   public var debugDescription: String {
     _debugDescription ?? ""
   }
@@ -50,5 +67,27 @@ extension AppError: CustomDebugStringConvertible {
 extension CancellationError: @retroactive LocalizedError {
   var localizedDescription: String {
     "cancelled"
+  }
+}
+
+extension AppError: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      message: container.decode(String.self, forKey: .message),
+      debugDescription: container.decodeIfPresent(String.self, forKey: .debugDescription))
+  }
+
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(message, forKey: .message)
+    if let debugDescription = _debugDescription {
+      try container.encode(debugDescription, forKey: .debugDescription)
+    }
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case message
+    case debugDescription
   }
 }

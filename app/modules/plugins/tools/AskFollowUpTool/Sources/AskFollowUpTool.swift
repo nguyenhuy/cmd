@@ -16,16 +16,27 @@ public final class AskFollowUpTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
-    init(callingTool: AskFollowUpTool, toolUseId: String, input: Input, initialStatus: Status.Element? = nil) {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+    public init(
+      callingTool: AskFollowUpTool,
+      toolUseId: String,
+      input: Input,
+      context: ToolFoundation.ToolExecutionContext,
+      internalState _: InternalState? = nil,
+      initialStatus: Status.Element? = nil)
+    {
       self.callingTool = callingTool
       self.toolUseId = toolUseId
       self.input = input
+      self.context = context
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let question: String
@@ -36,6 +47,8 @@ public final class AskFollowUpTool: NonStreamableTool {
       public let response: String
     }
 
+    public let context: ToolFoundation.ToolExecutionContext
+
     public let isReadonly = true
 
     public let callingTool: AskFollowUpTool
@@ -44,25 +57,21 @@ public final class AskFollowUpTool: NonStreamableTool {
 
     public let status: Status
 
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
 
     func select(followUp: String) {
-      updateStatus.yield(.completed(.success(.init(response: followUp))))
+      updateStatus.complete(with: .success(.init(response: followUp)))
     }
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -107,10 +116,6 @@ public final class AskFollowUpTool: NonStreamableTool {
 
   public func isAvailable(in _: ChatMode) -> Bool {
     true
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context _: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input)
   }
 }
 

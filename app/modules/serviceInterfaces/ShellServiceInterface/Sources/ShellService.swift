@@ -24,6 +24,7 @@ public struct CommandExecutionResult: Equatable, Sendable, Encodable {
 
 public protocol Execution: Sendable {
   func tearDown() async
+  func terminate() throws
 }
 
 // MARK: - StandardInputWriter
@@ -52,6 +53,8 @@ public protocol ShellService: Sendable {
     useInteractiveShell: Bool,
     body: SubprocessHandle?)
     async throws -> CommandExecutionResult
+
+  var env: [String: String] { get }
 }
 
 extension ShellService {

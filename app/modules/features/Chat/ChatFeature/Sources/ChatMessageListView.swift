@@ -3,6 +3,7 @@
 
 import CheckpointServiceInterface
 import DLS
+import Foundation
 import SwiftUI
 
 // MARK: - ChatMessageList
@@ -34,12 +35,15 @@ struct ChatMessageList: View {
           switch event {
           case .message(let message):
             ChatMessageView(message: message)
+              .padding(.horizontal, ChatView.Constants.chatPadding)
+              .padding(.top, 2)
+
           case .checkpoint(let checkpoint):
             CheckpointView(checkpoint: checkpoint, onRestoreTapped: onRestoreTapped)
           }
         }
       }
-      .padding()
+      .padding(.vertical, ChatView.Constants.chatPadding)
     }
   }
 

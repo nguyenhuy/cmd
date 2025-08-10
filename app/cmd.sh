@@ -60,7 +60,11 @@ clean_command() {
 }
 
 test_swift_command() {
-	cd modules && swift test -Xswiftc -suppress-warnings --quiet
+	cd "$(git rev-parse --show-toplevel)/app/modules" && swift test -Xswiftc -suppress-warnings --quiet
+}
+
+test_ts_command() {
+	cd "$(git rev-parse --show-toplevel)/local-server" && yarn test
 }
 
 # Main command dispatcher
@@ -71,8 +75,14 @@ case "$command" in
 lint:swift)
 	lint_swift_command "$@"
 	;;
+lint:ts)
+	cd "$(git rev-parse --show-toplevel)/local-server" && yarn lint --fix
+	;;
 test:swift)
 	test_swift_command "$@"
+	;;
+test:ts)
+	test_ts_command "$@"
 	;;
 sync:dependencies)
 	sync_dependencies_command "$@"

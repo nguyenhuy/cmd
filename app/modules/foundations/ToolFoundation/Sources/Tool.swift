@@ -15,9 +15,7 @@ import SwiftUI
 /// A tool that can be called by the assistant and execute tasks locally.
 /// Each invocation of the tool is a 'tool use' that has its own input/output/state and possibly UI.
 public protocol Tool: Sendable {
-  associatedtype Use: ToolUse
-  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-  func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use
+  associatedtype Use: ToolUse where Use.SomeTool == Self
   /// The name of the tool, used to identify it. It should only contain alphanumeric characters.
   var name: String { get }
   /// A description of what the tool does. The description of its input parameters is better suited for the `inputSchema` property.
@@ -38,6 +36,22 @@ extension Tool {
   public typealias Input = Use.Input
   public typealias Output = Use.Output
 
+  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
+  public func use(toolUseId: String, input: Use.Input, isInputComplete: Bool, context: ToolExecutionContext) -> Use {
+    Use(
+      callingTool: self,
+      toolUseId: toolUseId,
+      input: input,
+      isInputComplete: isInputComplete,
+      context: context,
+      internalState: nil,
+      initialStatus: nil)
+  }
+
+  public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
+    let decodedInput = try JSONDecoder().decode(Input.self, from: input)
+    return use(toolUseId: toolUseId, input: decodedInput, isInputComplete: isInputComplete, context: context)
+  }
 }
 
 // MARK: - ToolUse
@@ -46,9 +60,19 @@ extension Tool {
 public protocol ToolUse: Sendable, Codable {
   associatedtype Input: Codable & Sendable
   associatedtype Output: Codable & Sendable
+  associatedtype InternalState: Codable & Sendable
   associatedtype SomeTool: Tool where SomeTool.Use == Self
 
   typealias Status = CurrentValueStream<ToolUseExecutionStatus<Output>>
+
+  init(
+    callingTool: SomeTool,
+    toolUseId: String,
+    input: Input,
+    isInputComplete: Bool,
+    context: ToolExecutionContext,
+    internalState: InternalState?,
+    initialStatus: Status.Element?)
 
   /// The unique identifier of the tool use.
   var toolUseId: String { get }
@@ -61,6 +85,12 @@ public protocol ToolUse: Sendable, Codable {
   var callingTool: SomeTool { get }
   /// The status of the execution of the tool use.
   var status: Status { get }
+  /// The context in which the tool is executed.
+  var context: ToolExecutionContext { get }
+  /// Some internal state that the tool use needs to persist. It is not used outside of the tool use.
+  var internalState: InternalState? { get }
+  /// Whether the input has been entirely streamed.
+  var isInputComplete: Bool { get }
   /// Update the input with the updated one.
   /// Note: the tool can expect this to be called only if `canInputBeStreamed` is true.
   /// - Parameters:
@@ -76,27 +106,7 @@ public protocol ToolUse: Sendable, Codable {
   func cancel()
 }
 
-extension ToolUseExecutionStatus {
-  var asOutput: Output? {
-    get throws {
-      if case .completed(let result) = self {
-        return try result.get()
-      }
-      if case .approvalRejected(let reason) = self {
-        if let reason, !reason.isEmpty {
-          throw AppError(
-            message: "User denied permission to execute this tool with the following explanation: `\(reason)`. Follow the user's direction or ask for clarification.")
-        }
-        throw AppError(
-          message: "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification.")
-      }
-      return nil
-    }
-  }
-}
-
 extension ToolUse {
-
   public var toolName: String { callingTool.name }
 
   public var toolDisplayName: String { callingTool.displayName }
@@ -121,23 +131,51 @@ extension ToolUse {
       try status.value.asOutput
     }
   }
-
 }
+
+extension ToolUse where InternalState == InternalState {
+  public var internalState: InternalState? { nil }
+}
+
+// MARK: - StreamableTool
 
 /// A tool that doesn't support streamed input, and that needs to have all its input to start a tool use.
-public protocol NonStreamableTool: Tool {
-  /// Use the tool with the given input. This doesn't start the execution, which happens when `startExecuting` is called on the tool use.
-  func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use
-}
+public protocol NonStreamableTool: Tool where Use: NonStreamableToolUse { }
 
 extension NonStreamableTool {
   public var canInputBeStreamed: Bool { false }
+}
 
-  public func use(toolUseId: String, input: Data, isInputComplete: Bool, context: ToolExecutionContext) throws -> Use {
-    assert(isInputComplete)
-    let input = try JSONDecoder().decode(Input.self, from: input)
-    return use(toolUseId: toolUseId, input: input, context: context)
+public protocol NonStreamableToolUse: ToolUse where SomeTool: NonStreamableTool {
+  init(
+    callingTool: SomeTool,
+    toolUseId: String,
+    input: Input,
+    context: ToolExecutionContext,
+    internalState: InternalState?,
+    initialStatus: Status.Element?)
+}
+
+extension NonStreamableToolUse {
+  public init(
+    callingTool: SomeTool,
+    toolUseId: String,
+    input: Input,
+    isInputComplete _: Bool,
+    context: ToolExecutionContext,
+    internalState: InternalState?,
+    initialStatus: CurrentValueStream<ToolUseExecutionStatus<Output>>.Element? = nil)
+  {
+    self.init(
+      callingTool: callingTool,
+      toolUseId: toolUseId,
+      input: input,
+      context: context,
+      internalState: internalState,
+      initialStatus: initialStatus)
   }
+
+  public var isInputComplete: Bool { true }
 }
 
 extension ToolUse where SomeTool: NonStreamableTool {
@@ -157,16 +195,40 @@ public protocol DisplayableToolUse: ToolUse {
 
 /// The context in which a tool use has been created.
 public struct ToolExecutionContext: Sendable, Codable {
-  /// The path to the project.
-  public let project: URL?
-  /// The path to the root of the project.
-  /// For a Swift package this is the same as the project. For an xcodeproj this is the containing directory.
-  public let projectRoot: URL?
-
-  public init(project: URL?, projectRoot: URL?) {
+  public init(threadId: String, project: URL? = nil, projectRoot: URL? = nil) {
+    self.threadId = threadId
     self.project = project
     self.projectRoot = projectRoot
   }
+
+  #if DEBUG
+  public init(threadId: String = "mock-thread-id", projectRoot: URL? = nil) {
+    self.threadId = threadId
+    project = nil
+    self.projectRoot = projectRoot
+  }
+  #endif
+
+  /// The identifier for the chat thread where the tool is being used.
+  public let threadId: String
+  /// The path to the project that is being worked on.
+  public let project: URL?
+  /// The root of the project that is being worked on.
+  /// For a Swift package this is the same as the project. For an xcodeproj this is the containing directory.
+  public let projectRoot: URL?
+
+}
+
+/// The current context in which the tool use exists. The tool can modify relevant properties.
+public protocol LiveToolExecutionContext: Sendable, AnyObject {
+  /// The files whose content has been read/modified during the conversation.
+  ///
+  /// To ensure correct execution, we enforce that a file has to be read before being modified. This properties helps keep track of this.
+  func knownFileContent(for path: URL) -> String?
+  func set(knownFileContent: String, for path: URL)
+  /// A properties that allows chat plugins (e.g. tools) to store state relevant to them within the context of a conversation.
+  func pluginState<T: Codable & Sendable>(for key: String) -> T?
+  func set(pluginState: some Codable & Sendable, for key: String)
 }
 
 // MARK: - ToolUseExecutionStatus
@@ -180,7 +242,90 @@ public enum ToolUseExecutionStatus<Output: Codable & Sendable>: Sendable {
 
 }
 
+extension ToolUseExecutionStatus {
+  var asOutput: Output? {
+    get throws {
+      if case .completed(let result) = self {
+        return try result.get()
+      }
+      if case .approvalRejected(let reason) = self {
+        if let reason, !reason.isEmpty {
+          throw AppError(
+            message: "User denied permission to execute this tool with the following explanation: `\(reason)`. Follow the user's direction or ask for clarification.")
+        }
+        throw AppError(
+          message: "User denied permission to execute this tool. Please suggest an alternative approach or ask for clarification.")
+      }
+      return nil
+    }
+  }
+}
+
+// MARK: UpdatableToolUse
+
+/// A tool use that can update its status in a standardized way.
+///
+/// Conforming to this protocol helps reduce redundant boilerplate that is provided by the extension.
+public protocol UpdatableToolUse: ToolUse {
+  var updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation { get }
+}
+
+extension UpdatableToolUse {
+  public func reject(reason: String?) {
+    updateStatus.yield(.approvalRejected(reason: reason))
+  }
+
+}
+
+// MARK: - ExternalTool
+
+public protocol ExternalTool: NonStreamableTool where Use: ExternalToolUse { }
+
+public protocol ExternalToolUse: NonStreamableToolUse, UpdatableToolUse where SomeTool: ExternalTool {
+  /// Set the output
+  func receive(output: String) throws
+}
+
+extension ExternalToolUse {
+
+  public func startExecuting() {
+    updateStatus.yield(.notStarted)
+    updateStatus.yield(.running)
+    // The execution is managed externally by Claude Code. Nothing to do here.
+  }
+
+  public func receive(output: JSON.Value, isSuccess: Bool) throws {
+    guard case .string(let stringOutput) = output else {
+      return
+    }
+    if isSuccess {
+      try receive(output: stringOutput)
+    } else {
+      updateStatus.complete(with: .failure(AppError(stringOutput)))
+    }
+  }
+
+  public func cancel() {
+    updateStatus.complete(with: .failure(CancellationError()))
+  }
+}
+
+extension Tool {
+
+  /// Whether the tool's execution is externally managed (for instance Claude Code's tools are external).
+  public var isExternalTool: Bool {
+    self as? (any ExternalTool) != nil
+  }
+}
+
 public enum StreamableInput<StreamingInput: Codable & Sendable, StreamedInput: Codable & Sendable>: Sendable {
   case streaming(_ input: StreamingInput)
   case streamed(_ input: StreamedInput)
+}
+
+extension AsyncStream.Continuation {
+  public func complete<Output>(with result: Result<Output, Error>) where Element == ToolUseExecutionStatus<Output> {
+    yield(.completed(result))
+    finish()
+  }
 }

@@ -19,15 +19,19 @@ struct ReadFileToolEncodingTests {
     let input = ReadFileTool.Use.Input(
       path: "/src/main.swift",
       lineRange: nil)
-    let use = tool.use(toolUseId: "read-123", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "read-123", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "read_file",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "path": "/src/main.swift"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -43,12 +47,14 @@ struct ReadFileToolEncodingTests {
     let input = ReadFileTool.Use.Input(
       path: "/test/file.py",
       lineRange: lineRange)
-    let use = tool.use(toolUseId: "read-range-456", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "read-range-456", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "read_file",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "lineRange": {
             "end": 15,
@@ -56,6 +62,8 @@ struct ReadFileToolEncodingTests {
           },
           "path": "/test/file.py"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -71,12 +79,14 @@ struct ReadFileToolEncodingTests {
     let input = ReadFileTool.Use.Input(
       path: "/config/settings.json",
       lineRange: lineRange)
-    let use = tool.use(toolUseId: "read-single-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "read-single-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "read_file",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "lineRange": {
             "end": 25,
@@ -84,6 +94,8 @@ struct ReadFileToolEncodingTests {
           },
           "path": "/config/settings.json"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -93,9 +105,7 @@ struct ReadFileToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

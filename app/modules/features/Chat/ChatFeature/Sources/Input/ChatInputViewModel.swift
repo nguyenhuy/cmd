@@ -146,6 +146,8 @@ final class ChatInputViewModel {
 
   var didTapSendMessage: @MainActor () -> Void = { }
 
+  var didCancelMessage: @MainActor () -> Void = { }
+
   /// The current tool approval request pending user response.
   var pendingToolApproval: ToolApprovalRequest? { toolCallsPendingApproval.first?.request }
 
@@ -201,7 +203,11 @@ final class ChatInputViewModel {
   }
 
   /// Create a deep copy of the view model.
-  func copy(didTapSendMessage: @escaping @MainActor () -> Void) -> ChatInputViewModel {
+  func copy(
+    didTapSendMessage: @escaping @MainActor () -> Void,
+    didCancelMessage: @escaping @MainActor () -> Void)
+    -> ChatInputViewModel
+  {
     let model = ChatInputViewModel(
       textInput: TextInput(textInput.string),
       selectedModel: selectedModel,
@@ -211,6 +217,7 @@ final class ChatInputViewModel {
       mode: mode,
       attachments: attachments)
     model.didTapSendMessage = didTapSendMessage
+    model.didCancelMessage = didCancelMessage
     return model
   }
 
@@ -270,22 +277,27 @@ final class ChatInputViewModel {
     }
 
     // Search navigation
-    guard let searchResults else {
+    if let searchResults {
+      if key == .upArrow {
+        selectedSearchResultIndex = max(0, selectedSearchResultIndex - 1)
+        return true
+      } else if key == .downArrow {
+        selectedSearchResultIndex = min(searchResults.count - 1, selectedSearchResultIndex + 1)
+        return true
+      } else if key == .return, !modifiers.contains(.shift) {
+        guard searchResults.count > selectedSearchResultIndex else {
+          // Not searching, don't handle the key event.
+          return false
+        }
+        // Handle search selection
+        handleDidSelect(searchResult: searchResults[selectedSearchResultIndex])
+        return true
+      }
       return false
     }
-    if key == .upArrow {
-      selectedSearchResultIndex = max(0, selectedSearchResultIndex - 1)
-      return true
-    } else if key == .downArrow {
-      selectedSearchResultIndex = min(searchResults.count - 1, selectedSearchResultIndex + 1)
-      return true
-    } else if key == .return, !modifiers.contains(.shift) {
-      guard searchResults.count > selectedSearchResultIndex else {
-        // Not searching, don't handle the key event.
-        return false
-      }
-      // Handle search selection
-      handleDidSelect(searchResult: searchResults[selectedSearchResultIndex])
+
+    if key == .escape {
+      didCancelMessage()
       return true
     }
     return false

@@ -1,0 +1,26 @@
+Target.module(
+  name: "ChatService",
+  dependencies: [
+    .product(name: "GRDB", package: "GRDB.swift"),
+    "AppFoundation",
+    "ChatFeatureInterface",
+    "ChatServiceInterface",
+    "CheckpointServiceInterface",
+    "ConcurrencyFoundation",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "LoggingServiceInterface",
+    "ServerServiceInterface",
+    "ThreadSafe",
+    "ToolFoundation",
+  ],
+  testDependencies: [
+    "ChatFeatureInterface",
+    "ChatServiceInterface",
+    "ConcurrencyFoundation",
+    "FoundationInterfaces",
+    "LLMServiceInterface",
+    "SwiftTesting",
+    "ToolFoundation",
+  ])

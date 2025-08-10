@@ -13,15 +13,17 @@ import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
 import SettingsServiceInterface
+import ShellServiceInterface
 import ToolFoundation
 
 // MARK: - DefaultLLMService
 
 final class DefaultLLMService: LLMService {
 
-  init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI) {
+  init(server: Server, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
     self.server = server
     self.settingsService = settingsService
+    self.shellService = shellService
 
     #if DEBUG
     repeatDebugHelper = RepeatDebugHelper(userDefaults: userDefaults)
@@ -32,6 +34,7 @@ final class DefaultLLMService: LLMService {
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
+    chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
     async throws -> SendMessageResponse
@@ -50,6 +53,7 @@ final class DefaultLLMService: LLMService {
           messageHistory: messageHistory,
           tools: tools,
           model: model,
+          chatMode: chatMode,
           context: context,
           handleUpdateStream: { newMessage in
             // Add the new message to the response stream.
@@ -75,7 +79,12 @@ final class DefaultLLMService: LLMService {
         // Execute each tool call.
         for toolUseRequest in toolUseRequests {
           try Task.checkCancellation()
-          await messageHistory.append(Self.waitForResult(of: toolUseRequest, context: context))
+          await messageHistory.append(Self.waitForResult(of: toolUseRequest))
+        }
+
+        if toolUseRequests.filter({ $0.toolUse as? any ExternalToolUse == nil }).isEmpty {
+          // All tool uses are external, we don't need to send their result back to the assistant.
+          break
         }
       }
       response.finish()
@@ -105,16 +114,17 @@ final class DefaultLLMService: LLMService {
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
     model: LLMModel,
+    chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void,
     handleUsageInfo: (Schema.ResponseUsage) -> Void)
     async throws -> AssistantMessage
   {
     let settings = settingsService.values()
-    let customInstructions = customInstructions(for: context.chatMode, from: settings)
+    let customInstructions = customInstructions(for: chatMode, from: settings)
     let promptConfiguration = PromptConfiguration(
       projectRoot: context.projectRoot,
-      mode: context.chatMode,
+      mode: chatMode,
       customInstructions: customInstructions)
 
     return try await streamCompletionResponse(
@@ -180,6 +190,8 @@ final class DefaultLLMService: LLMService {
 
   private let settingsService: SettingsService
 
+  private let shellService: ShellService
+
   #if DEBUG
   private let repeatDebugHelper: RepeatDebugHelper
   #endif
@@ -188,8 +200,7 @@ final class DefaultLLMService: LLMService {
   /// Wait for the result of a tool use request.
   /// This returns a message representing the result of the tool use, and broadcast the execution status to the update stream.
   private static func waitForResult(
-    of toolUseRequest: ToolUseMessage,
-    context _: ChatContext)
+    of toolUseRequest: ToolUseMessage)
     async -> Schema.Message
   {
     let toolUse = toolUseRequest.toolUse
@@ -244,10 +255,17 @@ final class DefaultLLMService: LLMService {
       messages: messageHistory,
       system: system,
       projectRoot: context?.projectRoot?.path,
-      tools: tools.map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
+      tools: tools
+        .filter { !$0.isExternalTool }
+        .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
       model: provider.id(for: model),
       enableReasoning: enableReasoning,
-      provider: .init(provider: provider, settings: providerSettings))
+      provider: .init(
+        provider: provider,
+        settings: providerSettings,
+        shellService: shellService,
+        projectRoot: context?.projectRoot?.path),
+      threadId: context?.threadId)
     let data = try JSONEncoder().encode(params)
 
     let result = MutableCurrentValueStream<AssistantMessage>(AssistantMessage(content: []))
@@ -309,14 +327,16 @@ final class DefaultLLMService: LLMService {
 extension BaseProviding where
   Self: ServerProviding,
   Self: SettingsServiceProviding,
-  Self: UserDefaultsProviding
+  Self: UserDefaultsProviding,
+  Self: ShellServiceProviding
 {
   public var llmService: LLMService {
     shared {
       DefaultLLMService(
         server: server,
         settingsService: settingsService,
-        userDefaults: sharedUserDefaults)
+        userDefaults: sharedUserDefaults,
+        shellService: shellService)
     }
   }
 }
@@ -328,7 +348,7 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-  init(provider: LLMProvider, settings: LLMProviderSettings) throws {
+  init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:
@@ -337,10 +357,26 @@ extension Schema.APIProvider {
         return .openai
       case .openRouter:
         return .openrouter
+      case .claudeCode:
+        return .claudeCode
       default:
         throw AppError(message: "Unsupported provider \(provider.name)")
       }
     }()
-    self = .init(name: apiProviderName, settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl))
+    let localExecutable = settings.executable.map {
+      Schema.LocalExecutable(
+        executable: $0,
+        env: JSON(shellService.env),
+        cwd: projectRoot)
+    }
+    self = .init(
+      name: apiProviderName,
+      settings: .init(apiKey: settings.apiKey, baseUrl: settings.baseUrl, localExecutable: localExecutable))
   }
+}
+
+extension ChatContext {
+  var project: URL? { toolExecutionContext.projectRoot }
+  var projectRoot: URL? { toolExecutionContext.projectRoot }
+  var threadId: String { toolExecutionContext.threadId }
 }
