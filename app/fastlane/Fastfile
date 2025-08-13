@@ -201,8 +201,10 @@ platform :mac do
     app_zip_path = result[:app_zip_path]
     build_path = result[:build_path]
 
+    gh_personal_access_token_cmd = load_secret("GH_WRITE_TOKEN")
+
     set_github_release(
-      api_token: load_secret("GH_WRITE_TOKEN"),
+      api_token: gh_personal_access_token_cmd,
       server_url: "https://api.github.com",
       repository_name: "getcmd-dev/cmd",
       name: "v#{version}",
@@ -215,9 +217,14 @@ platform :mac do
     sh("rm -rf #{build_path}")
 
     new_branch_name = "release-v#{version}"
+    if ENV['CI']
+      sh("git config --global user.name 'cmd-bot'")
+      sh("git config --global user.email 'cmd@get-cmd.dev'")
+      sh("git remote set-url --push origin https://gsabran:#{gh_personal_access_token_cmd}@github.com/getcmd-dev/cmd.git")
+    end
     sh("git checkout -b #{new_branch_name} && git add ..  && git commit -m 'Release v#{version}' && git push origin #{new_branch_name}")
     create_pull_request(
-      api_token: load_secret("GH_WRITE_TOKEN"),
+      api_token: gh_personal_access_token_cmd,
       title: "Release v#{version}",
       repo: "getcmd-dev/cmd",
       head: new_branch_name,
