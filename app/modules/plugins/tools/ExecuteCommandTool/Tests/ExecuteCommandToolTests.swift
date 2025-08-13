@@ -50,7 +50,8 @@ struct ExecuteCommandToolTests {
           cwd: "./path/to/dir",
           canModifySourceFiles: false,
           canModifyDerivedFiles: false),
-        context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+        isInputComplete: true,
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }
@@ -79,7 +80,8 @@ struct ExecuteCommandToolTests {
           cwd: "./path/to/dir",
           canModifySourceFiles: false,
           canModifyDerivedFiles: false),
-        context: .init(project: nil, projectRoot: URL(filePath: "/path/to/root")))
+        isInputComplete: true,
+        context: .init(projectRoot: URL(filePath: "/path/to/root")))
       toolUse.startExecuting()
       return toolUse
     }

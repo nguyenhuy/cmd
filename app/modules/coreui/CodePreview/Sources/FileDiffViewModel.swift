@@ -21,20 +21,22 @@ import XcodeObserverServiceInterface
 @Observable @MainActor
 public final class FileDiffViewModel: Sendable {
 
-  public convenience init?(
+  public convenience init(
     filePath: String,
     llmDiff: String)
+    throws
   {
     let fileContent: String
     do {
-      fileContent = try Self.getCurrentContent(of: URL(fileURLWithPath: filePath))
+      @Dependency(\.xcodeObserver) var xcodeObserver
+      fileContent = try xcodeObserver.getContent(of: URL(fileURLWithPath: filePath))
     } catch {
       // New file
       fileContent = ""
     }
     do {
       let changes = try FileDiff.parse(searchReplacePattern: llmDiff, for: fileContent)
-      self.init(filePath: filePath, changes: changes, oldContent: fileContent)
+      try self.init(filePath: filePath, changes: changes, oldContent: fileContent)
     } catch {
       defaultLogger.error("""
         Could not format diff for \(filePath): \(error)
@@ -44,14 +46,15 @@ public final class FileDiffViewModel: Sendable {
         \(fileContent)
         --
         """)
-      return nil
+      throw error
     }
   }
 
-  public convenience init?(
+  public convenience init(
     filePath: String,
     changes: [FileDiff.SearchReplace],
     oldContent: String? = nil)
+    throws
   {
     let path = URL(fileURLWithPath: filePath)
     let fileContent: String
@@ -59,7 +62,8 @@ public final class FileDiffViewModel: Sendable {
       fileContent = oldContent
     } else {
       do {
-        fileContent = try Self.getCurrentContent(of: path)
+        @Dependency(\.xcodeObserver) var xcodeObserver
+        fileContent = try xcodeObserver.getContent(of: path)
       } catch {
         // New file
         fileContent = ""
@@ -69,7 +73,14 @@ public final class FileDiffViewModel: Sendable {
     do {
       let newContent = try FileDiff.apply(changes: changes, to: fileContent)
       if newContent == fileContent {
-        return nil
+        throw AppError(
+          message: "No change found",
+          debugDescription: """
+            No change found when changing \(filePath) with
+            \(changes.map { ">>> search:\n\($0.search)\n=== replace:\n\($0.replace)\n<<<" }.joined(separator: "\n"))
+
+            Current file content: \(fileContent)
+            """)
       }
 
       let gitDiff = try FileDiff.getGitDiff(oldContent: fileContent, newContent: newContent)
@@ -93,12 +104,12 @@ public final class FileDiffViewModel: Sendable {
       defaultLogger.error("""
         Could not format diff for \(filePath): \(error)
         -- Changes:
-        \(changes.map { "replace:\n\($0.replace)\nwith:\n\($0.replace)" }.joined(separator: "\n-------\n"))
+        \(changes.map { "replace:\n\($0.search)\nwith:\n\($0.replace)" }.joined(separator: "\n-------\n"))
         -- Previous Content:
         \(fileContent)
         --
         """)
-      return nil
+      throw error
     }
   }
 
@@ -115,11 +126,9 @@ public final class FileDiffViewModel: Sendable {
     self.canBeApplied = canBeApplied
     self.formattedDiff = formattedDiff
 
-    @Dependency(\.fileManager) var fileManager
     @Dependency(\.xcodeObserver) var xcodeObserver
     @Dependency(\.xcodeController) var xcodeController
 
-    self.fileManager = fileManager
     self.xcodeObserver = xcodeObserver
     self.xcodeController = xcodeController
 
@@ -156,7 +165,6 @@ public final class FileDiffViewModel: Sendable {
     guard let formattedDiff else {
       throw AppError("Cannot apply changes before they has been prepared.")
     }
-    let fileManager = fileManager
     let filePath = filePath
     let xcodeObserver = xcodeObserver
     let xcodeController = xcodeController
@@ -172,7 +180,7 @@ public final class FileDiffViewModel: Sendable {
           }.first
         }.first
       }.first
-      let currentContent = try editorContent ?? fileManager.read(contentsOf: filePath, encoding: .utf8)
+      let currentContent = try editorContent ?? xcodeObserver.getContent(of: filePath)
       let targetContent = formattedDiff.changes.map(\.change).targetContent(applying: changes.map(\.change))
 
       let fileDiff = try FileDiff.getFileChange(changing: currentContent, to: targetContent)
@@ -255,25 +263,9 @@ public final class FileDiffViewModel: Sendable {
 
   private var cancellable: AnyCancellable?
 
-  private let fileManager: FileManagerI
   private let xcodeObserver: XcodeObserver
   private let xcodeController: XcodeController
 
   private let diffingTasks = ReplaceableTaskQueue<SuggestionUpdate?>()
-
-  /// Get the current content of the file. It is possible that the editor has content that is not yet saved to disk.
-  private static func getCurrentContent(of file: URL) throws -> String {
-    @Dependency(\.fileManager) var fileManager
-    @Dependency(\.xcodeObserver) var xcodeObserver
-    let editorContent = xcodeObserver.state.wrapped?.xcodesState.compactMap { xc in
-      xc.workspaces.compactMap { ws in
-        ws.tabs.compactMap { tab in
-          tab.knownPath == file ? tab.lastKnownContent : nil
-        }.first
-      }.first
-    }.first
-    // TODO: is it fine to run on the main thread?
-    return try editorContent ?? fileManager.read(contentsOf: file, encoding: .utf8)
-  }
 
 }

@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ServerServiceInterface
+import SwiftUI
 import ToolFoundation
 
 // MARK: - SearchFilesTool
@@ -17,13 +18,14 @@ public final class SearchFilesTool: NonStreamableTool {
   public init() { }
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
-  public final class Use: ToolUse, @unchecked Sendable {
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
 
-    init(
+    public init(
       callingTool: SearchFilesTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: EmptyObject? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -36,9 +38,12 @@ public final class SearchFilesTool: NonStreamableTool {
         filePattern: input.filePattern)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let directoryPath: String
@@ -56,12 +61,16 @@ public final class SearchFilesTool: NonStreamableTool {
 
     public let status: Status
 
+    public let context: ToolExecutionContext
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
       updateStatus.yield(.running)
       guard let projectRoot = context.projectRoot else {
-        updateStatus.yield(.completed(.failure(AppError("Cannot search files without a project"))))
+        updateStatus.complete(with: .failure(AppError("Cannot search files without a project")))
         return
       }
 
@@ -74,7 +83,7 @@ public final class SearchFilesTool: NonStreamableTool {
             filePattern: input.filePattern)
           let data = try JSONEncoder().encode(fullInput)
           let response: Schema.SearchFilesToolOutput = try await server.postRequest(path: "searchFiles", data: data)
-          updateStatus.yield(.completed(.success(Schema.SearchFilesToolOutput(
+          updateStatus.complete(with: .success(Schema.SearchFilesToolOutput(
             outputForLLm: response.outputForLLm,
             results: response.results.map { result in
               Schema.SearchFileResult(
@@ -82,26 +91,18 @@ public final class SearchFilesTool: NonStreamableTool {
                 searchResults: result.searchResults)
             },
             rootPath: response.rootPath,
-            hasMore: response.hasMore))))
+            hasMore: response.hasMore)))
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
       }
     }
 
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
     public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
+      updateStatus.complete(with: .failure(CancellationError()))
     }
-
-    let context: ToolExecutionContext
 
     @Dependency(\.server) private var server
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -146,10 +147,6 @@ public final class SearchFilesTool: NonStreamableTool {
     true
   }
 
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
-  }
-
 }
 
 // MARK: - ToolUseViewModel
@@ -181,5 +178,14 @@ extension SearchFilesTool.Use.Output {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     try container.encode(outputForLLm)
+  }
+}
+
+// MARK: - SearchFilesTool.Use + DisplayableToolUse
+
+extension SearchFilesTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+      status: status, input: input)))
   }
 }

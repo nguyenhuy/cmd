@@ -5,7 +5,7 @@ import AppEventServiceInterface
 import AppFoundation
 import ChatAppEvents
 import ChatFoundation
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import Combine
 import Dependencies
 import Foundation
@@ -29,7 +29,7 @@ public class ChatViewModel {
     self.init(
       defaultMode: defaultMode ?? .agent,
       tab: tab,
-      currentModel: .claudeSonnet_4_0)
+      currentModel: .claudeSonnet)
   }
   #endif
 
@@ -37,7 +37,7 @@ public class ChatViewModel {
     self.init(
       defaultMode: defaultMode ?? .agent,
       tab: ChatThreadViewModel(),
-      currentModel: .claudeSonnet_4_0)
+      currentModel: .claudeSonnet)
   }
 
   private init(
@@ -96,7 +96,9 @@ public class ChatViewModel {
     let currentTab = tab
     tab = newTab
     if copyingCurrentInput {
-      newTab.input = currentTab.input.copy(didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } })
+      newTab.input = currentTab.input.copy(
+        didTapSendMessage: { Task { [weak newTab] in await newTab?.sendMessage() } },
+        didCancelMessage: { newTab.cancelCurrentMessage() })
     }
   }
 

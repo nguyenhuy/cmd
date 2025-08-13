@@ -3,7 +3,7 @@
 
 import AppFoundation
 import ChatFeatureInterface
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import CheckpointServiceInterface
 import Dependencies
 import FileSuggestionServiceInterface
@@ -21,6 +21,7 @@ extension ChatThreadViewModel {
       messages: persistentModel.messages.map { .init(from: $0) },
       events: persistentModel.events.map { .init(from: $0) },
       projectInfo: persistentModel.projectInfo,
+      knownFilesContent: persistentModel.knownFilesContent,
       createdAt: persistentModel.createdAt)
   }
 
@@ -31,6 +32,7 @@ extension ChatThreadViewModel {
       messages: messages.map(\.persistentModel),
       events: events.map(\.persistentModel),
       projectInfo: projectInfo,
+      knownFilesContent: context.knownFilesContent,
       createdAt: createdAt)
   }
 
@@ -92,6 +94,9 @@ extension ChatMessageContent {
         id: summary.id,
         projectRoot: nil,
         deltas: [summary.text]))
+
+    case .internalContent(let content):
+      self = .internalContent(content)
     }
   }
 
@@ -124,6 +129,9 @@ extension ChatMessageContent {
         projectRoot: nil,
         text: summary.text,
         attachments: []))
+
+    case .internalContent(let content):
+      .internalContent(content)
     }
   }
 

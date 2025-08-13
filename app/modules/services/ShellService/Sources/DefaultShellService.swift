@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
@@ -20,6 +21,8 @@ final class DefaultShellService: ShellService {
   init() {
     loadZshEnvironmentInBackground()
   }
+
+  public private(set) var env: [String: String] = [:]
 
   @discardableResult
   func run(
@@ -43,6 +46,9 @@ final class DefaultShellService: ShellService {
     let stderrData = Atomic(Data())
     let mergedData = Atomic(Data())
 
+    let (stdoutHasCompleted, stdoutCompleted) = Future<Void, Never>.make()
+    let (stderrHasCompleted, stderrCompleted) = Future<Void, Never>.make()
+
     let result = try await Subprocess.run(
       .path("/bin/zsh"),
       arguments: Arguments(["-c"] + [command]),
@@ -58,14 +64,19 @@ final class DefaultShellService: ShellService {
           stdoutData.mutate { $0.append(data) }
           mergedData.mutate { $0.append(data) }
         }
+        stdoutCompleted(.success(()))
       }
       Task {
         for await data in errorStream {
           stderrData.mutate { $0.append(data) }
           mergedData.mutate { $0.append(data) }
         }
+        stderrCompleted(.success(()))
       }
     }
+
+    await stdoutHasCompleted.value
+    await stderrHasCompleted.value
 
     return CommandExecutionResult(
       exitCode: result.terminationStatus.code,
@@ -73,8 +84,6 @@ final class DefaultShellService: ShellService {
       stderr: String(data: stderrData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
       mergedOutput: String(data: mergedData.value, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines))
   }
-
-  private var env: [String: String] = [:]
 
   private static func loadZshEnvironment(userEnv: [String: String]? = nil) async throws -> [String: String] {
     let result = try await Subprocess.run(
@@ -149,6 +158,10 @@ extension Subprocess.StandardInputWriter: ShellServiceInterface.StandardInputWri
 extension Subprocess.Execution: ShellServiceInterface.Execution {
   public func tearDown() async {
     await teardown(using: [])
+  }
+
+  public func terminate() throws {
+    try send(signal: .terminate)
   }
 }
 

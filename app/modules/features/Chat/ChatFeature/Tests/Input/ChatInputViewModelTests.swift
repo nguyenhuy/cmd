@@ -21,8 +21,8 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with a selected model that is in available models keeps that model")
   func test_initialization_withSelectedModelInAvailableModels() {
-    let selectedModel = LLMModel.gpt_4o
-    let activeModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
+    let selectedModel = LLMModel.gpt
+    let activeModels = [LLMModel.claudeSonnet, LLMModel.gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -40,8 +40,8 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with a selected model that is not in available models selects the first available model")
   func test_initialization_withSelectedModelNotInAvailableModels() {
-    let selectedModel = LLMModel.o3
-    let activeModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
+    let selectedModel = LLMModel.claudeOpus
+    let activeModels = [LLMModel.claudeSonnet, LLMModel.gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -59,7 +59,7 @@ struct ChatInputViewModelTests {
   @MainActor
   @Test("initializing with nil selected model selects the first available model")
   func test_initialization_withNilSelectedModel() {
-    let activeModels = [LLMModel.claudeSonnet_4_0, LLMModel.gpt_4o]
+    let activeModels = [LLMModel.claudeSonnet, LLMModel.gpt]
     let mockSettingsService = MockSettingsService.allConfigured
 
     let viewModel = withDependencies {
@@ -96,8 +96,16 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
     let mockUserDefaults = MockUserDefaults()
 
@@ -106,11 +114,11 @@ struct ChatInputViewModelTests {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatInputViewModel(
-        selectedModel: .gpt_4o,
-        activeModels: [.claudeSonnet_4_0, .gpt_4o, .o4_mini])
+        selectedModel: .gpt,
+        activeModels: [.claudeSonnet, .gpt, .gpt_mini])
     }
 
-    #expect(viewModel.selectedModel == .gpt_4o)
+    #expect(viewModel.selectedModel == .gpt)
   }
 
   @MainActor
@@ -119,8 +127,16 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
     let mockUserDefaults = MockUserDefaults()
 
@@ -129,17 +145,17 @@ struct ChatInputViewModelTests {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatInputViewModel(
-        selectedModel: .claudeSonnet_4_0,
+        selectedModel: .claudeSonnet,
         activeModels: nil)
     }
 
-    #expect(viewModel.selectedModel == .claudeSonnet_4_0)
+    #expect(viewModel.selectedModel == .claudeSonnet)
 
     var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
     newSettings[.anthropic] = nil
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
 
-    #expect(viewModel.selectedModel == .gpt_4_1)
+    #expect(viewModel.selectedModel == .gpt)
   }
 
   @MainActor
@@ -148,8 +164,16 @@ struct ChatInputViewModelTests {
     let mockSettingsService = MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
     let mockUserDefaults = MockUserDefaults()
 
@@ -158,20 +182,22 @@ struct ChatInputViewModelTests {
       $0.userDefaults = mockUserDefaults
     } operation: {
       ChatInputViewModel(
-        selectedModel: .claudeSonnet_4_0,
+        selectedModel: .claudeSonnet,
         activeModels: nil)
     }
 
-    #expect(viewModel.selectedModel == .claudeSonnet_4_0)
+    #expect(viewModel.selectedModel == .claudeSonnet)
 
     var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
     newSettings[.openAI] = nil
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
 
-    #expect(viewModel.activeModels.count == 4)
-    #expect(viewModel.activeModels.contains(.claudeSonnet_4_0))
-    #expect(!viewModel.activeModels.contains(.gpt_4o))
-    #expect(viewModel.selectedModel == .claudeSonnet_4_0)
+    #expect(viewModel.activeModels.sorted(by: { $0.id < $1.id }) == [
+      .claudeHaiku_3_5,
+      .claudeOpus,
+      .claudeSonnet,
+    ])
+    #expect(viewModel.selectedModel == .claudeSonnet)
 
     newSettings[.anthropic] = nil
     mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
@@ -186,8 +212,16 @@ extension MockSettingsService {
     MockSettingsService(Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 1),
-        .openAI: LLMProviderSettings(apiKey: "test", baseUrl: nil, createdOrder: 2),
+        .anthropic: LLMProviderSettings(
+          apiKey: "test",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 1),
+        .openAI: LLMProviderSettings(
+          apiKey: "test",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
       ]))
   }
 }

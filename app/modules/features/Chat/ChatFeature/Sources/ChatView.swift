@@ -43,12 +43,10 @@ public struct ChatView: View {
         secondaryActionRow
         ChatMessageList(viewModel: viewModel.tab)
           .id("ChatMessageList-\(viewModel.tab.id)")
+
         ChatInputView(
           inputViewModel: viewModel.tab.input,
-          isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse,
-          didTapCancel: { [weak viewModel] in
-            viewModel?.tab.cancelCurrentMessage()
-          }).id("ChatInputView-\(viewModel.tab.id)")
+          isStreamingResponse: Bindable(viewModel.tab).isStreamingResponse).id("ChatInputView-\(viewModel.tab.id)")
       }
       if viewModel.showChatHistory {
         ChatHistoryView(
@@ -71,6 +69,7 @@ public struct ChatView: View {
 
   enum Constants {
     static let iconSize: CGFloat = 22
+    static let chatPadding: CGFloat = 16
   }
 
   var projectName: String? {

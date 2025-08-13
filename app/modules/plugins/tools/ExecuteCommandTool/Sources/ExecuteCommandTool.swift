@@ -8,6 +8,7 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ShellServiceInterface
+import SwiftUI
 import ThreadSafe
 import ToolFoundation
 
@@ -18,13 +19,13 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
   // TODO: remove @unchecked Sendable once https://github.com/pointfreeco/swift-dependencies/discussions/267 is fixed.
   @ThreadSafe
-  public final class Use: ToolUse, @unchecked Sendable {
-
-    init(
+  public final class Use: NonStreamableToolUse, UpdatableToolUse, @unchecked Sendable {
+    public init(
       callingTool: ExecuteCommandTool,
       toolUseId: String,
       input: Input,
       context: ToolExecutionContext,
+      internalState _: InternalState? = nil,
       initialStatus: Status.Element? = nil)
     {
       self.callingTool = callingTool
@@ -37,6 +38,9 @@ public final class ExecuteCommandTool: NonStreamableTool {
         canModifyDerivedFiles: input.canModifyDerivedFiles)
 
       let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      if case .completed = stream.value { updateStatus.finish() }
+      // If the tool was running when the app was terminated, we don't support resume execution so it's set to cancelled.
+      if case .running = stream.value { updateStatus.complete(with: .failure(CancellationError())) }
       status = stream
       self.updateStatus = updateStatus
 
@@ -47,6 +51,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
       stderrStream = stderr
       setStderrStream = { stream in setStderr(.success(stream)) }
     }
+
+    public typealias InternalState = EmptyObject
 
     public struct Input: Codable, Sendable {
       public let command: String
@@ -69,6 +75,15 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     public let status: Status
 
+    public let context: ToolExecutionContext
+
+    public let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
+
+    public func cancel() {
+      updateStatus.complete(with: .failure(CancellationError()))
+      try? runningProcess?.terminate()
+    }
+
     public func startExecuting() {
       // Transition from pendingApproval to notStarted to running
       updateStatus.yield(.notStarted)
@@ -85,31 +100,25 @@ public final class ExecuteCommandTool: NonStreamableTool {
             self.setStdoutStream(.init(stdout))
             self.setStderrStream(.init(stderr))
           }
+
+          let output = Output(
+            output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
+            exitCode: shellResult.exitCode)
           if shellResult.exitCode == 0 {
-            updateStatus.yield(.completed(.success(Output(
-              output: shellResult.mergedOutput?.trimmed(toNotExceed: truncationLimit),
-              exitCode: shellResult.exitCode))))
+            updateStatus.complete(with: .success(output))
           } else {
             try updateStatus
               .yield(
                 .completed(
                   .failure(
                     AppError(
-                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(shellResult), encoding: .utf8) ?? "")"))))
+                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(output), encoding: .utf8) ?? "")"))))
           }
         } catch {
-          updateStatus.yield(.completed(.failure(error)))
+          updateStatus.complete(with: .failure(error))
         }
         runningProcess = nil
       }
-    }
-
-    public func reject(reason: String?) {
-      updateStatus.yield(.approvalRejected(reason: reason))
-    }
-
-    public func cancel() {
-      updateStatus.yield(.completed(.failure(CancellationError())))
     }
 
     let stdoutStream: Future<BroadcastedStream<Data>, Never>
@@ -117,8 +126,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
     let setStdoutStream: (BroadcastedStream<Data>) -> Void
     let setStderrStream: (BroadcastedStream<Data>) -> Void
-
-    let context: ToolExecutionContext
 
     func killRunningProcess() async {
       commandWasManuallyInterrupted = true
@@ -129,8 +136,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
     private var runningProcess: (any Execution)?
 
     @Dependency(\.shellService) private var shellService
-
-    private let updateStatus: AsyncStream<ToolUseExecutionStatus<Output>>.Continuation
 
   }
 
@@ -184,10 +189,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
   public func isAvailable(in mode: ChatMode) -> Bool {
     // TODO: add support for readonly uses of the terminal.
     mode == .agent
-  }
-
-  public func use(toolUseId: String, input: Use.Input, context: ToolExecutionContext) -> Use {
-    Use(callingTool: self, toolUseId: toolUseId, input: input, context: context)
   }
 
   static let truncationLimit = 30000
@@ -247,5 +248,18 @@ extension String {
     let i = index(startIndex, offsetBy: limit / 2)
     let j = index(endIndex, offsetBy: -limit / 2)
     return String(self[startIndex..<i]) + "... [\(count - limit) characters truncated] ..." + String(self[j..<endIndex])
+  }
+}
+
+// MARK: - ExecuteCommandTool.Use + DisplayableToolUse
+
+extension ExecuteCommandTool.Use: DisplayableToolUse {
+  public var body: AnyView {
+    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+      command: input.command,
+      status: status,
+      stdout: stdoutStream,
+      stderr: stderrStream,
+      kill: killRunningProcess)))
   }
 }

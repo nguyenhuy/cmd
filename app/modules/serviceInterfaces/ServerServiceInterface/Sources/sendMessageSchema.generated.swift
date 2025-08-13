@@ -14,6 +14,7 @@ extension Schema {
     public let model: String
     public let enableReasoning: Bool
     public let provider: APIProvider
+    public let threadId: String?
   
     private enum CodingKeys: String, CodingKey {
       case messages = "messages"
@@ -23,6 +24,7 @@ extension Schema {
       case model = "model"
       case enableReasoning = "enableReasoning"
       case provider = "provider"
+      case threadId = "threadId"
     }
   
     public init(
@@ -32,7 +34,8 @@ extension Schema {
         tools: [Tool]? = nil,
         model: String,
         enableReasoning: Bool,
-        provider: APIProvider
+        provider: APIProvider,
+        threadId: String? = nil
     ) {
       self.messages = messages
       self.system = system
@@ -41,6 +44,7 @@ extension Schema {
       self.model = model
       self.enableReasoning = enableReasoning
       self.provider = provider
+      self.threadId = threadId
     }
   
     public init(from decoder: Decoder) throws {
@@ -52,6 +56,7 @@ extension Schema {
       model = try container.decode(String.self, forKey: .model)
       enableReasoning = try container.decode(Bool.self, forKey: .enableReasoning)
       provider = try container.decode(APIProvider.self, forKey: .provider)
+      threadId = try container.decodeIfPresent(String?.self, forKey: .threadId)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -63,6 +68,7 @@ extension Schema {
       try container.encode(model, forKey: .model)
       try container.encode(enableReasoning, forKey: .enableReasoning)
       try container.encode(provider, forKey: .provider)
+      try container.encodeIfPresent(threadId, forKey: .threadId)
     }
   }
   public struct Message: Codable, Sendable {
@@ -267,27 +273,31 @@ extension Schema {
     }
   }
   public struct ToolResultMessage: Codable, Sendable {
+    public let type = "tool_result"
     public let toolUseId: String
     public let toolName: String
-    public let type = "tool_result"
     public let result: Result
+    public let idx: Int?
   
     private enum CodingKeys: String, CodingKey {
+      case type = "type"
       case toolUseId = "toolUseId"
       case toolName = "toolName"
-      case type = "type"
       case result = "result"
+      case idx = "idx"
     }
   
     public init(
+        type: String = "tool_result",
         toolUseId: String,
         toolName: String,
-        type: String = "tool_result",
-        result: Result
+        result: Result,
+        idx: Int? = nil
     ) {
       self.toolUseId = toolUseId
       self.toolName = toolName
       self.result = result
+      self.idx = idx
     }
   
     public init(from decoder: Decoder) throws {
@@ -295,14 +305,16 @@ extension Schema {
       toolUseId = try container.decode(String.self, forKey: .toolUseId)
       toolName = try container.decode(String.self, forKey: .toolName)
       result = try container.decode(Result.self, forKey: .result)
+      idx = try container.decodeIfPresent(Int?.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
       try container.encode(toolUseId, forKey: .toolUseId)
       try container.encode(toolName, forKey: .toolName)
-      try container.encode(type, forKey: .type)
       try container.encode(result, forKey: .result)
+      try container.encodeIfPresent(idx, forKey: .idx)
     }
   
     public enum Result: Codable, Sendable {
@@ -363,12 +375,46 @@ extension Schema {
       try container.encode(type, forKey: .type)
     }
   }
+  public struct InternalContent: Codable, Sendable {
+    public let type = "internal_content"
+    public let value: JSON
+    public let idx: Int
+  
+    private enum CodingKeys: String, CodingKey {
+      case type = "type"
+      case value = "value"
+      case idx = "idx"
+    }
+  
+    public init(
+        type: String = "internal_content",
+        value: JSON,
+        idx: Int
+    ) {
+      self.value = value
+      self.idx = idx
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      value = try container.decode(JSON.self, forKey: .value)
+      idx = try container.decode(Int.self, forKey: .idx)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(type, forKey: .type)
+      try container.encode(value, forKey: .value)
+      try container.encode(idx, forKey: .idx)
+    }
+  }
   public enum MessageContent: Codable, Sendable {
     case textMessage(_ value: TextMessage)
     case reasoningMessage(_ value: ReasoningMessage)
     case toolUseRequest(_ value: ToolUseRequest)
     case toolResultMessage(_ value: ToolResultMessage)
     case internalTextMessage(_ value: InternalTextMessage)
+    case internalContent(_ value: InternalContent)
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -388,6 +434,8 @@ extension Schema {
           self = .toolResultMessage(try ToolResultMessage(from: decoder))
         case "internal_text":
           self = .internalTextMessage(try InternalTextMessage(from: decoder))
+        case "internal_content":
+          self = .internalContent(try InternalContent(from: decoder))
         default:
           throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
       }
@@ -404,6 +452,8 @@ extension Schema {
         case .toolResultMessage(let value):
           try value.encode(to: encoder)
         case .internalTextMessage(let value):
+          try value.encode(to: encoder)
+        case .internalContent(let value):
           try value.encode(to: encoder)
       }
     }
@@ -671,30 +721,36 @@ extension Schema {
     public struct Settings: Codable, Sendable {
       public let apiKey: String?
       public let baseUrl: String?
+      public let localExecutable: LocalExecutable?
     
       private enum CodingKeys: String, CodingKey {
         case apiKey = "apiKey"
         case baseUrl = "baseUrl"
+        case localExecutable = "localExecutable"
       }
     
       public init(
           apiKey: String? = nil,
-          baseUrl: String? = nil
+          baseUrl: String? = nil,
+          localExecutable: LocalExecutable? = nil
       ) {
         self.apiKey = apiKey
         self.baseUrl = baseUrl
+        self.localExecutable = localExecutable
       }
     
       public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         apiKey = try container.decodeIfPresent(String?.self, forKey: .apiKey)
         baseUrl = try container.decodeIfPresent(String?.self, forKey: .baseUrl)
+        localExecutable = try container.decodeIfPresent(LocalExecutable?.self, forKey: .localExecutable)
       }
     
       public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(apiKey, forKey: .apiKey)
         try container.encodeIfPresent(baseUrl, forKey: .baseUrl)
+        try container.encodeIfPresent(localExecutable, forKey: .localExecutable)
       }
     }
   }
@@ -702,7 +758,43 @@ extension Schema {
     case openai = "openai"
     case anthropic = "anthropic"
     case openrouter = "openrouter"
+    case claudeCode = "claude_code"
   }    
+  public struct LocalExecutable: Codable, Sendable {
+    public let executable: String
+    public let env: JSON
+    public let cwd: String?
+  
+    private enum CodingKeys: String, CodingKey {
+      case executable = "executable"
+      case env = "env"
+      case cwd = "cwd"
+    }
+  
+    public init(
+        executable: String,
+        env: JSON,
+        cwd: String? = nil
+    ) {
+      self.executable = executable
+      self.env = env
+      self.cwd = cwd
+    }
+  
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      executable = try container.decode(String.self, forKey: .executable)
+      env = try container.decode(JSON.self, forKey: .env)
+      cwd = try container.decodeIfPresent(String?.self, forKey: .cwd)
+    }
+  
+    public func encode(to encoder: Encoder) throws {
+      var container = encoder.container(keyedBy: CodingKeys.self)
+      try container.encode(executable, forKey: .executable)
+      try container.encode(env, forKey: .env)
+      try container.encodeIfPresent(cwd, forKey: .cwd)
+    }
+  }
   public struct TextDelta: Codable, Sendable {
     public let type = "text_delta"
     public let text: String
@@ -785,7 +877,7 @@ extension Schema {
     public let type = "error"
     public let message: String
     public let statusCode: Int?
-    public let idx: Int
+    public let idx: Int?
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -798,7 +890,7 @@ extension Schema {
         type: String = "error",
         message: String,
         statusCode: Int? = nil,
-        idx: Int
+        idx: Int? = nil
     ) {
       self.message = message
       self.statusCode = statusCode
@@ -809,7 +901,7 @@ extension Schema {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       message = try container.decode(String.self, forKey: .message)
       statusCode = try container.decodeIfPresent(Int?.self, forKey: .statusCode)
-      idx = try container.decode(Int.self, forKey: .idx)
+      idx = try container.decodeIfPresent(Int?.self, forKey: .idx)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -817,7 +909,7 @@ extension Schema {
       try container.encode(type, forKey: .type)
       try container.encode(message, forKey: .message)
       try container.encodeIfPresent(statusCode, forKey: .statusCode)
-      try container.encode(idx, forKey: .idx)
+      try container.encodeIfPresent(idx, forKey: .idx)
     }
   }
   public struct ReasoningDelta: Codable, Sendable {
@@ -962,11 +1054,13 @@ extension Schema {
     case textDelta(_ value: TextDelta)
     case toolUseRequest(_ value: ToolUseRequest)
     case toolUseDelta(_ value: ToolUseDelta)
+    case toolResultMessage(_ value: ToolResultMessage)
     case responseError(_ value: ResponseError)
     case reasoningDelta(_ value: ReasoningDelta)
     case reasoningSignature(_ value: ReasoningSignature)
     case responseUsage(_ value: ResponseUsage)
     case ping(_ value: Ping)
+    case internalContent(_ value: InternalContent)
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
@@ -982,6 +1076,8 @@ extension Schema {
           self = .toolUseRequest(try ToolUseRequest(from: decoder))
         case "tool_call_delta":
           self = .toolUseDelta(try ToolUseDelta(from: decoder))
+        case "tool_result":
+          self = .toolResultMessage(try ToolResultMessage(from: decoder))
         case "error":
           self = .responseError(try ResponseError(from: decoder))
         case "reasoning_delta":
@@ -992,6 +1088,8 @@ extension Schema {
           self = .responseUsage(try ResponseUsage(from: decoder))
         case "ping":
           self = .ping(try Ping(from: decoder))
+        case "internal_content":
+          self = .internalContent(try InternalContent(from: decoder))
         default:
           throw DecodingError.typeMismatch(String.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Invalid type"))
       }
@@ -1005,6 +1103,8 @@ extension Schema {
           try value.encode(to: encoder)
         case .toolUseDelta(let value):
           try value.encode(to: encoder)
+        case .toolResultMessage(let value):
+          try value.encode(to: encoder)
         case .responseError(let value):
           try value.encode(to: encoder)
         case .reasoningDelta(let value):
@@ -1014,6 +1114,8 @@ extension Schema {
         case .responseUsage(let value):
           try value.encode(to: encoder)
         case .ping(let value):
+          try value.encode(to: encoder)
+        case .internalContent(let value):
           try value.encode(to: encoder)
       }
     }

@@ -19,17 +19,22 @@ struct AskFollowUpToolEncodingTests {
     let input = AskFollowUpTool.Use.Input(
       question: "Test question",
       followUp: ["Follow up 1"])
-    let use = tool.use(toolUseId: "test-123", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "test-123", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "followUp": [
             "Follow up 1"
           ],
           "question": "Test question"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "notStarted"
         },
@@ -44,11 +49,14 @@ struct AskFollowUpToolEncodingTests {
     let input = AskFollowUpTool.Use.Input(
       question: "Complex question",
       followUp: ["Step 1", "Step 2", "Step 3"])
-    let use = tool.use(toolUseId: "complex-456", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "complex-456", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "followUp": [
             "Step 1",
@@ -57,6 +65,8 @@ struct AskFollowUpToolEncodingTests {
           ],
           "question": "Complex question"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "notStarted"
         },
@@ -71,17 +81,22 @@ struct AskFollowUpToolEncodingTests {
     let input = AskFollowUpTool.Use.Input(
       question: "Simple question?",
       followUp: [])
-    let use = tool.use(toolUseId: "simple-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "simple-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "ask_followup",
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "followUp": [
 
           ],
           "question": "Simple question?"
         },
+        "internalState": null,
+        "isInputComplete": true,
         "status": {
           "status": "notStarted"
         },
@@ -91,9 +106,7 @@ struct AskFollowUpToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

@@ -4,19 +4,21 @@
 import AppFoundation
 import ChatFeatureInterface
 import ChatFoundation
-import ChatHistoryServiceInterface
+import ChatServiceInterface
 import CheckpointServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import FoundationInterfaces
+import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import Observation
 import ServerServiceInterface
 import SettingsServiceInterface
+import ThreadSafe
 import ToolFoundation
 import XcodeObserverServiceInterface
 
@@ -47,6 +49,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     messages: [ChatMessageViewModel],
     events: [ChatEvent]? = nil,
     projectInfo: SelectedProjectInfo? = nil,
+    knownFilesContent: [String: String] = [:],
     createdAt: Date = Date())
   {
     self.id = id
@@ -54,6 +57,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     self.messages = messages
     self.projectInfo = projectInfo
     self.createdAt = createdAt
+    context = ChatThreadContext(knownFilesContent: knownFilesContent)
     self.events = events ?? messages.flatMap { message in
       message.content.map { .message(.init(content: $0, role: message.role)) }
     }
@@ -63,6 +67,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
     input = ChatInputViewModel()
     input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
+    input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
     workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
       guard state.focusedWorkspace != nil else { return }
@@ -77,6 +82,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
         self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
       }
     }.store(in: &cancellables)
+
+    @Dependency(\.chatContextRegistry) var chatContextRegistry
+    chatContextRegistry.register(context: context, for: id.uuidString)
   }
 
   typealias SelectedProjectInfo = ChatThreadModel.SelectedProjectInfo
@@ -94,6 +102,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   private(set) var projectInfo: SelectedProjectInfo?
 
   private(set) var isShowingChatHistory = false
+
+  let context: ChatThreadContext
 
   private(set) var name: String? {
     didSet {
@@ -118,6 +128,14 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     streamingTask?.cancel()
     streamingTask = nil
     input.cancelAllPendingToolApprovalRequests()
+    // Cancel all existing tool calls.
+    for message in messages {
+      for content in message.content {
+        if let toolUse = content.asToolUse?.toolUse, !toolUse.hasCompleted {
+          toolUse.cancel()
+        }
+      }
+    }
   }
 
   func handleToggleChatHistory() {
@@ -186,6 +204,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
           messageHistory: messages,
           tools: tools,
           model: selectedModel,
+          chatMode: input.mode,
           context: DefaultChatContext(
             project: projectInfo?.path,
             projectRoot: projectInfo?.dirPath,
@@ -193,7 +212,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             requestToolApproval: { [weak self] toolUse in
               try await self?.handleToolApproval(for: toolUse)
             },
-            chatMode: input.mode),
+            chatMode: input.mode,
+            threadId: self.id.uuidString),
           handleUpdateStream: { newMessages in
             Task { @MainActor [weak self] in
               guard let self else { return }
@@ -215,6 +235,18 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       content.append(newContent)
                       events.append(.message(.init(content: newContent, role: .assistant)))
                       newMessageState.content = content
+
+                      // Persistence
+                      Task.detached {
+                        await self.persistThread()
+                      }
+                      if let toolUse = newContent.asToolUse?.toolUse {
+                        Task.detached { [weak self] in
+                          for await _ in toolUse.updates {
+                            await self?.persistThread()
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -356,6 +388,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     if shouldAlwaysApprove(toolName: toolUse.toolName) {
       return // Skip approval for this tool
     }
+    if toolUse is any ExternalToolUse {
+      return // We don't manage the permission for this tool
+    }
 
     let approvalResult = await input.requestApproval(
       for: toolUse)
@@ -385,7 +420,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       // Create checkpoint and add it to events before the tool call is executed.
       let checkpoint = try await checkpointService.createCheckpoint(
         projectRoot: projectInfo.dirPath,
-        taskId: "main",
+        taskId: id.uuidString,
         message: "checkpoint")
       if !events.compactMap(\.checkpoint).contains(where: { $0.id == checkpoint.id }) {
         // Execute on the main actor to update the UI
@@ -439,22 +474,66 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
 }
 
+// MARK: - ChatThreadContext
+
+@ThreadSafe
+final class ChatThreadContext: LiveToolExecutionContext {
+
+  init(knownFilesContent: [String: String] = [:], userInfo: [String: any Codable & Sendable] = [:]) {
+    self.knownFilesContent = knownFilesContent
+    self.userInfo = userInfo
+  }
+
+  private(set) var knownFilesContent: [String: String]
+  private(set) var userInfo: [String: any Codable & Sendable]
+
+  func knownFileContent(for path: URL) -> String? {
+    knownFilesContent[path.absoluteString]
+  }
+
+  func set(knownFileContent: String, for path: URL) {
+    knownFilesContent[path.absoluteString] = knownFileContent
+  }
+
+  func pluginState<T>(for key: String) -> T? where T: Decodable, T: Encodable, T: Sendable {
+    if let decodedObject = userInfo[key] as? T {
+      return decodedObject
+    }
+    if let object = userInfo[key] as? JSON {
+      do {
+        let decodedObject = try JSONDecoder().decode(T.self, from: JSONSerialization.data(withJSONObject: object, options: []))
+        userInfo[key] = decodedObject
+        return decodedObject
+      } catch {
+        defaultLogger.error(error)
+      }
+    }
+    return nil
+  }
+
+  func set(pluginState value: some Decodable & Encodable & Sendable, for key: String) {
+    userInfo[key] = value
+  }
+
+}
+
 // MARK: - DefaultChatContext
 
-struct DefaultChatContext: ChatContext {
-
+final class DefaultChatContext: ChatContext {
   init(
     project: URL?,
     projectRoot: URL?,
     prepareForWriteToolUse: @escaping @Sendable () async -> Void,
     requestToolApproval: @escaping @Sendable (any ToolUse) async throws -> Void,
-    chatMode: ChatMode)
+    chatMode: ChatMode,
+    threadId: String)
   {
     self.project = project
     self.projectRoot = projectRoot
     self.prepareForWriteToolUse = prepareForWriteToolUse
     self.requestToolApproval = requestToolApproval
     self.chatMode = chatMode
+    self.threadId = threadId
   }
 
   let project: URL?
@@ -462,6 +541,12 @@ struct DefaultChatContext: ChatContext {
   let prepareForWriteToolUse: @Sendable () async -> Void
   let requestToolApproval: @Sendable (any ToolUse) async throws -> Void
   let chatMode: ChatMode
+  let threadId: String
+
+  var toolExecutionContext: ToolExecutionContext {
+    ToolExecutionContext(threadId: threadId, project: project, projectRoot: projectRoot)
+  }
+
 }
 
 // MARK: - ChatEvent

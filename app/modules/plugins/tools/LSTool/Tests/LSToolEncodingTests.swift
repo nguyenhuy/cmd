@@ -19,16 +19,20 @@ struct LSToolEncodingTests {
     let input = LSTool.Use.Input(
       path: "/project",
       recursive: false)
-    let use = tool.use(toolUseId: "ls-123", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "ls-123", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "path": "/project",
           "recursive": false
         },
+      "internalState" : null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -43,16 +47,20 @@ struct LSToolEncodingTests {
     let input = LSTool.Use.Input(
       path: "/workspace/src",
       recursive: true)
-    let use = tool.use(toolUseId: "ls-recursive-456", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "ls-recursive-456", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "path": "/workspace/src",
           "recursive": true
         },
+      "internalState" : null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -67,15 +75,19 @@ struct LSToolEncodingTests {
     let input = LSTool.Use.Input(
       path: "/home/user/projects",
       recursive: nil)
-    let use = tool.use(toolUseId: "ls-structure-789", input: input, context: toolExecutionContext)
+    let use = tool.use(toolUseId: "ls-structure-789", input: input, isInputComplete: true, context: toolExecutionContext)
 
     try testDecodingEncodingWithTool(of: use, tool: tool, """
       {
         "callingTool": "list_files",
-        "context": {},
+        "context": {
+          "threadId": "mock-thread-id"
+        },
         "input": {
           "path": "/home/user/projects"
         },
+      "internalState" : null,
+        "isInputComplete": true,
         "status": {
           "status": "pendingApproval"
         },
@@ -85,9 +97,7 @@ struct LSToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

@@ -1,11 +1,15 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import ChatServiceInterface
+import Dependencies
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import SwiftTesting
 import Testing
 import ToolFoundation
+import XcodeObserverServiceInterface
 @testable import EditFilesTool
 
 // MARK: - EditFilesToolEncodingTests
@@ -29,35 +33,47 @@ struct EditFilesToolEncodingTests {
 
     let input = EditFilesTool.Use.Input(files: [fileChange])
     let data = try JSONEncoder().encode(input)
-    let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
+    let files = [
+      fileChange.path: "# Old Title",
+    ]
 
-    try testDecodingEncodingWithTool(of: use, tool: tool, """
-      {
-        "callingTool" : "suggest_files_changes",
-        "context" : {
+    try withDependencies {
+      $0.chatContextRegistry = MockChatContextRegistryService([
+        "mock-thread-id": MockChatThreadContext(knownFilesContent: files),
+      ])
+      $0.xcodeObserver = MockXcodeObserver(fileManager: MockFileManager(files: files))
+    } operation: {
+      let use = try tool.use(toolUseId: "edit-123", input: data, isInputComplete: true, context: toolExecutionContext)
 
-        },
-        "inputData" : {
-          "files" : [
-            {
-              "changes" : [
-                {
-                  "replace" : "# New Title",
-                  "search" : "# Old Title"
-                }
-              ],
-              "isNewFile" : false,
-              "path" : "\\/project\\/README.md"
-            }
-          ]
-        },
-        "isInputComplete" : true,
-        "status" : {
-          "status" : "pendingApproval"
-        },
-        "toolUseId" : "edit-123"
-      }
-      """)
+      try testDecodingEncodingWithTool(of: use, tool: tool, """
+        {
+          "callingTool" : "suggest_files_changes",
+          "context" : {
+            "threadId": "mock-thread-id"
+          },
+          "input" : {
+            "files" : [
+              {
+                "changes" : [
+                  {
+                    "replace" : "# New Title",
+                    "search" : "# Old Title"
+                  }
+                ],
+                "isNewFile" : false,
+                "path" : "\\/project\\/README.md"
+              }
+            ]
+          },
+          "internalState" : null,
+          "isInputComplete" : true,
+          "status" : {
+            "status" : "pendingApproval"
+          },
+          "toolUseId" : "edit-123"
+        }
+        """)
+    }
   }
 
   @Test("Tool Use encoding/decoding - new file creation")
@@ -81,9 +97,9 @@ struct EditFilesToolEncodingTests {
       {
         "callingTool" : "suggest_files_changes",
         "context" : {
-
+          "threadId": "mock-thread-id"
         },
-        "inputData" : {
+        "input" : {
           "files" : [
             {
               "changes" : [
@@ -97,6 +113,7 @@ struct EditFilesToolEncodingTests {
             }
           ]
         },
+        "internalState" : null,
         "isInputComplete" : true,
         "status" : {
           "status" : "pendingApproval"
@@ -137,9 +154,9 @@ struct EditFilesToolEncodingTests {
       {
         "callingTool" : "suggest_files_changes",
         "context" : {
-
+          "threadId": "mock-thread-id"
         },
-        "inputData" : {
+        "input" : {
           "files" : [
             {
               "changes" : [
@@ -163,6 +180,7 @@ struct EditFilesToolEncodingTests {
             }
           ]
         },
+        "internalState" : null,
         "isInputComplete" : true,
         "status" : {
           "status" : "pendingApproval"
@@ -173,9 +191,7 @@ struct EditFilesToolEncodingTests {
   }
 }
 
-private let toolExecutionContext = ToolExecutionContext(
-  project: nil,
-  projectRoot: nil)
+private let toolExecutionContext = ToolExecutionContext()
 
 private func testDecodingEncodingWithTool(
   of value: some Codable,

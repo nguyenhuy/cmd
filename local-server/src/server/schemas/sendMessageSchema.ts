@@ -6,6 +6,7 @@ export interface SendMessageRequestParams {
 	model: string
 	enableReasoning: boolean
 	provider: APIProvider
+	threadId: string | undefined
 }
 
 export interface APIProvider {
@@ -13,20 +14,29 @@ export interface APIProvider {
 	settings: {
 		apiKey?: string
 		baseUrl?: string
+		localExecutable?: LocalExecutable
 	}
 }
 
-export type APIProviderName = "openai" | "anthropic" | "openrouter"
+export interface LocalExecutable {
+	executable: string
+	env: Record<string, string>
+	cwd?: string
+}
+
+export type APIProviderName = "openai" | "anthropic" | "openrouter" | "claude_code"
 
 export type StreamedResponseChunk =
 	| TextDelta
 	| ToolUseRequest
 	| ToolUseDelta
+	| ToolResultMessage // When interacting with an external agent, like Claude Code, the tool results are produced externally and sent back to the host application.
 	| ResponseError
 	| ReasoningDelta
 	| ReasoningSignature
 	| ResponseUsage
 	| Ping
+	| InternalContent
 
 export interface TextDelta {
 	type: "text_delta"
@@ -95,7 +105,7 @@ export interface ResponseError {
 	/**
 	 * @format integer
 	 */
-	idx: number
+	idx?: number
 }
 
 export interface ResponseUsage {
@@ -114,7 +124,30 @@ export interface ResponseUsage {
 	idx: number
 }
 
-export type MessageContent = TextMessage | ReasoningMessage | ToolUseRequest | ToolResultMessage | InternalTextMessage
+/**
+ * An opaque message that the local server sends to the host app for it to be sent back in the next turn.
+ * This can be helpful for the local server to remain stateless while later receiving the required information (somewhat similar to a session cookie).
+ */
+export interface InternalContent {
+	type: "internal_content"
+	/**
+	 * The content of the message that should be preserved.
+	 */
+	value: Record<string, unknown>
+
+	/**
+	 * @format integer
+	 */
+	idx: number
+}
+
+export type MessageContent =
+	| TextMessage
+	| ReasoningMessage
+	| ToolUseRequest
+	| ToolResultMessage
+	| InternalTextMessage
+	| InternalContent
 
 export interface Message {
 	// The role of the message's author. Roles can be: system, user, assistant, function or tool.
@@ -204,10 +237,14 @@ export interface ToolResultFailureMessage {
 }
 
 export interface ToolResultMessage {
+	type: "tool_result"
 	toolUseId: string
 	toolName: string
-	type: "tool_result"
 	result: ToolResultSuccessMessage | ToolResultFailureMessage
+	/**
+	 * @format integer
+	 */
+	idx?: number
 }
 
 export interface Tool {

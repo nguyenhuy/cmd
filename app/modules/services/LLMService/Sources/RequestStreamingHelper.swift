@@ -5,6 +5,7 @@ import AppFoundation
 import ChatFoundation
 import ConcurrencyFoundation
 import Foundation
+import JSONFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ServerServiceInterface
@@ -15,8 +16,7 @@ import ToolFoundation
 
 /// Receives streamed data from the serevr, and processes it to update the `result` stream with the new content.
 /// Parse tool request, handle text and tool streaming.,
-@ThreadSafe
-final class RequestStreamingHelper: Sendable {
+actor RequestStreamingHelper: Sendable {
   #if DEBUG
   /// - Parameters:
   ///   - stream: The stream of data received from the server.
@@ -73,7 +73,6 @@ final class RequestStreamingHelper: Sendable {
   /// Handle all the streamed data, updating the `result` stream with the new content.
   ///  The `result` stream will always be complete when this method returns, either with a final message or an error.
   func processStream() async throws -> Schema.ResponseUsage? {
-    var usage: Schema.ResponseUsage? = nil
     do {
       for try await chunk in stream {
         do {
@@ -89,36 +88,18 @@ final class RequestStreamingHelper: Sendable {
 
           let event = try JSONDecoder().decode(Schema.StreamedResponseChunk.self, from: chunk)
 
-          let previousChunkIdx = _internalState.set(\.lastChunkIdx, to: event.idx)
-          if event.idx <= previousChunkIdx {
-            defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
-          }
-
-          switch event {
-          case .ping:
-            break
-
-          case .textDelta(let textDelta):
-            handle(textDelta: textDelta)
-
-          case .toolUseDelta(let toolUseDelta):
-            await handle(toolUseDelta: toolUseDelta)
-
-          case .toolUseRequest(let toolUseRequest):
-            await handle(toolUseRequest: toolUseRequest)
-
-          case .responseError(let error):
-            // We received an error from the server.
-            err = err ?? AppError(message: error.message)
-
-          case .reasoningDelta(let reasoningDelta):
-            handle(reasoningDelta: reasoningDelta)
-
-          case .reasoningSignature(let reasoningSignature):
-            handle(reasoningSignature: reasoningSignature)
-
-          case .responseUsage(let value):
-            usage = value
+          if let idx = event.idx {
+            if lastChunkIdx == idx - 1 {
+              // events are ordered
+              await process(event: event)
+            } else {
+              print("queing event \(idx). Current idx: \(lastChunkIdx)")
+              // Events have been received out of order. Correct this.
+              pendingEvents.append(event)
+              defaultLogger.error("Received chunks out of order. This will lead to corrupted data being used in the app.")
+            }
+          } else {
+            await process(event: event)
           }
         } catch {
           defaultLogger.error("Failed to process chunk \(String(data: chunk, encoding: .utf8) ?? "<corrupted>"): \(error)")
@@ -131,12 +112,15 @@ final class RequestStreamingHelper: Sendable {
       }
       finish()
     } catch {
-      defaultLogger.error("Finished streaming response with error \(error)")
+      defaultLogger.error("Finished streaming response with error \(err ?? error)")
       finish()
-      throw error
+      throw err ?? error
     }
     return usage
   }
+
+  private var usage: Schema.ResponseUsage? = nil
+  private var pendingEvents: [Schema.StreamedResponseChunk] = []
 
   private let isTaskCancelled: @Sendable () -> Bool
   private var lastChunkIdx = -1
@@ -157,6 +141,49 @@ final class RequestStreamingHelper: Sendable {
       domain: "ToolUseError",
       code: 1,
       userInfo: [NSLocalizedDescriptionKey: "Could not parse the input for tool \(name): \(error.localizedDescription)"])
+  }
+
+  private func process(event: Schema.StreamedResponseChunk) async {
+    lastChunkIdx = event.idx ?? lastChunkIdx
+
+    switch event {
+    case .ping:
+      break
+
+    case .textDelta(let textDelta):
+      handle(textDelta: textDelta)
+
+    case .toolUseDelta(let toolUseDelta):
+      await handle(toolUseDelta: toolUseDelta)
+
+    case .toolUseRequest(let toolUseRequest):
+      await handle(toolUseRequest: toolUseRequest)
+
+    case .toolResultMessage(let toolResult):
+      await handle(toolResult: toolResult)
+
+    case .responseError(let error):
+      // We received an error from the server.
+      err = err ?? AppError(message: error.message)
+
+    case .reasoningDelta(let reasoningDelta):
+      handle(reasoningDelta: reasoningDelta)
+
+    case .reasoningSignature(let reasoningSignature):
+      handle(reasoningSignature: reasoningSignature)
+
+    case .responseUsage(let value):
+      usage = value
+
+    case .internalContent(let message):
+      handle(internalMessage: message)
+    }
+
+    // Try to dequeue events received out of order.
+    if let nextEvent = pendingEvents.first(where: { $0.idx == self.lastChunkIdx + 1 }) {
+      pendingEvents.removeAll(where: { $0.idx == nextEvent.idx })
+      await process(event: nextEvent)
+    }
   }
 
   /// Wrap up the stream. When the stream is process without failure this is already called.
@@ -224,9 +251,7 @@ final class RequestStreamingHelper: Sendable {
           toolUseId: toolUseId,
           input: data,
           isInputComplete: false,
-          context: ToolExecutionContext(
-            project: context.project,
-            projectRoot: context.projectRoot))
+          context: context.toolExecutionContext)
 
         if !toolUse.isReadonly {
           await context.prepareForWriteToolUse()
@@ -287,7 +312,8 @@ final class RequestStreamingHelper: Sendable {
         content.append(toolUse: FailedToolUse(
           toolUseId: toolUse.toolUseId,
           toolName: toolUse.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription))
+          errorDescription: Self.failedToParseToolInputError(toolName: toolUse.toolName, error: error).localizedDescription,
+          context: context.toolExecutionContext))
         result.update(with: AssistantMessage(content: content))
       }
       endStreamedToolUse()
@@ -308,7 +334,6 @@ final class RequestStreamingHelper: Sendable {
       toolUseId: toolUseRequest.toolUseId,
       idx: toolUseRequest.idx)
 
-    let toolExecutionContext = ToolExecutionContext(project: context.project, projectRoot: context.projectRoot)
     if let tool = tools.first(where: { $0.name == request.toolName }) {
       do {
         let data = try JSONEncoder().encode(request.input)
@@ -316,7 +341,7 @@ final class RequestStreamingHelper: Sendable {
           toolUseId: request.toolUseId,
           input: data,
           isInputComplete: true,
-          context: toolExecutionContext)
+          context: context.toolExecutionContext)
 
         if !toolUse.isReadonly {
           await context.prepareForWriteToolUse()
@@ -330,16 +355,39 @@ final class RequestStreamingHelper: Sendable {
         content.append(toolUse: FailedToolUse(
           toolUseId: request.toolUseId,
           toolName: request.toolName,
-          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription))
+          errorDescription: Self.failedToParseToolInputError(toolName: request.toolName, error: error).localizedDescription,
+          context: context.toolExecutionContext))
       }
     } else {
       // Tool not found
       content.append(toolUse: FailedToolUse(
         toolUseId: request.toolUseId,
         toolName: request.toolName,
-        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription))
+        errorDescription: Self.missingToolError(toolName: request.toolName).localizedDescription,
+        context: context.toolExecutionContext))
     }
     result.update(with: AssistantMessage(content: content))
+  }
+
+  private func handle(toolResult: Schema.ToolResultMessage) async {
+    guard
+      let toolUse = result.content
+        .compactMap(\.asToolUseRequest)
+        .first(where: { toolUseRequest in
+          toolUseRequest.id == toolResult.toolUseId
+        })?.toolUse as? (any ExternalToolUse)
+    else {
+      defaultLogger.error("Could not find tool use matching \(toolResult.toolUseId)")
+      return
+    }
+
+    switch toolResult.result {
+    case .toolResultSuccessMessage(let toolResultSuccess):
+      try? toolUse.receive(output: toolResultSuccess.success, isSuccess: true)
+
+    case .toolResultFailureMessage(let toolResultFailure):
+      try? toolUse.receive(output: toolResultFailure.failure, isSuccess: false)
+    }
   }
 
   private func endStreamedToolUse() {
@@ -389,10 +437,18 @@ final class RequestStreamingHelper: Sendable {
     }
   }
 
+  private func handle(internalMessage: Schema.InternalContent) {
+    endPreviousContent()
+
+    var content = result.content
+    content.append(.internalContent(internalMessage))
+    result.update(with: AssistantMessage(content: content))
+  }
+
 }
 
 extension Schema.StreamedResponseChunk {
-  var idx: Int {
+  var idx: Int? {
     switch self {
     case .ping(let ping):
       ping.idx
@@ -402,6 +458,8 @@ extension Schema.StreamedResponseChunk {
       toolUseDelta.idx
     case .toolUseRequest(let toolUseRequest):
       toolUseRequest.idx
+    case .toolResultMessage(let toolResult):
+      toolResult.idx
     case .responseError(let error):
       error.idx
     case .reasoningDelta(let reasoningDelta):
@@ -410,6 +468,8 @@ extension Schema.StreamedResponseChunk {
       reasoningSignature.idx
     case .responseUsage(let usage):
       usage.idx
+    case .internalContent(let message):
+      message.idx
     }
   }
 }

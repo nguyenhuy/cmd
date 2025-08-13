@@ -41,6 +41,7 @@ enum ChatMessageContent: Identifiable {
   case nonUserFacingText(ChatMessageTextContent)
   case toolUse(ChatMessageToolUseContent)
   case conversationSummary(ChatMessageTextContent)
+  case internalContent(ChatMessageInternalContent)
 
   var id: UUID {
     switch self {
@@ -54,11 +55,20 @@ enum ChatMessageContent: Identifiable {
       content.id
     case .conversationSummary(let content):
       content.id
+    case .internalContent(let content):
+      content.id
     }
   }
 
   var asText: ChatMessageTextContent? {
     if case .text(let content) = self {
+      return content
+    }
+    return nil
+  }
+
+  var asToolUse: ChatMessageToolUseContent? {
+    if case .toolUse(let content) = self {
       return content
     }
     return nil
@@ -236,6 +246,8 @@ final class ChatMessageReasoningContent: EquatableByIdentifier {
   #endif
 
 }
+
+typealias ChatMessageInternalContent = ChatMessageInternalContentModel
 
 // MARK: - EquatableByIdentifier
 

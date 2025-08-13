@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express"
-import { logError, logInfo } from "../../../logger"
+import { logError, logInfo, saveLogToFile } from "../../../logger"
 import { ModelProvider } from "../../providers/provider"
 import {
 	Message,
@@ -31,8 +31,9 @@ import {
 	CoreSystemMessage,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
+import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
 
-export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]) => {
+export const registerEndpoint = (router: Router, modelProviders: ModelProvider[], getPort: () => number) => {
 	router.post("/sendMessage", async (req: Request, res: Response) => {
 		if (!req.body) {
 			throw new UserFacingError({
@@ -61,6 +62,24 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 
 			const tools = body.tools
 
+			if (body.provider.name == "claude_code") {
+				const threadId = body.threadId
+				if (!threadId) {
+					throw new UserFacingError({
+						message: "Thread ID is required for Claude Code provider.",
+					})
+				}
+				// Claude Code is treated as a special case.
+				const localExecutable = body.provider.settings.localExecutable
+				if (!localExecutable) {
+					throw new UserFacingError({
+						message: "Local executable is required for Claude Code provider.",
+					})
+				}
+				await sendMessageToClaudeCode({ messages, localExecutable, port: getPort(), threadId, router }, res)
+				return
+			}
+
 			const modelProvider = modelProviders.find((provider) => provider.name === body.provider.name)
 			if (!modelProvider) {
 				throw new UserFacingError({
@@ -78,8 +97,21 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					message: `Unsupported model: ${modelName} is not supported by ${body.provider.name}.`,
 				})
 			}
+
+			// Cleanup when disconnected
+			const abortController = new AbortController()
+			res.on("close", () => {
+				logInfo("Response closed (client disconnected), aborting the request.")
+				abortController.abort()
+			})
+			res.on("error", (err) => {
+				logInfo(`Response error: ${err.message}, aborting the request.`)
+				abortController.abort()
+			})
+
 			const { fullStream, usage } = await streamText({
 				model,
+				abortSignal: abortController.signal,
 				tools: tools?.map(mapTool).reduce(
 					(acc, tool) => {
 						acc[tool.name] = tool
@@ -92,9 +124,10 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 					: messages.map(mapMessage),
 				toolCallStreaming: true,
 				providerOptions: generalProviderOptions,
+				maxTokens: 8192,
 			})
 
-			let idx = await processResponseStream(fullStream, res)
+			let idx = await respondUsingResponseStream(mapStream(fullStream), res)
 
 			const usageInfo = await usage
 			const usageRes: ResponseUsage = {
@@ -107,7 +140,8 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 			res.write(JSON.stringify(usageRes))
 			res.end()
 		} catch (error) {
-			logInfo("Request body that led to error:\n\n" + JSON.stringify(req.body, null, 2))
+			const logFile = saveLogToFile("failed_send_message.json", JSON.stringify(req.body, null, 2))
+			logInfo(`Request body that led to error saved to ${logFile}`)
 			logError(error)
 
 			throw addUserFacingError(error, "Failed to process message.")
@@ -115,14 +149,77 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 	})
 }
 
+type MappedOmit<T, K extends keyof T> = { [P in keyof T as P extends K ? never : P]: T[P] }
+
+export type ResponseChunkWithoutIndex = MappedOmit<StreamedResponseChunk, "idx">
+
 /**
- * Processes the response stream received from the provider (and already parsed by Vercel's AI SDK) and convert it to the format expected by the app.
- * @param stream - The resonse stream.
+ * Converts the response stream received from the provider (and already parsed by Vercel's AI SDK) and convert it to the format expected by the app.
+ */
+async function* mapStream(
+	stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>,
+): AsyncIterable<ResponseChunkWithoutIndex> {
+	for await (const chunk of stream) {
+		switch (chunk.type) {
+			case "text-delta":
+				yield {
+					type: "text_delta",
+					text: chunk.textDelta,
+				}
+				break
+			case "tool-call-delta":
+				yield {
+					type: "tool_call_delta",
+					toolName: chunk.toolName,
+					toolUseId: chunk.toolCallId,
+					inputDelta: chunk.argsTextDelta,
+				}
+				break
+			case "tool-call":
+				yield {
+					type: "tool_call",
+					toolName: chunk.toolName,
+					toolUseId: chunk.toolCallId,
+					input: chunk.args,
+				}
+				break
+			case "reasoning":
+				yield {
+					type: "reasoning_delta",
+					delta: chunk.textDelta,
+				}
+				break
+			case "reasoning-signature":
+				yield {
+					type: "reasoning_signature",
+					signature: chunk.signature,
+				}
+				break
+			case "error": {
+				const error = mapResponseError(chunk.error, () => 0)
+				yield error
+				// Throw the error here to stop the stream immediately
+				throw new UserFacingError({
+					message: error.message,
+					statusCode: error.statusCode,
+				})
+			}
+			default:
+				logInfo(`skipping chunk: ${chunk.type}`)
+				break
+		}
+	}
+}
+
+/**
+ * Respond to the request, using the stream of relevant events.
+ * Note: this will add the required event index, as well as send ping on a regular interval.
+ * @param stream - The stream of events to send to the caller.
  * @param res - The Express response object to write the streamed response chunks to.
  * @throws {UserFacingError} If an error occurs while processing the stream or sending the response.
  */
-async function processResponseStream(
-	stream: AsyncIterable<TextStreamPart<Record<string, MappedTool>>>,
+export async function respondUsingResponseStream(
+	stream: AsyncIterable<ResponseChunkWithoutIndex>,
 	res: Response,
 ): Promise<number> {
 	let interval: NodeJS.Timeout | undefined
@@ -140,62 +237,14 @@ async function processResponseStream(
 		}, 1000)
 
 		for await (const chunk of stream) {
-			const transformChunk = (
-				chunk: TextStreamPart<Record<string, MappedTool>>,
-			): StreamedResponseChunk | undefined => {
-				switch (chunk.type) {
-					case "text-delta":
-						return {
-							type: "text_delta",
-							text: chunk.textDelta,
-							idx: i++,
-						}
-					case "tool-call-delta":
-						return {
-							type: "tool_call_delta",
-							toolName: chunk.toolName,
-							toolUseId: chunk.toolCallId,
-							inputDelta: chunk.argsTextDelta,
-							idx: i++,
-						}
-					case "tool-call":
-						return {
-							type: "tool_call",
-							toolName: chunk.toolName,
-							toolUseId: chunk.toolCallId,
-							input: chunk.args,
-							idx: i++,
-						}
-					case "reasoning":
-						return {
-							type: "reasoning_delta",
-							delta: chunk.textDelta,
-							idx: i++,
-						}
-					case "reasoning-signature":
-						return {
-							type: "reasoning_signature",
-							signature: chunk.signature,
-							idx: i++,
-						}
-					case "error":
-						return mapResponseError(chunk.error, () => i++)
-					default:
-						logInfo(`skipping chunk: ${chunk.type}`)
-						return undefined
-				}
-			}
-			const newChunk = transformChunk(chunk)
-			if (newChunk === undefined) {
-				continue // skip unsupported chunk types
-			}
-			chunks.push(newChunk)
+			const chunkWithIdx: StreamedResponseChunk = { ...chunk, idx: i++ }
+			chunks.push(chunkWithIdx)
 			if (res.getHeader("Content-Type") === undefined) {
 				res.setHeader("Content-Type", "text/event-stream")
 				res.setHeader("Cache-Control", "no-cache")
 				res.setHeader("Connection", "keep-alive")
 			}
-			res.write(JSON.stringify(newChunk))
+			res.write(JSON.stringify(chunkWithIdx))
 		}
 		logInfo("Stream ended")
 		if (interval) {
@@ -209,7 +258,7 @@ async function processResponseStream(
 		if (interval) {
 			clearInterval(interval)
 		}
-		console.log({ error })
+		logError(`Error while processing stream: ${error}`)
 		throw addUserFacingError(error, "Failed to send message.")
 	}
 	return i
@@ -221,10 +270,12 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 		| "text_delta"
 		| "tool_call"
 		| "tool_call_delta"
+		| "tool_result"
 		| "ping"
 		| "reasoning_delta"
 		| "reasoning_signature"
 		| "usage"
+		| "internal_content"
 		| undefined
 	let text: string | undefined
 
@@ -273,7 +324,7 @@ const mapMessage = (message: Message): CoreMessage => {
 		return {
 			role: "system",
 			content: message.content.map(asTextMessage)[0].text,
-		} as CoreSystemMessage
+		} satisfies CoreSystemMessage
 	} else if (message.role === "user") {
 		return {
 			role: "user",
@@ -330,7 +381,7 @@ const mapMessage = (message: Message): CoreMessage => {
 				})
 				return result
 			}),
-		} as CoreUserMessage
+		} satisfies CoreUserMessage
 	} else if (message.role === "assistant") {
 		return {
 			role: "assistant",
@@ -339,23 +390,23 @@ const mapMessage = (message: Message): CoreMessage => {
 					if (isTextMessage(content)) {
 						if (content.text.length > 0) {
 							return {
-								type: "text",
+								type: "text" as const,
 								text: content.text,
-							} as TextPart
+							} satisfies TextPart
 						} else {
 							// skipping messages with empty text
 							return undefined
 						}
 					} else if (isToolUseRequestMessage(content)) {
 						return {
-							type: "tool-call",
+							type: "tool-call" as const,
 							toolCallId: content.toolUseId,
 							toolName: content.toolName,
 							args: content.input,
 						}
 					} else if (isReasoningMessage(content)) {
 						return {
-							type: "reasoning",
+							type: "reasoning" as const,
 							text: content.text,
 							signature: content.signature,
 						}
@@ -363,7 +414,7 @@ const mapMessage = (message: Message): CoreMessage => {
 					throw new Error(`Unsupported content type: ${content.type}`)
 				})
 				.filter(isDefined),
-		} as CoreAssistantMessage
+		} satisfies CoreAssistantMessage
 	} else if (message.role === "tool") {
 		return {
 			role: "tool",
@@ -373,7 +424,7 @@ const mapMessage = (message: Message): CoreMessage => {
 				toolName: content.toolName,
 				result: content.result,
 			})),
-		} as CoreToolMessage
+		} satisfies CoreToolMessage
 	} else {
 		throw new Error(`Unsupported message role: ${message.role}`)
 	}
