@@ -2,6 +2,9 @@ name: Draft GitHub Release
 
 on:
   workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
 jobs:
   distribute-app:
     runs-on: macos-15
