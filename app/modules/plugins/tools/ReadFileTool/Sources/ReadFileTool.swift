@@ -106,7 +106,6 @@ public final class ReadFileTool: NonStreamableTool {
 
     var mappedInput: Input { internalState }
 
-    @Dependency(\.server) private var server
     @Dependency(\.fileManager) private var fileManager
     @Dependency(\.chatContextRegistry) private var chatContextRegistry
 
@@ -168,9 +167,8 @@ public final class ReadFileTool: NonStreamableTool {
 // MARK: - ReadFileTool.Use + DisplayableToolUse
 
 extension ReadFileTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: mappedInput)))
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput, projectRoot: context.projectRoot))
   }
 }
 

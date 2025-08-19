@@ -116,6 +116,10 @@ public final class EditFilesTool: Tool {
       /// Baseline content is a property set locally, not sent by the LLM.
       /// It is used to help persist the content of the file before applying changes, so that the change is correctly displayed even after the file has changed.
       var baseLineContent: String?
+      /// When an external tool provides an input that is not consistent without our state, for instance the search/replace cannot be applied to our last known content,
+      /// `correctedChanges` is created to help always be able to show a diff.
+      /// The corrected diff is created to match the change between our last know content and the current content. This ensures that we can create a matching diff.
+      var correctedChanges: [Input.FileChange.Change]?
     }
 
     public struct Input: Codable, Sendable {
@@ -222,10 +226,10 @@ public final class EditFilesTool: Tool {
         do {
           if callingTool.shouldAutoApply {
             // Apply the changes.
-            await viewModel.applyAllChanges()
+            await editViewModel.applyAllChanges()
           } else {
             // Wait for the user to accept the changes.
-            viewModel.acknowledgeSuggestionReceived()
+            editViewModel.acknowledgeSuggestionReceived()
           }
         }
       }
@@ -238,32 +242,21 @@ public final class EditFilesTool: Tool {
     let _isInputComplete: Atomic<Bool>
 
     @MainActor
-    var viewModel: ToolUseViewModel {
+    var editViewModel: EditFilesToolUseViewModel {
       if let _viewModel {
         return _viewModel
       }
-      let viewModel = ToolUseViewModel(
+      let viewModel = EditFilesToolUseViewModel(
         status: status,
         input: mappedInput.value,
         isInputComplete: isInputComplete,
         setResult: { [weak self, mappedInput, context] toolUseResult in
           self?.updateStatus.yield(.completed(toolUseResult.asToolUseResult))
           // Update tracked content for successfully applied files
-          let appliedFiles = toolUseResult.fileChanges
-            .filter { fileChange in
-              switch fileChange.status {
-              case .applied:
-                true
-              default:
-                false
-              }
-            }
-            .compactMap { fileChange in
-              mappedInput.value.first { $0.path.path == fileChange.path }
-            }
-          context.updateFilesContent(for: appliedFiles)
+          context.updateFilesContent(changes: toolUseResult.fileChanges, input: mappedInput.value)
         },
-        toolUseResult: formattedOutput.value)
+        toolUseResult: formattedOutput.value,
+        projectRoot: context.projectRoot)
       _viewModel = viewModel
       return viewModel
     }
@@ -272,7 +265,7 @@ public final class EditFilesTool: Tool {
     private let mappedInput: Atomic<[FileChange]>
     private let formattedOutput: Atomic<FormattedOutput>
 
-    @MainActor private var _viewModel: ToolUseViewModel?
+    @MainActor private var _viewModel: EditFilesToolUseViewModel?
   }
 
   public let inputSchema: JSON =
@@ -405,7 +398,9 @@ public final class EditFilesTool: Tool {
 // MARK: - EditFilesTool.Use + DisplayableToolUse
 
 extension EditFilesTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: viewModel))
+
+  @MainActor
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(editViewModel)
   }
 }

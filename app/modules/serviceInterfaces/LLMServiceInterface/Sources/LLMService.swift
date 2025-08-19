@@ -5,9 +5,10 @@ import ChatFoundation
 import ConcurrencyFoundation
 import Foundation
 import LLMFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import ToolFoundation
 
+/// Note: this stream of update replays all past updates when enumerated (including for the wrapped array)
 public typealias UpdateStream = CurrentValueStream<[CurrentValueStream<AssistantMessage>]>
 
 // MARK: - ChatContext

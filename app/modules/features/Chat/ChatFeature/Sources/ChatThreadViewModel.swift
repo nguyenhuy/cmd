@@ -14,9 +14,9 @@ import FoundationInterfaces
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
+import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
-import ServerServiceInterface
 import SettingsServiceInterface
 import ThreadSafe
 import ToolFoundation
@@ -36,9 +36,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   }
   #endif
 
-  convenience init() {
+  convenience init(id: UUID? = nil) {
     self.init(
-      id: UUID(),
+      id: id ?? UUID(),
       name: nil,
       messages: [])
   }
@@ -83,6 +83,10 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       }
     }.store(in: &cancellables)
 
+    context.handle(requestPersistence: { [weak self] in
+      Task { await self?.persistThread() }
+    })
+
     @Dependency(\.chatContextRegistry) var chatContextRegistry
     chatContextRegistry.register(context: context, for: id.uuidString)
   }
@@ -103,7 +107,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   private(set) var isShowingChatHistory = false
 
-  let context: ChatThreadContext
+  private(set) var context: ChatThreadContext
 
   private(set) var name: String? {
     didSet {
@@ -142,7 +146,18 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     isShowingChatHistory.toggle()
   }
 
-  /// Are we queing too much on the main thread?
+  /// Add new message content to the chat thread. Usually this is done automatically by sending the content of the input in `sendMessage`.
+  /// This method can be used when sending messages received from an external source, like from Xcode AI chat.
+  func add(messageContents: [ChatMessageContent], role: MessageRole) {
+    let message = ChatMessageViewModel(
+      content: messageContents,
+      role: role)
+    messages.append(message)
+    for content in messageContents {
+      events.append(.message(.init(content: content, role: role)))
+    }
+  }
+
   @MainActor
   func sendMessage() async {
     let projectInfo = updateProjectInfo()
@@ -170,17 +185,19 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     input.textInput = TextInput()
     input.attachments = []
 
-    // TODO: reformat the string sent to the LLM
-    let messageContent = ChatMessageContent.text(ChatMessageTextContent(
-      projectRoot: projectInfo?.dirPath,
-      text: textInput.string.string,
-      attachments: attachments))
-    let userMessage = ChatMessageViewModel(
-      content: [messageContent],
-      role: .user)
+    if !textInput.string.string.isEmpty {
+      // TODO: reformat the string sent to the LLM
+      let messageContent = ChatMessageContent.text(ChatMessageTextContent(
+        projectRoot: projectInfo?.dirPath,
+        text: textInput.string.string,
+        attachments: attachments))
+      let userMessage = ChatMessageViewModel(
+        content: [messageContent],
+        role: .user)
 
-    events.append(.message(.init(content: messageContent, role: .user)))
-    messages.append(userMessage)
+      events.append(.message(.init(content: messageContent, role: .user)))
+      messages.append(userMessage)
+    }
     let messages = messages.apiFormat
 
     if !textInput.string.string.isEmpty, name == nil {
@@ -214,11 +231,11 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             },
             chatMode: input.mode,
             threadId: self.id.uuidString),
-          handleUpdateStream: { newMessages in
+          handleUpdateStream: { newMessagesUpdates in
             Task { @MainActor [weak self] in
               guard let self else { return }
               var trackedMessages = Set<UUID>()
-              for await update in newMessages.updates {
+              for await update in newMessagesUpdates.futureUpdates {
                 for newMessage in update.filter({ !trackedMessages.contains($0.id) }) {
                   trackedMessages.insert(newMessage.id)
 
@@ -227,7 +244,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                     role: .assistant)
                   self.messages.append(newMessageState)
 
-                  for await update in newMessage.updates {
+                  for await update in newMessage.futureUpdates {
                     // new message content was received
                     if let newContent = update.content.last {
                       var content = newMessageState.content
@@ -242,7 +259,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
                       }
                       if let toolUse = newContent.asToolUse?.toolUse {
                         Task.detached { [weak self] in
-                          for await _ in toolUse.updates {
+                          for await _ in toolUse.futureUpdates {
                             await self?.persistThread()
                           }
                         }
@@ -479,13 +496,22 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 @ThreadSafe
 final class ChatThreadContext: LiveToolExecutionContext {
 
-  init(knownFilesContent: [String: String] = [:], userInfo: [String: any Codable & Sendable] = [:]) {
+  init(
+    knownFilesContent: [String: String] = [:],
+    userInfo: [String: any Codable & Sendable] = [:],
+    requestPersistence: @escaping @Sendable () -> Void = { })
+  {
     self.knownFilesContent = knownFilesContent
     self.userInfo = userInfo
+    _requestPersistence = requestPersistence
   }
 
   private(set) var knownFilesContent: [String: String]
   private(set) var userInfo: [String: any Codable & Sendable]
+
+  func handle(requestPersistence: @escaping @Sendable () -> Void) {
+    _requestPersistence = requestPersistence
+  }
 
   func knownFileContent(for path: URL) -> String? {
     knownFilesContent[path.absoluteString]
@@ -514,6 +540,12 @@ final class ChatThreadContext: LiveToolExecutionContext {
   func set(pluginState value: some Decodable & Encodable & Sendable, for key: String) {
     userInfo[key] = value
   }
+
+  func requestPersistence() {
+    _requestPersistence()
+  }
+
+  private var _requestPersistence: @Sendable () -> Void
 
 }
 

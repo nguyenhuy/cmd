@@ -117,7 +117,7 @@ extension ToolUse {
       if let result = try status.value.asOutput {
         return result
       }
-      for await value in status {
+      for await value in status.futureUpdates {
         if let result = try value.asOutput {
           return result
         }
@@ -182,13 +182,44 @@ extension ToolUse where SomeTool: NonStreamableTool {
   public func receive(inputUpdate _: Data, isLast _: Bool) throws { }
 }
 
-// MARK: - DisplayableToolUse
-
-/// A tool that can be displayed in th UI.
-public protocol DisplayableToolUse: ToolUse {
+/// An object that can be represented as a view
+public protocol ViewRepresentable {
   associatedtype SomeView: View
   @MainActor
   var body: SomeView { get }
+}
+
+public final class AnyToolUseViewModel: Sendable, ViewRepresentable, StreamRepresentable {
+  public init(_ viewModel: some Sendable & ViewRepresentable & StreamRepresentable) {
+    _body = { AnyView(viewModel.body) }
+    _streamRepresentation = { viewModel.streamRepresentation }
+  }
+
+  @MainActor
+  public var body: some View { _body() }
+  @MainActor
+  public var streamRepresentation: String? { _streamRepresentation() }
+
+  private let _body: @MainActor () -> AnyView
+  private let _streamRepresentation: @MainActor () -> String?
+
+}
+
+// MARK: - DisplayableToolUse
+
+/// A tool that can be displayed in th UI.
+public protocol DisplayableToolUse: ToolUse, StreamRepresentable, ViewRepresentable where SomeView == ViewModel.SomeView {
+  associatedtype ViewModel: ViewRepresentable & StreamRepresentable
+  @MainActor
+  var viewModel: ViewModel { get }
+}
+
+extension DisplayableToolUse {
+  @MainActor
+  public var body: ViewModel.SomeView { viewModel.body }
+
+  @MainActor
+  public var streamRepresentation: String? { viewModel.streamRepresentation }
 }
 
 // MARK: - ToolExecutionContext
@@ -229,6 +260,11 @@ public protocol LiveToolExecutionContext: Sendable, AnyObject {
   /// A properties that allows chat plugins (e.g. tools) to store state relevant to them within the context of a conversation.
   func pluginState<T: Codable & Sendable>(for key: String) -> T?
   func set(pluginState: some Codable & Sendable, for key: String)
+
+  /// Note: `persist` is usually called when the tool knows that the state is not persisted otherwise,
+  /// which means that implementation details are leaking between independent modules...
+  /// Signals that the state has changed and should be persisted.
+  func requestPersistence()
 }
 
 // MARK: - ToolUseExecutionStatus

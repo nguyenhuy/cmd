@@ -136,8 +136,8 @@ public final class ClaudeCodeBashTool: ExternalTool {
 // MARK: - ClaudeCodeBashTool.Use + DisplayableToolUse
 
 extension ClaudeCodeBashTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    let (stdoutStream, stdoutContinuation) = BroadcastedStream<Data>.makeStream()
+  public var viewModel: AnyToolUseViewModel {
+    let (stdoutStream, stdoutContinuation) = BroadcastedStream<Data>.makeStream(replayStrategy: .replayAll)
     Task {
       let output = await self.status.lastValue
       if
@@ -150,18 +150,17 @@ extension ClaudeCodeBashTool.Use: DisplayableToolUse {
       stdoutContinuation.finish()
     }
 
-    let (stderrStream, stderrContinuation) = BroadcastedStream<Data>.makeStream()
+    let (stderrStream, stderrContinuation) = BroadcastedStream<Data>.makeStream(replayStrategy: .replayAll)
     Task {
       _ = await self.status.lastValue
       stderrContinuation.finish()
     }
 
-    let viewModel = ToolUseViewModel(
+    return AnyToolUseViewModel(ToolUseViewModel(
       command: input.command,
       status: status,
       stdout: Future.Just(stdoutStream),
       stderr: Future.Just(stderrStream),
-      kill: { })
-    return AnyView(ToolUseView(toolUse: viewModel))
+      kill: { }))
   }
 }

@@ -8,6 +8,7 @@ import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeWebFetchTool
@@ -129,7 +130,7 @@ final class WebFetchToolUseViewModel {
     self.status = status.value
     self.input = input
     Task { [weak self] in
-      for await status in status {
+      for await status in status.futureUpdates {
         self?.status = status
       }
     }
@@ -137,4 +138,33 @@ final class WebFetchToolUseViewModel {
 
   let input: ClaudeCodeWebFetchTool.Use.Input
   var status: ToolUseExecutionStatus<ClaudeCodeWebFetchTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension WebFetchToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(WebFetchToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success:
+      return """
+        ⏺ WebFetch(\(input.url))
+          ⎿ Content fetched and processed
+
+
+        """
+
+    case .failure(let error):
+      return """
+        ⏺ WebFetch(\(input.url))
+          ⎿ Failed: \(error.localizedDescription)
+
+
+        """
+    }
+  }
 }

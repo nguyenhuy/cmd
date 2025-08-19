@@ -68,7 +68,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
       // The ouput is in the format (line number)→... and can contain extra XML like info.
 
       let parsedOutput = output
-        .split(separator: "\n")
+        .split(separator: "\n", omittingEmptySubsequences: false)
         .compactMap { line in try? /\s*[0-9]+→(.*)/.wholeMatch(in: line)?.output.1 }
         .joined(separator: "\n")
       updateStatus.complete(with: .success(.init(content: parsedOutput, uri: input.file_path)))
@@ -134,7 +134,7 @@ public final class ClaudeCodeReadTool: ExternalTool {
 // MARK: - ClaudeCodeReadTool.Use + DisplayableToolUse
 
 extension ClaudeCodeReadTool.Use: DisplayableToolUse {
-  public var body: AnyView {
+  public var viewModel: AnyToolUseViewModel {
     let lineRange: ReadFileTool.Use.Input.Range? = {
       if let limit = input.limit {
         if let offset = input.offset {
@@ -149,7 +149,7 @@ extension ClaudeCodeReadTool.Use: DisplayableToolUse {
       return nil
     }()
 
-    return AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: .init(path: input.file_path, lineRange: lineRange))))
+    return AnyToolUseViewModel(ToolUseViewModel(
+      status: status, input: .init(path: input.file_path, lineRange: lineRange), projectRoot: context.projectRoot))
   }
 }

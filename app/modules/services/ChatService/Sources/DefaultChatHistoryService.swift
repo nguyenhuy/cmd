@@ -9,6 +9,7 @@ import DependencyFoundation
 import Foundation
 import FoundationInterfaces
 import GRDB
+import JSONFoundation
 import LLMServiceInterface
 import LoggingServiceInterface
 import ToolFoundation
@@ -61,7 +62,7 @@ final class DefaultChatHistoryService: ChatHistoryService, Sendable {
       at: rawContentPath.deletingLastPathComponent(),
       withIntermediateDirectories: true,
       attributes: nil)
-    let encoder = JSONEncoder()
+    let encoder = JSONEncoder.sortingKeys
 
     let objectsDir = rawContentPath.deletingLastPathComponent().appendingPathComponent("objects")
     encoder.userInfo[AttachmentSerializer.attachmentSerializerKey] = AttachmentSerializer(

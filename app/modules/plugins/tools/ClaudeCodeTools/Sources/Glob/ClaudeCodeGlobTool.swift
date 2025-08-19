@@ -8,6 +8,7 @@ import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeGlobTool
@@ -125,7 +126,7 @@ final class GlobToolUseViewModel {
     self.status = status.value
     self.input = input
     Task { [weak self] in
-      for await status in status {
+      for await status in status.futureUpdates {
         self?.status = status
       }
     }
@@ -133,4 +134,33 @@ final class GlobToolUseViewModel {
 
   let input: ClaudeCodeGlobTool.Use.Input
   var status: ToolUseExecutionStatus<ClaudeCodeGlobTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension GlobToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(GlobToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        ⏺ Glob(\(input.pattern))
+          ⎿ Found \(output.files.count) files
+
+
+        """
+
+    case .failure(let error):
+      return """
+        ⏺ Glob(\(input.pattern))
+          ⎿ Failed: \(error.localizedDescription)
+
+
+        """
+    }
+  }
 }

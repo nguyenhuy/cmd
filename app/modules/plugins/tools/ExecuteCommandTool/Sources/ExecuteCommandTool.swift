@@ -8,7 +8,6 @@ import Dependencies
 import Foundation
 import JSONFoundation
 import ShellServiceInterface
-import SwiftUI
 import ThreadSafe
 import ToolFoundation
 
@@ -97,8 +96,8 @@ public final class ExecuteCommandTool: NonStreamableTool {
             useInteractiveShell: true)
           { execution, _, stdout, stderr in
             self.runningProcess = execution
-            self.setStdoutStream(.init(stdout))
-            self.setStderrStream(.init(stderr))
+            self.setStdoutStream(.init(replayStrategy: .replayAll, stdout))
+            self.setStderrStream(.init(replayStrategy: .replayAll, stderr))
           }
 
           let output = Output(
@@ -112,7 +111,7 @@ public final class ExecuteCommandTool: NonStreamableTool {
                 .completed(
                   .failure(
                     AppError(
-                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder().encode(output), encoding: .utf8) ?? "")"))))
+                      "The command \(commandWasManuallyInterrupted ? "was interrupted by the user. Wait for further instructions." : "failed").\n\(String(data: JSONEncoder.sortingKeys.encode(output), encoding: .utf8) ?? "")"))))
           }
         } catch {
           updateStatus.complete(with: .failure(error))
@@ -195,50 +194,6 @@ public final class ExecuteCommandTool: NonStreamableTool {
 
 }
 
-// MARK: - ToolUseViewModel
-
-@Observable
-@MainActor
-final class ToolUseViewModel {
-
-  init(
-    command: String,
-    status: ExecuteCommandTool.Use.Status,
-    stdout: Future<BroadcastedStream<Data>, Never>,
-    stderr: Future<BroadcastedStream<Data>, Never>,
-    kill: @escaping () async -> Void)
-  {
-    self.command = command
-    self.status = status.value
-    self.kill = kill
-    Task {
-      for await status in status {
-        self.status = status
-      }
-    }
-    Task {
-      let stdoutStream = await stdout.value
-      for await data in stdoutStream {
-        self.stdData += data
-        self.std = String(data: stdData, encoding: .utf8)
-      }
-    }
-    Task {
-      let stderrStream = await stderr.value
-      for await data in stderrStream {
-        self.stdData += data
-        self.std = String(data: stdData, encoding: .utf8)
-      }
-    }
-  }
-
-  let command: String
-  var status: ToolUseExecutionStatus<ExecuteCommandTool.Use.Output>
-  var std: String?
-  var stdData = Data()
-  let kill: () async -> Void
-}
-
 extension String {
   /// Truncate the string to a specified limit, removing from the middle if needed.
   func trimmed(toNotExceed limit: Int) -> String {
@@ -254,12 +209,12 @@ extension String {
 // MARK: - ExecuteCommandTool.Use + DisplayableToolUse
 
 extension ExecuteCommandTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(ToolUseView(toolUse: ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(
       command: input.command,
       status: status,
       stdout: stdoutStream,
       stderr: stderrStream,
-      kill: killRunningProcess)))
+      kill: killRunningProcess))
   }
 }

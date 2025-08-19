@@ -6,6 +6,8 @@ import AppEventServiceInterface
 import AppKit
 import AppUpdateService
 import AppUpdateServiceInterface
+import ChatCompletionService
+import ChatCompletionServiceInterface
 import ChatService
 import ChatServiceInterface
 import CheckpointService
@@ -19,11 +21,11 @@ import FoundationInterfaces
 import HighlighterServiceInterface
 import LLMService
 import LLMServiceInterface
+import LocalServerService
+import LocalServerServiceInterface
 import LoggingServiceInterface
 import PermissionsService
 import PermissionsServiceInterface
-import ServerService
-import ServerServiceInterface
 import SettingsService
 import SettingsServiceInterface
 import ShellService
@@ -68,6 +70,12 @@ extension ChatContextRegistryServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatContextRegistryService { AppScope.shared.chatContextRegistry }
 }
 
+// MARK: - ChatCompletionServiceDependencyKey + DependencyKey
+
+extension ChatCompletionServiceDependencyKey: DependencyKey {
+  public static var liveValue: ChatCompletionService { AppScope.shared.chatCompletionService }
+}
+
 // MARK: - CheckpointServiceDependencyKey + DependencyKey
 
 extension CheckpointServiceDependencyKey: DependencyKey {
@@ -106,10 +114,10 @@ extension PermissionsServiceDependencyKey: DependencyKey {
   public static var liveValue: PermissionsService { AppScope.shared.permissionsService }
 }
 
-// MARK: - ServerDependencyKey + DependencyKey
+// MARK: - LocalServerDependencyKey + DependencyKey
 
-extension ServerDependencyKey: DependencyKey {
-  public static var liveValue: Server { AppScope.shared.server }
+extension LocalServerDependencyKey: DependencyKey {
+  public static var liveValue: LocalServer { AppScope.shared.localServer }
 }
 
 // MARK: - SettingsServiceDependencyKey + DependencyKey
@@ -168,6 +176,10 @@ extension AppScope: ChatHistoryServiceProviding { }
 
 extension AppScope: ChatContextRegistryServiceProviding { }
 
+// MARK: - AppScope + ChatCompletionServiceProviding
+
+extension AppScope: ChatCompletionServiceProviding { }
+
 // MARK: - AppScope + CheckpointServiceProviding
 
 extension AppScope: CheckpointServiceProviding { }
@@ -196,9 +208,9 @@ extension AppScope: LLMServiceProviding { }
 
 extension AppScope: PermissionsServiceProviding { }
 
-// MARK: - AppScope + ServerProviding
+// MARK: - AppScope + LocalServerProviding
 
-extension AppScope: ServerProviding { }
+extension AppScope: LocalServerProviding { }
 
 // MARK: - AppScope + SettingsServiceProviding
 

@@ -6,8 +6,8 @@ import AppFoundation
 import ConcurrencyFoundation
 import Foundation
 import JSONFoundation
+import LocalServerServiceInterface
 import LoggingServiceInterface
-import ServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -256,7 +256,7 @@ public struct ClaudeCodeGrepInput: Codable, Sendable {
 /// The output is in a simple format showing file paths, like:
 /// ```
 /// Found 2 files
-/// /Users/me/cmd/app/modules/serviceInterfaces/ServerServiceInterface/Sources/sendMessageSchema.generated.swift
+/// /Users/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
 /// /Users/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
 /// ```
 private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
@@ -340,12 +340,11 @@ private func parseGrepOutputWithContext(rawOutput: String, projectRoot: String?)
 // MARK: - ClaudeCodeGrepTool.Use + DisplayableToolUse
 
 extension ClaudeCodeGrepTool.Use: DisplayableToolUse {
-  public var body: AnyView {
+  public var viewModel: AnyToolUseViewModel {
     let mappedInput = SearchFilesTool.Use.Input(
       directoryPath: input.path ?? input.projectRoot ?? "/",
       regex: input.pattern,
       filePattern: input.glob)
-    return AnyView(ToolUseView(toolUse: ToolUseViewModel(
-      status: status, input: mappedInput)))
+    return AnyToolUseViewModel(ToolUseViewModel(status: status, input: mappedInput))
   }
 }

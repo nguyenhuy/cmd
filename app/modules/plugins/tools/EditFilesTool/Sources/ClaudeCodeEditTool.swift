@@ -2,13 +2,17 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
+import ChatServiceInterface
 @preconcurrency import Combine
 import ConcurrencyFoundation
+import Dependencies
 import DLS
 import Foundation
+import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
 import SwiftUI
+import ThreadSafe
 import ToolFoundation
 
 // MARK: - ClaudeCodeEditTool
@@ -17,7 +21,8 @@ public final class ClaudeCodeEditTool: ExternalTool {
 
   public init() { }
 
-  public final class Use: ExternalToolUse, Sendable {
+  @ThreadSafe
+  public final class Use: ExternalToolUse, @unchecked Sendable {
     public init(
       callingTool: ClaudeCodeEditTool,
       toolUseId: String,
@@ -74,11 +79,32 @@ public final class ClaudeCodeEditTool: ExternalTool {
     public func receive(output _: String) throws {
       // Placeholder parsing - using placeholder values for now
       let placeholderOutput = "Edit completed successfully"
-      // TODO: handle failures
       updateStatus.complete(with: .success(placeholderOutput))
+      updateTrackedFileContent()
+      Task { [weak self] in
+        // It seems that Claude Code can send the result of the file edit before the file has been updated on disk,
+        // which is surprising.
+        // We re-update the file content 1s later to work around this.
+        try await Task.sleep(nanoseconds: 1_000_000)
+        self?.updateTrackedFileContent()
+      }
     }
 
-    private let mappedInput: [FileChange]
+    @Dependency(\.chatContextRegistry) private var chatContextRegistry
+    @Dependency(\.fileManager) private var fileManager
+    private var mappedInput: [FileChange]
+
+    private func updateTrackedFileContent() {
+      do {
+        let context = try chatContextRegistry.context(for: context.threadId)
+        try mappedInput.forEach { change in
+          let fileContent = try fileManager.read(contentsOf: change.path)
+          context.set(knownFileContent: fileContent, for: change.path)
+        }
+      } catch {
+        defaultLogger.error("Failed to update tracked file content", error)
+      }
+    }
 
   }
 
@@ -156,13 +182,22 @@ extension ClaudeCodeEditTool.Use.Input {
 }
 
 extension ClaudeCodeEditTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    let viewModel = ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(EditFilesToolUseViewModel(
       status: status,
       input: mappedInput,
       isInputComplete: true,
-      setResult: { _ in })
+      setResult: { _ in },
+      correctInput: { [weak self] file, fixedInput in
+        guard let self else { return }
+        mappedInput = mappedInput.correcting(file: file, with: fixedInput)
+        updateTrackedFileContent()
 
-    return AnyView(ToolUseView(toolUse: viewModel))
+        do {
+          try chatContextRegistry.context(for: context.threadId).requestPersistence()
+        } catch {
+          defaultLogger.error("Failed to persist thread")
+        }
+      }))
   }
 }

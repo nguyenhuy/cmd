@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 import XcodeControllerServiceInterface
 
@@ -147,15 +148,44 @@ final class ToolUseViewModel {
   {
     self.buildType = buildType
     self.status = status.value
-    Task {
-      for await status in status {
-        self.status = status
+    Task { [weak self] in
+      for await status in status.futureUpdates {
+        self?.status = status
       }
     }
   }
 
   let buildType: BuildType
   var status: ToolUseExecutionStatus<BuildTool.Use.Output>
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success(let output):
+      return """
+        ⏺ Build(\(buildType.rawValue))
+          ⎿ \(output.isSuccess ? "Succeeded" : "Failed")
+
+
+        """
+
+    case .failure(let error):
+      return """
+        ⏺ Build(\(buildType.rawValue))
+          ⎿ Failed: \(error.localizedDescription)
+
+
+        """
+    }
+  }
 }
 
 extension BuildMessage {

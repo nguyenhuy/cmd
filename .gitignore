@@ -6,3 +6,5 @@ tmp
 .build
 build
 .swiftpm
+.serena
+*.tmp

@@ -8,7 +8,7 @@ import Testing
 
 import AppFoundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 
 @testable import LLMService
 
@@ -17,7 +17,7 @@ final class SendOneMessageTests {
   @Test("SendOneMessage sends correct payload")
   func test_sendOneMessage_sendsCorrectPayload() async throws {
     let requestCompleted = expectation(description: "The request completed")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { path, data, _ in
       #expect(path == "sendMessage")
@@ -60,7 +60,7 @@ final class SendOneMessageTests {
     let initialStreamExpectationValidated = expectation(description: "initial stream expectation validated")
     let chunksReceived = expectation(description: "All chunk received")
     let messageUpdatesReceived = expectation(description: "All message update received")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       // Wait here to avoid concurrency issues that would make the test flaky.
@@ -90,14 +90,14 @@ final class SendOneMessageTests {
     var messageUpdateCount = 0
     var contentUpdateCount = 0
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         messageUpdateCount += 1
         if messageUpdateCount == 1 {
           // First update has one piece of text content
           #expect(message.content.count == 1)
           let updatingTextContent = try #require(message.content.first?.asText)
 
-          for await textContent in updatingTextContent.updates {
+          for await textContent in updatingTextContent.futureUpdates {
             contentUpdateCount += 1
             if contentUpdateCount == 1 {
               #expect(textContent.content == "hi what can I do?")
@@ -120,7 +120,7 @@ final class SendOneMessageTests {
     let initialStreamExpectationValidated = expectation(description: "initial stream expectation validated")
     let chunksReceived = expectation(description: "All chunk received")
     let messageUpdatesReceived = expectation(description: "All message update received")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       // Wait here to avoid concurrency issues that would make the test flaky.
@@ -149,14 +149,14 @@ final class SendOneMessageTests {
     var messageUpdateCount = 0
     var contentUpdateCount = 0
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         messageUpdateCount += 1
         if messageUpdateCount == 1 {
           // First update has one piece of text content
           #expect(message.content.count == 1)
           let updatingTextContent = try #require(message.content.first?.asText)
 
-          for await textContent in updatingTextContent.updates {
+          for await textContent in updatingTextContent.futureUpdates {
             contentUpdateCount += 1
             if contentUpdateCount == 1 {
               #expect(textContent.content == "hi")
@@ -179,7 +179,7 @@ final class SendOneMessageTests {
     let toolCallReceived = expectation(description: "tool Call received")
     let messagesReceived = expectation(description: "All message update received")
     let initialStreamExpectationValidated = expectation(description: "initial stream expectation validated")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       // Wait here to avoid concurrency issues that would make the test flaky.
@@ -219,7 +219,7 @@ final class SendOneMessageTests {
 
     var messageUpdateCount = 0
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         messageUpdateCount += 1
         if messageUpdateCount == 1 {
           // First update has one piece of text content
@@ -247,7 +247,7 @@ final class SendOneMessageTests {
     let toolCallReceived = expectation(description: "tool Call received")
     let messagesReceived = expectation(description: "All message update received")
     let initialStreamExpectationValidated = expectation(description: "initial stream expectation validated")
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       // Wait here to avoid concurrency issues that would make the test flaky.
@@ -272,7 +272,7 @@ final class SendOneMessageTests {
     initialStreamExpectationValidated.fulfill()
 
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
         #expect(message.content.count == 1)
         let toolCall = try #require(message.content.last?.asToolUseRequest)
@@ -291,7 +291,7 @@ final class SendOneMessageTests {
 
   @Test("SendOneMessage fails with CancellationError when cancelled")
   func test_sendOneMessage_isCancelled() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     let requestStarted = expectation(description: "Request started")
     let requestCancelled = expectation(description: "Request cancelled")
@@ -301,7 +301,7 @@ final class SendOneMessageTests {
       requestStarted.fulfill()
 
       try await fulfillment(of: requestCancelled)
-      // This will be ignored by the ServerMock as we've already returned a cancellation error.
+      // This will be ignored by the LocalServerMock as we've already returned a cancellation error.
       return okServerResponse
     }
 
@@ -337,7 +337,7 @@ final class SendOneMessageTests {
 
   @Test("SendOneMessage stops streaming when cancelled")
   func test_sendOneMessage_stopsStreamingWhenCancelled() async throws {
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     let requestStarted = expectation(description: "Request started")
     let requestCancelled = expectation(description: "Request cancelled")
@@ -357,7 +357,7 @@ final class SendOneMessageTests {
         }
         """.utf8Data)
 
-      // This will be ignored by the ServerMock as we've already returned a cancellation error.
+      // This will be ignored by the LocalServerMock as we've already returned a cancellation error.
       return okServerResponse
     }
 
@@ -370,7 +370,7 @@ final class SendOneMessageTests {
         context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
         handleUpdateStream: { updateStream in
           Task {
-            for await _ in updateStream {
+            for await _ in updateStream.futureUpdates {
               Issue.record("Expected no updates")
             }
             updateStreamFinished.fulfill()
@@ -405,7 +405,7 @@ final class SendOneMessageTests {
     let chunk4Validated = expectation(description: "Fourth chunk validated")
     let toolCallValidated = expectation(description: "Tool call validated")
 
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       // Wait here to avoid concurrency issues that would make the test flaky.
@@ -476,7 +476,7 @@ final class SendOneMessageTests {
 
     var _toolUse: TestStreamingTool<TestToolInput, EmptyObject>.Use?
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
         #expect(message.content.count == 1)
         let toolUse = try #require(message.content.last?.asToolUseRequest?.toolUse as? TestStreamingTool<
@@ -542,7 +542,7 @@ final class SendOneMessageTests {
     let initialStreamExpectationValidated = expectation(description: "initial stream expectation validated")
     let messagesReceived = expectation(description: "All message update received")
 
-    let server = MockServer()
+    let server = MockLocalServer()
     let sut = DefaultLLMService(server: server)
     server.onPostRequest = { _, _, sendChunk in
       // Wait here to avoid concurrency issues that would make the test flaky.
@@ -588,7 +588,7 @@ final class SendOneMessageTests {
 
     var _toolUse: TestStreamingTool<TestToolInput, EmptyObject>.Use?
     Task {
-      for await message in updatingMessage.updates {
+      for await message in updatingMessage.futureUpdates {
         // Second update has a tool call
         #expect(message.content.count == 1)
         let toolUse = try #require(message.content.last?.asToolUseRequest?.toolUse as? TestStreamingTool<

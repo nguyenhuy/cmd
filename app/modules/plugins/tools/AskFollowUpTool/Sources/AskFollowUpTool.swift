@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - AskFollowUpTool
@@ -134,7 +135,7 @@ final class ToolUseViewModel {
     self.input = input
     self.selectFollowUp = selectFollowUp
     Task {
-      for await status in status {
+      for await status in status.futureUpdates {
         self.status = status
       }
     }
@@ -143,4 +144,33 @@ final class ToolUseViewModel {
   let input: AskFollowUpTool.Use.Input
   var status: ToolUseExecutionStatus<AskFollowUpTool.Output>
   let selectFollowUp: (String) -> Void
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension ToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(ToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success:
+      return """
+        ⏺ Ask(\(input.question))
+          ⎿ \(input.followUp.count) follow-up options provided
+
+
+        """
+
+    case .failure(let error):
+      return """
+        ⏺ Ask(\(input.question))
+          ⎿ Failed: \(error.localizedDescription)
+
+
+        """
+    }
+  }
 }

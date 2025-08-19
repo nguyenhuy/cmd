@@ -4,8 +4,8 @@
 import AppFoundation
 import Foundation
 import LLMServiceInterface
+import LocalServerServiceInterface
 import LoggingServiceInterface
-import ServerServiceInterface
 import ToolFoundation
 
 // MARK: - ChatMessageModel

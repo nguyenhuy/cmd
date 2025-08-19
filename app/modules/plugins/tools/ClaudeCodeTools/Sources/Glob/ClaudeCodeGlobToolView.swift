@@ -8,9 +8,8 @@ import ToolFoundation
 // MARK: - ClaudeCodeGlobTool.Use + DisplayableToolUse
 
 extension ClaudeCodeGlobTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    AnyView(GlobToolUseView(toolUse: GlobToolUseViewModel(
-      status: status, input: input)))
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(GlobToolUseViewModel(status: status, input: input))
   }
 }
 
@@ -41,7 +40,7 @@ struct GlobToolUseView: View {
               .fill(Color.clear)
               .frame(width: 8, height: 8)
 
-            Text(" ⎿  Found \(output.files.count) files")
+            Text(" ⎿ Found \(output.files.count) files")
               .foregroundColor(foregroundColor)
           }
 

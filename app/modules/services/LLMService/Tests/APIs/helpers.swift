@@ -8,7 +8,7 @@ import FoundationInterfaces
 import JSONFoundation
 import LLMFoundation
 import LLMServiceInterface
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SettingsServiceInterface
 import ShellServiceInterface
 import ThreadSafe
@@ -18,7 +18,7 @@ import ToolFoundation
 extension DefaultLLMService {
 
   convenience init(
-    server: MockServer = MockServer(),
+    server: MockLocalServer = MockLocalServer(),
     settingsService: MockSettingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
@@ -36,7 +36,7 @@ extension DefaultLLMService {
     shellService: MockShellService = MockShellService())
   {
     self.init(
-      server: server as Server,
+      server: server as LocalServer,
       settingsService: settingsService as SettingsService,
       userDefaults: MockUserDefaults(),
       shellService: shellService)
@@ -75,8 +75,8 @@ extension DefaultLLMService {
           model: .claudeSonnet,
           chatMode: .ask,
           context: TestChatContext(projectRoot: URL(filePath: "/path/to/root")),
-          handleUpdateStream: { stream in continuation
-            .resume(returning: stream)
+          handleUpdateStream: { stream in
+            continuation.resume(returning: stream)
           },
           handleUsageInfo: { _ in })
       }

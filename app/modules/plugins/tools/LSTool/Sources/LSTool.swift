@@ -7,7 +7,7 @@ import ConcurrencyFoundation
 import Dependencies
 import Foundation
 import JSONFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 
@@ -89,7 +89,7 @@ public final class LSTool: NonStreamableTool {
             path: input.path,
             recursive: input.recursive)
 
-          let data = try JSONEncoder().encode(fullInput)
+          let data = try JSONEncoder.sortingKeys.encode(fullInput)
           let response: Schema.ListFilesToolOutput = try await server.postRequest(path: "listFiles", data: data)
           updateStatus.complete(with: .success(response.transformed(with: context)))
         } catch {
@@ -104,7 +104,7 @@ public final class LSTool: NonStreamableTool {
 
     let directoryPath: URL
 
-    @Dependency(\.server) private var server
+    @Dependency(\.localServer) private var server
 
   }
 
@@ -161,10 +161,10 @@ extension Schema.ListFilesToolOutput {
 // MARK: - LSTool.Use + DisplayableToolUse
 
 extension LSTool.Use: DisplayableToolUse {
-  public var body: AnyView {
-    let viewModel = ToolUseViewModel(
+  public var viewModel: AnyToolUseViewModel {
+    AnyToolUseViewModel(ToolUseViewModel(
       status: status,
-      directoryPath: directoryPath)
-    return AnyView(ToolUseView(viewModel: viewModel))
+      directoryPath: directoryPath,
+      projectRoot: context.projectRoot))
   }
 }

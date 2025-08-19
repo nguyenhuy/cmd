@@ -7,6 +7,7 @@ import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
 import FoundationInterfaces
+import JSONFoundation
 import LoggingServiceInterface
 import SettingsServiceInterface
 import SharedValuesFoundation
@@ -155,7 +156,7 @@ final class DefaultSettingsService: SettingsService {
           privateKeys["OPENROUTER_API_KEY"] = openRouterSettings.apiKey
           publicSettings.llmProviderSettings[.openRouter]?.apiKey = "OPENROUTER_API_KEY"
         }
-        let value = try JSONEncoder().encode(publicSettings)
+        let value = try JSONEncoder.sortingKeys.encode(publicSettings)
         sharedUserDefaults.set(value, forKey: Keys.appWideSettings)
 
         for (key, value) in privateKeys {

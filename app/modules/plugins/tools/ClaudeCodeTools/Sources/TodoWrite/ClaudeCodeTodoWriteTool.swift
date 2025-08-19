@@ -9,6 +9,7 @@ import Dependencies
 import DLS
 import Foundation
 import JSONFoundation
+import SwiftUI
 import ToolFoundation
 
 // MARK: - ClaudeCodeTodoWriteTool
@@ -224,7 +225,7 @@ final class TodoWriteToolUseViewModel {
     self.input = input
     self.preExistingTodos = preExistingTodos
     Task { [weak self] in
-      for await status in status {
+      for await status in status.futureUpdates {
         self?.status = status
       }
     }
@@ -278,4 +279,48 @@ final class TodoWriteToolUseViewModel {
     return .unchanged
   }
 
+}
+
+// MARK: ViewRepresentable, StreamRepresentable
+
+extension TodoWriteToolUseViewModel: ViewRepresentable, StreamRepresentable {
+  @MainActor
+  var body: AnyView { AnyView(TodoWriteToolUseView(toolUse: self)) }
+
+  @MainActor
+  var streamRepresentation: String? {
+    guard case .completed(let result) = status else { return nil }
+    switch result {
+    case .success:
+      var representation = """
+        ⏺ Update Todos
+
+        """
+
+      for todo in input.todos.filter({ !todoChange(for: $0).isUnchanged }) {
+        let statusIcon =
+          switch todo.status {
+          case "completed":
+            "☒"
+          case "in_progress":
+            "→"
+          case "pending":
+            "☐"
+          default:
+            "○"
+          }
+        representation += "  ⎿ \(statusIcon) \(todo.content)\n"
+      }
+
+      return representation + "\n"
+
+    case .failure(let error):
+      return """
+        ⏺ TodoWrite(\(input.todos.count) items)
+          ⎿ Failed: \(error.localizedDescription)
+
+
+        """
+    }
+  }
 }

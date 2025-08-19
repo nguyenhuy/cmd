@@ -6,7 +6,7 @@ import Dependencies
 import DLS
 import FileDiffFoundation
 import FileDiffTypesFoundation
-import ServerServiceInterface
+import LocalServerServiceInterface
 import SwiftUI
 import ToolFoundation
 import XcodeControllerServiceInterface
@@ -15,7 +15,7 @@ import XcodeControllerServiceInterface
 
 struct ToolUseView: View {
 
-  @Bindable var toolUse: ToolUseViewModel
+  @Bindable var toolUse: EditFilesToolUseViewModel
 
   var body: some View {
     switch toolUse.status {
