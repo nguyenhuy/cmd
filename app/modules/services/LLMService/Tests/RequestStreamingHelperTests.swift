@@ -8,6 +8,7 @@ import FoundationInterfaces
 import JSONFoundation
 import LLMServiceInterface
 import LocalServerServiceInterface
+import SwiftTesting
 import Testing
 import ToolFoundation
 @testable import LLMService
@@ -28,6 +29,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningDelta = Schema.ReasoningDelta(delta: "Let me think...", idx: 0)
@@ -69,6 +71,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningDelta = Schema.ReasoningDelta(delta: " continues...", idx: 0)
@@ -110,6 +113,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningSignature = Schema.ReasoningSignature(signature: "signature123", idx: 0)
@@ -144,6 +148,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let reasoningSignature = Schema.ReasoningSignature(signature: "signature456", idx: 0)
@@ -185,6 +190,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     // First send reasoning delta
@@ -238,6 +244,7 @@ struct RequestStreamingHelperReasoningTests {
       tools: [],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     let deltas = [
@@ -268,6 +275,93 @@ struct RequestStreamingHelperReasoningTests {
     #expect(reasoningContent.content == "First thought then second and third")
     #expect(reasoningContent.deltas == ["First thought", " then second", " and third"])
   }
+
+  @Test("handle external tool use with permission request")
+  func handleExternalToolUseWithPermissionRequest() async throws {
+    // Given
+    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
+    let result = MutableCurrentValueStream(AssistantMessage(content: []))
+    let tool = TestExternalTool()
+    let toolUseId = UUID().uuidString
+    let permissionRequested = expectation(description: "tool use permission requested and approved")
+    let permissionResultSent = expectation(description: "tool use approval sent")
+
+    let localServer = MockLocalServer()
+    localServer.onPostRequest = { path, data, _ in
+      #expect(permissionRequested.isFulfilled)
+      #expect(path == "sendMessage/toolUse/permission")
+      #expect(data.jsonString() == """
+        {
+          "approvalResult" : {
+            "type" : "approval_allowed"
+          },
+          "toolUseId" : "\(toolUseId)"
+        }
+        """)
+      permissionResultSent.fulfill()
+      return LocalServerResponse()
+    }
+
+    let helper = RequestStreamingHelper(
+      stream: stream,
+      result: result,
+      tools: [tool],
+      context: TestChatContext(
+        projectRoot: URL(filePath: "/test"),
+        requestToolApproval: { _ in
+          permissionRequested.fulfill()
+          // Returning without throwing will accept the tool use.
+        }),
+      isTaskCancelled: { false },
+      localServer: localServer,
+      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
+
+    async let requestResult = helper.processStream()
+
+    let input = JSON.object([:])
+
+    let streamChunk = { (chunk: Schema.StreamedResponseChunk) in
+      let data = try JSONEncoder().encode(chunk)
+      continuation.yield(data)
+    }
+
+    // When
+    try streamChunk(.toolUseRequest(.init(
+      toolName: tool.name,
+      input: input,
+      toolUseId: toolUseId,
+      idx: 0)))
+
+    try streamChunk(.toolUsePermissionRequest(.init(
+      toolName: tool.name,
+      input: input,
+      toolUseId: toolUseId, idx: 1)))
+
+    try await fulfillment(of: [permissionRequested, permissionResultSent])
+
+    try streamChunk(.toolResultMessage(.init(
+      request: .init(
+        toolName: tool.name,
+        input: input, toolUseId: toolUseId,
+        idx: 2),
+      output: .string("Worked"))))
+
+    continuation.finish()
+
+    _ = try await requestResult
+
+    // Then
+    let toolUse = try #require(result.content.first?.asToolUseRequest?.toolUse as? TestExternalTool.Use)
+    #expect(toolUse.toolUseId == toolUseId)
+
+    let toolStatus = await toolUse.status.lastValue
+    switch toolStatus {
+    case .completed(.success):
+      break
+    default:
+      Issue.record("Unexpected tool use status \(toolStatus)")
+    }
+  }
 }
 
 // MARK: - RequestStreamingHelperToolFailureTests
@@ -294,11 +388,12 @@ struct RequestStreamingHelperToolFailureTests {
       tools: [mockTool],
       context: TestChatContext(projectRoot: URL(filePath: "/test")),
       isTaskCancelled: { false },
+      localServer: MockLocalServer(),
       repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
 
     // Create a tool failure message
     let failureMessage = Schema.ToolResultFailureMessage(
-      failure: JSON.Value.object(["message": JSON.Value.string("Tool execution failed with error")]))
+      failure: JSON.Value.string("Tool execution failed with error"))
     let toolResult = Schema.ToolResultMessage(
       toolUseId: "test-tool-123",
       toolName: "mock_tool",
@@ -337,52 +432,4 @@ struct RequestStreamingHelperToolFailureTests {
 
     Issue.record("Expected TestExternalTool.Use or FailedToolUse, got \(type(of: toolMessage.toolUse))")
   }
-
-//  @Test("Handle tool result failure with string error message")
-//  func testHandleToolResultFailureWithStringError() async throws {
-//    let mockTool = TestExternalTool()
-//    let mockToolUse = mockTool.use(
-//      toolUseId: "test-tool-456",
-//      input: EmptyObject(),
-//      context: TestToolExecutionContext(projectRoot: URL(filePath: "/test")),
-//      initialStatus: nil)
-//
-//    let result = MutableCurrentValueStream(AssistantMessage(content: [.tool(ToolUseMessage(toolUse: mockToolUse))]))
-//    let (stream, continuation) = AsyncThrowingStream<Data, Error>.makeStream()
-//
-//    let helper = RequestStreamingHelper(
-//      stream: stream,
-//      result: result,
-//      tools: [mockTool],
-//      context: TestChatContext(projectRoot: URL(filePath: "/test")),
-//      isTaskCancelled: { false },
-//      repeatDebugHelper: RepeatDebugHelper(userDefaults: MockUserDefaults()))
-//
-//    // Create a tool failure message with string error
-//    let failureMessage = Schema.ToolResultFailureMessage(
-//      failure: JSON.Value.string("Simple error message"))
-//    let toolResult = Schema.ToolResultMessage(
-//      toolUseId: "test-tool-456",
-//      toolName: "mock_tool",
-//      result: .toolResultFailureMessage(failureMessage))
-//    let chunk = Schema.StreamedResponseChunk.toolResult(toolResult)
-//    let data = try JSONEncoder().encode(chunk)
-//
-//    continuation.yield(data)
-//    continuation.finish()
-//
-//    try await helper.processStream()
-//
-//    let finalMessage = result.value
-//    guard
-//      case .tool(let toolMessage) = finalMessage.content.first,
-//      let failedToolUse = toolMessage.toolUse as? FailedToolUse
-//    else {
-//      Issue.record("Expected FailedToolUse")
-//      return
-//    }
-//
-//    #expect(failedToolUse.toolUseId == "test-tool-456")
-//    #expect(failedToolUse.errorDescription == "Simple error message")
-//  }
 }

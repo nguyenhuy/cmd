@@ -24,6 +24,7 @@ actor RequestStreamingHelper: Sendable {
   ///   - tools: The list of tools available to the assistant.
   ///   - context: The context in which the request is executed.
   ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
+  ///   - localServer: The local server for making API requests.
   ///   - repeatDebugHelper: A debug helper that will repeat the last streamed responses, regardless of the current input.
   init(
     stream: AsyncThrowingStream<Data, any Error>,
@@ -31,6 +32,7 @@ actor RequestStreamingHelper: Sendable {
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
     isTaskCancelled: @escaping @Sendable () -> Bool,
+    localServer: LocalServer,
     repeatDebugHelper: RepeatDebugHelper?)
   {
     self.stream = stream
@@ -38,6 +40,7 @@ actor RequestStreamingHelper: Sendable {
     self.tools = tools
     self.context = context
     self.isTaskCancelled = isTaskCancelled
+    self.localServer = localServer
     self.repeatDebugHelper = repeatDebugHelper
   }
   #else
@@ -47,18 +50,21 @@ actor RequestStreamingHelper: Sendable {
   ///   - tools: The list of tools available to the assistant.
   ///   - context: The context in which the request is executed.
   ///   - isTaskCancelled: A closure that returns whether the task has been cancelled.
+  ///   - localServer: The local server for making API requests.
   init(
     stream: AsyncThrowingStream<Data, any Error>,
     result: MutableCurrentValueStream<AssistantMessage>,
     tools: [any ToolFoundation.Tool],
     context: (any ChatContext)?,
-    isTaskCancelled: @escaping @Sendable () -> Bool)
+    isTaskCancelled: @escaping @Sendable () -> Bool,
+    localServer: LocalServer)
   {
     self.stream = stream
     self.result = result
     self.tools = tools
     self.context = context
     self.isTaskCancelled = isTaskCancelled
+    self.localServer = localServer
   }
   #endif
 
@@ -66,6 +72,7 @@ actor RequestStreamingHelper: Sendable {
   let stream: AsyncThrowingStream<Data, any Error>
   let tools: [any ToolFoundation.Tool]
   let context: (any ChatContext)?
+  let localServer: LocalServer
   var err: Error? = nil
   var streamingToolUse: (any ToolUse)? = nil
   var streamingToolUseInput = ""
@@ -177,6 +184,9 @@ actor RequestStreamingHelper: Sendable {
 
     case .internalContent(let message):
       handle(internalMessage: message)
+
+    case .toolUsePermissionRequest(let toolUsePermissionRequest):
+      await handle(toolUsePermissionRequest: toolUsePermissionRequest)
     }
 
     // Try to dequeue events received out of order.
@@ -271,7 +281,13 @@ actor RequestStreamingHelper: Sendable {
 
   private func startExecution(of toolUse: any ToolUse, context: any ChatContext) async {
     do {
-      try await context.requestToolApproval(toolUse)
+      if toolUse is any ExternalToolUse {
+        // We let the external agent manage permissions. If it needs permission
+        // approval it will explicitely ask us using `toolUsePermissionRequest`
+        // TODO: verify if there is any issue related to the ordering for external tools which calls first `toolUseRequest -> startExecution` and only later `toolUsePermissionRequest`
+      } else {
+        try await context.requestToolApproval(toolUse)
+      }
       toolUse.startExecuting()
     } catch is CancellationError {
       defaultLogger.error("Tool use is cancelled")
@@ -445,6 +461,72 @@ actor RequestStreamingHelper: Sendable {
     result.update(with: AssistantMessage(content: content))
   }
 
+  private func handle(toolUsePermissionRequest: Schema.ToolUsePermissionRequest) async {
+    defaultLogger
+      .log("Received tool permission request for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId)")
+
+    guard
+      let toolUse = result.content
+        .compactMap(\.asToolUseRequest)
+        .first(where: { toolUseRequest in
+          toolUseRequest.id == toolUsePermissionRequest.toolUseId
+        })?.toolUse as? (any ExternalToolUse)
+    else {
+      defaultLogger.error("Could not find tool use matching \(toolUsePermissionRequest.toolUseId)")
+      await send(permissionResponse: .approvalResultDeny(.init(reason: "Tool use not found")), for: toolUsePermissionRequest)
+      return
+    }
+    guard let context else {
+      defaultLogger.error("No context available to handle tool use.")
+      assertionFailure("No context available to handle tool use.")
+      await send(
+        permissionResponse: .approvalResultDeny(.init(reason: "Internal error, no context available")),
+        for: toolUsePermissionRequest)
+      return
+    }
+
+    let permissionApproval: Schema.ApprovalResult
+    do {
+      try await context.requestToolApproval(toolUse)
+      permissionApproval = .approvalResultApprove(.init())
+    } catch is CancellationError {
+      defaultLogger.error("Tool use is cancelled")
+      permissionApproval = .approvalResultDeny(.init(reason: "Tool use cancelled"))
+      toolUse.cancel()
+    } catch let error as LLMServiceError {
+      defaultLogger.error("Tool approval is denied: \(error)")
+      switch error {
+      case .toolUsageDenied(let reason):
+        permissionApproval = .approvalResultDeny(.init(reason: reason))
+        toolUse.reject(reason: reason)
+      }
+    } catch {
+      defaultLogger.error("Tool approval had unexpected error type: \(error)")
+      // Reject the tool use instead of replacing it
+      permissionApproval = .approvalResultDeny(.init(reason: error.localizedDescription))
+      toolUse.reject(reason: error.localizedDescription)
+    }
+    await send(permissionResponse: permissionApproval, for: toolUsePermissionRequest)
+  }
+
+  private func send(
+    permissionResponse: Schema.ApprovalResult,
+    for toolUsePermissionRequest: Schema.ToolUsePermissionRequest)
+    async
+  {
+    do {
+      let data = try JSONEncoder().encode(Schema.ApproveToolUseRequestParams(
+        toolUseId: toolUsePermissionRequest.toolUseId,
+        approvalResult: permissionResponse))
+
+      _ = try await localServer.postRequest(path: "sendMessage/toolUse/permission", data: data)
+    } catch {
+      defaultLogger
+        .error(
+          "Failed to handle tool permission request for \(toolUsePermissionRequest.toolName) \(toolUsePermissionRequest.toolUseId): \(error)")
+    }
+  }
+
 }
 
 extension Schema.StreamedResponseChunk {
@@ -470,6 +552,8 @@ extension Schema.StreamedResponseChunk {
       usage.idx
     case .internalContent(let message):
       message.idx
+    case .toolUsePermissionRequest(let request):
+      request.idx
     }
   }
 }

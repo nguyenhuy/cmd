@@ -4,9 +4,11 @@ import {
 	Message,
 	ToolResultFailureMessage,
 	ToolResultSuccessMessage,
+	ToolUsePermissionRequest,
+	ToolUseRequest,
 } from "@/server/schemas/sendMessageSchema"
 import { CoreMessage, CoreUserMessage } from "ai"
-import { Response, Router } from "express"
+import { Request, Response, Router } from "express"
 import { spawn } from "child_process"
 import { SDKAssistantMessage, SDKResultMessage, SDKUserMessage, type SDKMessage } from "@anthropic-ai/claude-code"
 import { respondUsingResponseStream, ResponseChunkWithoutIndex } from "../sendMessage"
@@ -15,6 +17,30 @@ import { writeFileSync, existsSync, mkdirSync } from "fs"
 import path from "path"
 import { StreamingJsonParser } from "@/utils/streamingJSONParser"
 import { registerMCPServerEndpoints } from "./mcp"
+import { ApprovalResult, ApproveToolUseRequestParams } from "@/server/schemas/toolApprovalSchema"
+import { createHash } from "crypto"
+import { UserFacingError } from "@/server/errors"
+
+// Constants
+const TOOL_NAME_PREFIX = "claude_code_"
+
+// Create a consistent hash of tool input for matching
+function createInputHash(input: unknown): string {
+	return createHash("sha256")
+		.update(JSON.stringify(input, (_, v) => (v.constructor === Object ? Object.entries(v).sort() : v)))
+		.digest("hex")
+		.substring(0, 16)
+}
+
+// To handle tool use permissions that are received over MCP, we need to keep track of tool use requests.
+// This is because we receive the tool use request first, then the permission request over MCP.
+// The permission request doesn't contain the tool use id, so we need to look at past tool use requests to
+// find the matching one and pull its id that can then be forwarded.
+const toolUseRequests = new Map<string, Array<Omit<ToolUseRequest, "idx"> & { timestamp: number; inputHash: string }>>()
+
+const pendingToolApprovalRequests = new Map<string, (result: ApprovalResult) => void>()
+
+type ExtendedSDKMessage = SDKMessage | Omit<ToolUsePermissionRequest, "idx">
 
 export const sendMessageToClaudeCode = async (
 	{
@@ -33,8 +59,11 @@ export const sendMessageToClaudeCode = async (
 	res: Response,
 ) => {
 	const eventStream = createClaudeCodeEventStream(res, { messages, localExecutable, port, threadId, router })
-	await respondUsingResponseStream(mapStream(eventStream), res)
+	await respondUsingResponseStream(mapStream(eventStream, threadId), res)
+	logInfo("done responsing, terminating request")
 	res.end()
+
+	toolUseRequests.delete(threadId)
 }
 
 const createClaudeCodeEventStream = (
@@ -52,7 +81,7 @@ const createClaudeCodeEventStream = (
 		threadId: string
 		router: Router
 	},
-): AsyncStream<SDKMessage> => {
+): AsyncStream<ExtendedSDKMessage> => {
 	// get the user messages since the last message sent
 	let firstNewUserMessagesIdx = messages.length
 	while (firstNewUserMessagesIdx > 0 && messages[firstNewUserMessagesIdx - 1].role === "user") {
@@ -106,23 +135,64 @@ const createClaudeCodeEventStream = (
 			mode: 0o700,
 		})
 	}
+	const eventStream = new AsyncStream<ExtendedSDKMessage>()
 
 	writeFileSync(mcpConfigFilePath, JSON.stringify(mcpConfig, null, 2))
 	registerMCPServerEndpoints(router, mcpEndpoint, async (toolName, input) => {
 		logInfo(
 			`Received MCP tool approval request for tool "${toolName}" with input: ${JSON.stringify(input, null, 2)}`,
 		)
-		// For now, we approve all requests
-		return {
-			isAllowed: true,
-			rejectionMessage: undefined,
+
+		if (!toolName || typeof toolName !== "string") {
+			throw new Error("Invalid tool name provided")
 		}
+
+		const newToolName = `${TOOL_NAME_PREFIX}${toolName}`
+		const threadRequests = toolUseRequests.get(threadId)
+
+		if (!threadRequests || threadRequests.length === 0) {
+			throw new Error(`No tool use requests found for thread ${threadId}`)
+		}
+
+		const inputHash = createInputHash(input)
+
+		// First, try to find an exact match by tool name and input hash
+		let matchingToolCall = threadRequests
+			.filter((toolCall) => toolCall.toolName === newToolName && toolCall.inputHash === inputHash)
+			.sort((a, b) => b.timestamp - a.timestamp)[0]
+
+		// If no exact match found, fall back to tool name only and log warning
+		if (!matchingToolCall) {
+			logInfo(
+				`No exact input match found for ${newToolName} with input ${JSON.stringify(input)} hash:${inputHash}, falling back to name-only matching`,
+			)
+			matchingToolCall = threadRequests
+				.filter((toolCall) => toolCall.toolName === newToolName)
+				.sort((a, b) => b.timestamp - a.timestamp)[0]
+		}
+
+		if (!matchingToolCall) {
+			throw new Error(`No existing matching tool call found for ${newToolName} in thread ${threadId}`)
+		}
+
+		eventStream.yield({
+			type: "tool_use_permission_request",
+			toolName: newToolName,
+			toolUseId: matchingToolCall.toolUseId,
+			input: matchingToolCall.input,
+		} satisfies Omit<ToolUsePermissionRequest, "idx">)
+
+		const response = await new Promise<ApprovalResult>((resolve) => {
+			pendingToolApprovalRequests.set(matchingToolCall.toolUseId, resolve)
+		})
+
+		logInfo(`Got tool approval response for ${newToolName}: ${JSON.stringify(response)}`)
+		return response
 	})
 
 	logInfo(`Spawning Claude with executable: ${localExecutable.executable}. MCP config file: ${mcpConfigFilePath}`)
 	logInfo(`New user messages text: "${newUserMessagesText}"`)
 
-	// Use stdin instead of -p flag to avoid hanging
 	const args = [
 		"--output-format",
 		"stream-json",
@@ -131,16 +201,14 @@ const createClaudeCodeEventStream = (
 		"100",
 		"--mcp-config",
 		mcpConfigFilePath,
-		// "--dangerously-skip-permissions", // For now, the MCP seems to not work and not receive requests.
 		"--permission-prompt-tool",
 		"mcp__command__tool_approval",
 	]
 	if (existingSessionId) {
 		args.push("--resume", existingSessionId)
 	}
-	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")}`)
+	logInfo(`Full command: ${localExecutable.executable} ${args.join(" ")} -p "${newUserMessagesText}"`)
 
-	const eventStream = new AsyncStream<SDKMessage>()
 	const jsonParser = new StreamingJsonParser()
 
 	const child = spawn(localExecutable.executable, args, {
@@ -154,7 +222,7 @@ const createClaudeCodeEventStream = (
 
 	child.stdout.on("data", (data) => {
 		const output = data.toString()
-		logInfo(`Received data from Claude: ${output}`)
+		logInfo(`Received data from Claude Code: ${output}`)
 		const parsedMessages = jsonParser.processChunk(output)
 		for (const payload of parsedMessages) {
 			eventStream.yield(payload as SDKMessage)
@@ -163,14 +231,15 @@ const createClaudeCodeEventStream = (
 
 	child.stderr.on("data", (data) => {
 		const error = data.toString()
-		logError(`Received error from Claude: ${error}`)
+		logError(`Received error from Claude Code: ${error}`)
 		eventStream.error(new Error(error))
 	})
 
 	child.on("close", (code) => {
-		logInfo(`Claude process exited with code ${code}`)
+		logInfo(`Claude Code process exited with code ${code}`)
 		if (code !== 0) {
-			eventStream.error(new Error(`Claude process exited with code ${code}`))
+			logError("Claude Code was killed with an external error. Ending stream.")
+			eventStream.error(new Error(`Claude Code process exited with code ${code}`))
 		}
 		eventStream.done()
 	})
@@ -179,13 +248,21 @@ const createClaudeCodeEventStream = (
 	child.stdin.write(newUserMessagesText)
 	child.stdin.end()
 
+	let responseCompletedByServer = false
+	res.on("finish", () => {
+		responseCompletedByServer = true
+	})
 	res.on("close", () => {
-		logInfo("Response closed (client disconnected), killing Claude process.")
-		child.kill()
+		if (!responseCompletedByServer) {
+			logInfo("Response closed (client disconnected), killing Claude Code process.")
+			child.kill()
+		}
 	})
 
 	res.on("error", (err) => {
-		logInfo(`Response error: ${err.message}, killing Claude process.`)
+		logError(`Claude Code will be killed after having error: ${err.message}`)
+		eventStream.error(new Error(`Claude Code errored: ${err.message}`))
+		eventStream.done()
 		child.kill()
 	})
 
@@ -196,11 +273,18 @@ export const isCoreUserMessage = (message: CoreMessage): message is CoreUserMess
 	return message.role === "user"
 }
 
-async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<ResponseChunkWithoutIndex> {
+async function* mapStream(
+	stream: AsyncIterable<ExtendedSDKMessage>,
+	threadId: string,
+): AsyncIterable<ResponseChunkWithoutIndex> {
 	let hasSentSessionId = false
 	const toolNames: { [toolId: string]: string } = {}
 
 	for await (const event of stream) {
+		if (isToolUsePermissionRequest(event)) {
+			yield event
+			continue
+		}
 		if (!hasSentSessionId) {
 			hasSentSessionId = true
 
@@ -238,14 +322,26 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 						break
 					}
 					case "tool_use": {
-						const toolName = `claude_code_${contentPart.name}`
+						const toolName = `${TOOL_NAME_PREFIX}${contentPart.name}`
 						toolNames[contentPart.id] = toolName
-						yield {
+						const input = contentPart.input as Record<string, unknown>
+
+						const toolUseResponse = {
 							type: "tool_call",
 							toolName,
 							toolUseId: contentPart.id,
-							input: contentPart.input as Record<string, unknown>,
+							input,
+						} satisfies Omit<ToolUseRequest, "idx">
+						yield toolUseResponse
+
+						if (!toolUseRequests.has(threadId)) {
+							toolUseRequests.set(threadId, [])
 						}
+						toolUseRequests.get(threadId)?.push({
+							...toolUseResponse,
+							timestamp: Date.now(),
+							inputHash: createInputHash(input),
+						})
 						break
 					}
 					default: {
@@ -274,7 +370,7 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 						yield {
 							type: "tool_result",
 							toolUseId: contentPart.tool_use_id,
-							toolName: toolNames[contentPart.tool_use_id] || "claude_code_tool",
+							toolName: toolNames[contentPart.tool_use_id] || `${TOOL_NAME_PREFIX}tool`,
 							result,
 						}
 						break
@@ -340,17 +436,57 @@ async function* mapStream(stream: AsyncIterable<SDKMessage>): AsyncIterable<Resp
 	}
 }
 
-const isSDKAssistantMessage = (message: SDKMessage): message is SDKAssistantMessage => {
+const isSDKAssistantMessage = (message: ExtendedSDKMessage): message is SDKAssistantMessage => {
 	return message.type === "assistant"
 }
-const isSDKUserMessage = (message: SDKMessage): message is SDKUserMessage => {
+const isSDKUserMessage = (message: ExtendedSDKMessage): message is SDKUserMessage => {
 	return message.type === "user"
 }
-const isSDKResultMessage = (message: SDKMessage): message is SDKResultMessage => {
+const isSDKResultMessage = (message: ExtendedSDKMessage): message is SDKResultMessage => {
 	return message.type === "result"
+}
+const isToolUsePermissionRequest = (message: ExtendedSDKMessage): message is Omit<ToolUsePermissionRequest, "idx"> => {
+	return message.type === "tool_use_permission_request"
 }
 
 type SessionIdInfo = {
 	type: "session_id"
 	sessionId: string
+}
+
+export const registerEndpoint = (router: Router) => {
+	// This endpoint is used to receive the result of pending tool permission requests.
+	router.post("/sendMessage/toolUse/permission", async (req: Request, res: Response) => {
+		const body = req.body as ApproveToolUseRequestParams
+		const { toolUseId, approvalResult } = body
+
+		if (!toolUseId || typeof toolUseId !== "string") {
+			throw new UserFacingError({
+				message: "Invalid toolUseId",
+				statusCode: 400,
+			})
+		}
+
+		if (!approvalResult || !approvalResult.type) {
+			throw new UserFacingError({
+				message: "Invalid approvalResult",
+				statusCode: 400,
+			})
+		}
+
+		logInfo(`received tool use permission request: ${toolUseId}, ${JSON.stringify(approvalResult)}.`)
+
+		const pendingRequest = pendingToolApprovalRequests.get(toolUseId)
+		if (!pendingRequest) {
+			throw new UserFacingError({
+				message: `No pending tool use approval request found for tool use ${toolUseId}`,
+				statusCode: 404,
+			})
+		}
+
+		// Remove from pending requests and resolve
+		pendingToolApprovalRequests.delete(toolUseId)
+		pendingRequest(approvalResult)
+		res.json({ success: true })
+	})
 }

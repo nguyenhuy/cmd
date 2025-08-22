@@ -32,9 +32,13 @@ import {
 	CoreSystemMessage,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
-import { sendMessageToClaudeCode } from "./claudeCode/sendMessageToClaudeCode"
+import {
+	sendMessageToClaudeCode,
+	registerEndpoint as registerClaudeCodeEndpoint,
+} from "./claudeCode/sendMessageToClaudeCode"
 
 export const registerEndpoint = (router: Router, modelProviders: ModelProvider[], getPort: () => number) => {
+	registerClaudeCodeEndpoint(router)
 	router.post("/sendMessage", async (req: Request, res: Response) => {
 		if (!req.body) {
 			throw new UserFacingError({
@@ -101,9 +105,15 @@ export const registerEndpoint = (router: Router, modelProviders: ModelProvider[]
 
 			// Cleanup when disconnected
 			const abortController = new AbortController()
+			let responseCompletedByServer = false
+			res.on("finish", () => {
+				responseCompletedByServer = true
+			})
 			res.on("close", () => {
-				logInfo("Response closed (client disconnected), aborting the request.")
-				abortController.abort()
+				if (!responseCompletedByServer) {
+					logInfo("Response closed (client disconnected), aborting the request.")
+					abortController.abort()
+				}
 			})
 			res.on("error", (err) => {
 				logInfo(`Response error: ${err.message}, aborting the request.`)
@@ -234,7 +244,7 @@ export async function respondUsingResponseStream(
 				res.setHeader("Cache-Control", "no-cache")
 				res.setHeader("Connection", "keep-alive")
 			}
-			res.write(JSON.stringify({ type: "ping", timestamp: Date.now(), idx: i++ } as Ping)) // send a ping to keep the connection alive
+			res.write(JSON.stringify({ type: "ping", timestamp: Date.now(), idx: i++ } as Ping) + "\n") // send a ping to keep the connection alive
 		}, 1000)
 
 		for await (const chunk of stream) {
@@ -245,7 +255,7 @@ export async function respondUsingResponseStream(
 				res.setHeader("Cache-Control", "no-cache")
 				res.setHeader("Connection", "keep-alive")
 			}
-			res.write(JSON.stringify(chunkWithIdx))
+			res.write(JSON.stringify(chunkWithIdx) + "\n")
 		}
 		logInfo("Stream ended")
 		if (interval) {
@@ -270,6 +280,7 @@ const debugLogSendingResponseMessageToApp = (chunks: Array<StreamedResponseChunk
 		| "error"
 		| "text_delta"
 		| "tool_call"
+		| "tool_use_permission_request"
 		| "tool_call_delta"
 		| "tool_result"
 		| "ping"

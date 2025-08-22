@@ -5,11 +5,12 @@ import { z } from "zod"
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js"
 import { v4 as uuidv4 } from "uuid"
+import { ApprovalResult } from "@/server/schemas/toolApprovalSchema"
 
 export const registerMCPServerEndpoints = (
 	router: Router,
 	path: string,
-	handleApproval: (toolName: string, input: unknown) => Promise<{ isAllowed: boolean; rejectionMessage?: string }>,
+	handleApproval: (toolName: string, input: unknown) => Promise<ApprovalResult>,
 ) => {
 	// This function is used to register the MCP server for permissions
 
@@ -38,8 +39,8 @@ export const registerMCPServerEndpoints = (
 	// @ts-ignore: Type instantiation is excessively deep and possibly infinite.
 	const cb: ToolCallback<typeof schema> = async (args) => {
 		const { tool_name, input } = args
-		const { isAllowed, rejectionMessage } = await handleApproval(tool_name, input)
-		if (isAllowed) {
+		const response = (await handleApproval(tool_name, input)) as ApprovalResult
+		if (response.type === "approval_allowed") {
 			return {
 				content: [
 					{
@@ -58,19 +59,14 @@ export const registerMCPServerEndpoints = (
 						type: "text",
 						text: JSON.stringify({
 							behavior: "deny",
-							message: rejectionMessage,
+							message: response.reason,
 						}),
 					},
 				],
 			}
 		}
 	}
-	server.tool(
-		"tool_approval",
-		'Simulate a permission check - approve if the input contains "allow", otherwise deny',
-		schema,
-		cb,
-	)
+	server.tool("tool_approval", "Prompt the user to approve or deny the tool call", schema, cb)
 
 	// Handle POST requests for client-to-server communication
 	router.post(path, async (req, res) => {
@@ -122,7 +118,6 @@ export const registerMCPServerEndpoints = (
 			res.status(400).send("Invalid or missing session ID")
 			return
 		}
-
 		const transport = transports[sessionId]
 		await transport.handleRequest(req, res)
 	}
