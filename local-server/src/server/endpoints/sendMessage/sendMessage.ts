@@ -32,6 +32,7 @@ import {
 	ImagePart,
 	FilePart,
 	SystemModelMessage,
+	ProviderMetadata,
 } from "ai"
 import { mapResponseError } from "./errorParsing"
 import {
@@ -175,6 +176,19 @@ async function* mapStream(
 
 	for await (const chunk of stream) {
 		switch (chunk.type) {
+			case "text-start": {
+				// Gemini seems to send reasoning signature with the next message (text-start)
+				// so we need to send the signature before yielding other content for it to be applied to
+				// the previous reasoning content.
+				const signature = extractReasoningSignature(chunk.providerMetadata)
+				if (signature) {
+					yield {
+						type: "reasoning_signature",
+						signature,
+					}
+				}
+				break
+			}
 			case "text-delta":
 				yield {
 					type: "text_delta",
@@ -205,13 +219,11 @@ async function* mapStream(
 					type: "reasoning_delta",
 					delta: chunk.text,
 				}
-				for (const [, providerMetadata] of Object.entries(chunk.providerMetadata || {})) {
-					const signature = providerMetadata?.signature
-					if (typeof signature === "string") {
-						yield {
-							type: "reasoning_signature",
-							signature,
-						}
+				const signature = extractReasoningSignature(chunk.providerMetadata)
+				if (signature) {
+					yield {
+						type: "reasoning_signature",
+						signature,
 					}
 				}
 				break
@@ -482,6 +494,19 @@ const mapMessage = (message: Message): ModelMessage => {
 	} else {
 		throw new Error(`Unsupported message role: ${message.role}`)
 	}
+}
+
+/*
+ * Extracts the reasoning signature from the provider metadata.
+ */
+const extractReasoningSignature = (meta: ProviderMetadata | undefined): string | undefined => {
+	for (const [, providerMetadata] of Object.entries(meta || {})) {
+		const signature = providerMetadata?.signature || providerMetadata?.thoughtSignature
+		if (typeof signature === "string") {
+			return signature
+		}
+	}
+	return undefined
 }
 
 const isTextMessage = (message: MessageContent): message is TextMessage => {

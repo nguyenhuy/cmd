@@ -33,6 +33,8 @@
 	},
 	"dependencies": {
 		"@ai-sdk/anthropic": "^2.0.6",
+		"@ai-sdk/google": "^2.0.8",
+		"@ai-sdk/groq": "^2.0.14",
 		"@ai-sdk/openai": "^2.0.19",
 		"@anthropic-ai/claude-code": "^1.0.58",
 		"@modelcontextprotocol/sdk": "^1.17.0",

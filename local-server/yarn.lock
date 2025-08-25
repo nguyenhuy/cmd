@@ -18,6 +18,22 @@
     "@ai-sdk/provider" "2.0.0"
     "@ai-sdk/provider-utils" "3.0.5"
 
+"@ai-sdk/google@^2.0.8":
+  version "2.0.8"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/google/-/google-2.0.8.tgz#1a3233fb7d73124cb4eb0e9f3b09702efc186f55"
+  integrity sha512-k+5SLtoV0qG4rSCxwWQ+/0qrJFXwYHQ1TcH4GyaP4X0qOuVS4NDtD8ymSu8ej0ejFluogtBfTLev7sbj2AnJzA==
+  dependencies:
+    "@ai-sdk/provider" "2.0.0"
+    "@ai-sdk/provider-utils" "3.0.5"
+
+"@ai-sdk/groq@^2.0.14":
+  version "2.0.14"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/groq/-/groq-2.0.14.tgz#c1a4d2e424b0cf21d0c21cfd579b244bb565ce4e"
+  integrity sha512-twgQfti5gmmNgLbPYiqhZJn0P+CDlxKWHEMisl4a7cgbruO+5QCj8XuvAfyfnvGlDAOUIKFastH0pIMp1Hu/Kw==
+  dependencies:
+    "@ai-sdk/provider" "2.0.0"
+    "@ai-sdk/provider-utils" "3.0.5"
+
 "@ai-sdk/openai@^2.0.19":
   version "2.0.19"
   resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-2.0.19.tgz#bd4223f9dc7ef59f7cd8bb9c62d3d53ca8bbd67e"
