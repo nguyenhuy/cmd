@@ -95,7 +95,51 @@ const createClaudeCodeEventStream = (
 			return message.content
 				.map((content) => {
 					if (content.type === "text") {
-						return content.text
+						let text = content.text
+						content.attachments?.forEach((attachment) => {
+							if (attachment.type === "file_attachment") {
+								text += `
+								<file_attachment>
+									<path>${attachment.path}</path>
+									<content>${attachment.content}</content>
+								</file_attachment>`
+							} else if (attachment.type === "file_selection_attachment") {
+								text += `
+								<file_selection_attachment>
+									<path>${attachment.path}</path>
+									<selection>${attachment.content}</selection>
+									<start_line>${attachment.startLine}</start_line>
+									<end_line>${attachment.endLine}</end_line>
+								</file_selection_attachment>`
+							} else if (attachment.type === "image_attachment") {
+								let filePath: string
+								if (attachment.path) {
+									filePath = attachment.path
+								} else {
+									// No path available. This can happen when the image was copied from the pasteboard.
+
+									// Remove the data URL prefix if present (e.g., "data:image/png;base64,")
+									const base64Data = attachment.url.replace(/^data:image\/\w+;base64,/, "")
+									const fileExtension = attachment.mimeType.split("/").pop()
+									// Write the image to a tmp file
+									const imageBuffer = Buffer.from(base64Data, "base64")
+									const tmpPath = `/tmp/cmd/${createHash("sha256").update(attachment.url).digest("hex").toString().slice(0, 8)}.${fileExtension}`
+									const dir = path.dirname(tmpPath)
+									if (!existsSync(dir)) {
+										mkdirSync(dir)
+									}
+									writeFileSync(tmpPath, imageBuffer)
+									filePath = tmpPath
+								}
+
+								text += `
+								<image_attachment>
+									<mimeType>${attachment.mimeType}</mimeType>
+									<path>${filePath}</path>
+								</image_attachment>`
+							}
+						})
+						return text
 					}
 					return undefined
 				})

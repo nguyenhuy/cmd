@@ -430,26 +430,31 @@ extension Schema {
     public let type = "image_attachment"
     public let url: String
     public let mimeType: String
+    public let path: String?
   
     private enum CodingKeys: String, CodingKey {
       case type = "type"
       case url = "url"
       case mimeType = "mimeType"
+      case path = "path"
     }
   
     public init(
         type: String = "image_attachment",
         url: String,
-        mimeType: String
+        mimeType: String,
+        path: String? = nil
     ) {
       self.url = url
       self.mimeType = mimeType
+      self.path = path
     }
   
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       url = try container.decode(String.self, forKey: .url)
       mimeType = try container.decode(String.self, forKey: .mimeType)
+      path = try container.decodeIfPresent(String?.self, forKey: .path)
     }
   
     public func encode(to encoder: Encoder) throws {
@@ -457,6 +462,7 @@ extension Schema {
       try container.encode(type, forKey: .type)
       try container.encode(url, forKey: .url)
       try container.encode(mimeType, forKey: .mimeType)
+      try container.encodeIfPresent(path, forKey: .path)
     }
   }
   public struct FileAttachment: Codable, Sendable {

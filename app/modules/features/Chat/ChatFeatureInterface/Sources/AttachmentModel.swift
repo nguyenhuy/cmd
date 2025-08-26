@@ -25,15 +25,25 @@ public enum AttachmentModel: Identifiable, Sendable {
 
   public struct ImageAttachmentModel: Identifiable, Sendable {
 
-    public init(id: UUID, imageData: Data, path: URL?) {
+    public init(id: UUID, imageData: Data, path: URL?, mimeType: String) {
       self.id = id
       self.imageData = imageData
       self.path = path
+      self.mimeType = mimeType
     }
 
     public let id: UUID
     public let imageData: Data
     public let path: URL?
+    public let mimeType: String
+//    public var inferredMimeType: String {
+//      if let path {
+//        "image/\(path.pathExtension)"
+//      } else {
+//        // We only support png here
+//        "image/png"
+//      }
+//    }
   }
 
   public struct FileSelectionAttachmentModel: Identifiable, Sendable {

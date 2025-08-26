@@ -190,6 +190,7 @@ export interface ImageAttachment {
 	type: "image_attachment"
 	url: string
 	mimeType: string
+	path?: string
 }
 
 export interface FileAttachment {
