@@ -58,7 +58,10 @@ extension NSAttributedString {
 
     // First, find the effective range with no textBlock attribute at cursor position
     var effectiveRange = NSRange()
-    let hasTextBlockAtCursor = attribute(.textBlock, at: cursorLocation - 1, effectiveRange: &effectiveRange) != nil
+    let hasTextBlockAtCursor = cursorLocation > 0 && attribute(
+      .textBlock,
+      at: cursorLocation - 1,
+      effectiveRange: &effectiveRange) != nil
 
     if hasTextBlockAtCursor {
       return nil // Cursor is within a text block, don't search
@@ -93,7 +96,7 @@ extension NSAttributedString {
         searchStartIndex = i
         break
       }
-      if nsString.character(at: i) == Self.newLineChar {
+      if isWhiteSpace(nsString.character(at: i)) {
         break
       }
     }
@@ -106,7 +109,7 @@ extension NSAttributedString {
 
     while searchEndIndex < maxEnd {
       let char = nsString.character(at: searchEndIndex)
-      if char == Self.atChar || char == Self.newLineChar {
+      if char == Self.atChar || isWhiteSpace(char) {
         break
       }
       searchEndIndex += 1
@@ -116,7 +119,13 @@ extension NSAttributedString {
   }
 
   private static let newLineChar: unichar = NSString(string: "\n").character(at: 0)
+  private static let carriageReturnChar: unichar = NSString(string: "\r").character(at: 0)
+  private static let space: unichar = NSString(string: " ").character(at: 0)
   private static let atChar: unichar = NSString(string: "@").character(at: 0)
+
+  private func isWhiteSpace(_ char: unichar) -> Bool {
+    char == Self.space || char == Self.carriageReturnChar || char == Self.newLineChar
+  }
 
   private func adjustedTextBlockRangeReverse(new: NSRange, old: NSRange, textBlockRange: NSRange) -> NSRange {
     if

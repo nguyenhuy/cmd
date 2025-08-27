@@ -22,6 +22,9 @@ import ThreadSafe
 import ToolFoundation
 import XcodeObserverServiceInterface
 
+// TODO: look at possible retention issue of `ChatThreadViewModel`
+// while making sure it is not release while streaming.
+
 // MARK: - ChatThreadViewModel
 
 @MainActor @Observable
@@ -226,6 +229,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
             project: projectInfo?.path,
             projectRoot: projectInfo?.dirPath,
             prepareForWriteToolUse: { [weak self] in await self?.handlePrepareForWriteToolUse() },
+            needsApproval: { [weak self] toolUse in await self?.needsApproval(for: toolUse) ?? true },
             requestToolApproval: { [weak self] toolUse in
               try await self?.handleToolApproval(for: toolUse)
             },
@@ -398,6 +402,11 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       try await summarizationTask?.value
       summarizationTask = nil
     }
+  }
+
+  /// Whether the tool use needs to be approved by the user.
+  private func needsApproval(for toolUse: any ToolUse) -> Bool {
+    !shouldAlwaysApprove(toolName: toolUse.toolName)
   }
 
   private func handleToolApproval(for toolUse: any ToolUse) async throws {

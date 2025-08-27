@@ -565,7 +565,10 @@ final class ChatInputViewModel {
 
   /// When the search query has changed, update the search results accordingly.
   private func updateSearchResults(searchQuery: String?) {
-    guard let searchQuery, let workspaceUrl = xcodeObserver.state.focusedWorkspace?.url else {
+    guard
+      let searchQuery,
+      let workspaceUrl = xcodeObserver.state.focusedWorkspace?.url
+    else {
       searchResults = nil
       selectedSearchResultIndex = 0
       textInputNeedsFocus = true

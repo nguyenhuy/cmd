@@ -40,7 +40,7 @@ public final class EditFilesTool: Tool {
 
       _input = Atomic(input)
 
-      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .pendingApproval)
+      let (stream, updateStatus) = Status.makeStream(initial: initialStatus ?? .notStarted)
       if case .completed = stream.value { updateStatus.finish() }
       status = stream
       self.updateStatus = updateStatus
@@ -251,7 +251,16 @@ public final class EditFilesTool: Tool {
         input: mappedInput.value,
         isInputComplete: isInputComplete,
         setResult: { [weak self, mappedInput, context] toolUseResult in
-          self?.updateStatus.yield(.completed(toolUseResult.asToolUseResult))
+          // TODO: Rework the output sent to the LLM and add tests
+          guard let self else { return }
+          if
+            isInputComplete,
+            toolUseResult.fileChanges.contains(where: { if case .error = $0.status { true } else { false } }) ||
+            toolUseResult.fileChanges.allSatisfy({ if case .applied = $0.status { true } else { false } })
+          {
+            // If one change failed to apply, or all were successfully applied, complete the tool use.
+            updateStatus.yield(.completed(toolUseResult.asToolUseResult))
+          }
           // Update tracked content for successfully applied files
           context.updateFilesContent(changes: toolUseResult.fileChanges, input: mappedInput.value)
         },
