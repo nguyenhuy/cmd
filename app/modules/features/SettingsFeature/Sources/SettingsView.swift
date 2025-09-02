@@ -99,6 +99,9 @@ public struct SettingsView: View {
       case .tools:
         ToolsConfigurationView(viewModel: viewModel.toolConfigurationViewModel)
 
+      case .mcp:
+        MCPSettingsView()
+
       case .keyboardShortcuts:
         KeyboardShortcutsSettingsView(keyboardShortcuts: $viewModel.keyboardShortcuts)
 
@@ -132,6 +135,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
   case models
   case chatModes
   case tools
+  case mcp
   case keyboardShortcuts
   case internalSettings
   case about
@@ -150,6 +154,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Chat Modes"
     case .tools:
       "Tools"
+    case .mcp:
+      "MCP"
     case .keyboardShortcuts:
       "Keyboard Shortcuts"
     case .internalSettings:
@@ -171,6 +177,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "text.bubble"
     case .tools:
       "wrench.and.screwdriver"
+    case .mcp:
+      "network"
     case .keyboardShortcuts:
       "keyboard"
     case .internalSettings:
@@ -242,6 +250,11 @@ private struct SettingsLandingView: View {
           SettingsCard(
             section: .tools,
             description: "Manage tool permissions and approval settings",
+            action: onNavigate)
+
+          SettingsCard(
+            section: .mcp,
+            description: "Configure Model Context Protocol servers",
             action: onNavigate)
 
           SettingsCard(

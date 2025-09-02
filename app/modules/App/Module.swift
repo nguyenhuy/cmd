@@ -37,6 +37,8 @@ Target.module(
     "LoggingService",
     "LoggingServiceInterface",
     "LSTool",
+    "MCPService",
+    "MCPServiceInterface",
     "Onboarding",
     "PermissionsService",
     "PermissionsServiceInterface",

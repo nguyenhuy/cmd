@@ -110,6 +110,8 @@ targets.append(contentsOf: Target.module(
     "LoggingService",
     "LoggingServiceInterface",
     "LSTool",
+    "MCPService",
+    "MCPServiceInterface",
     "Onboarding",
     "PermissionsService",
     "PermissionsServiceInterface",
@@ -703,6 +705,14 @@ targets.append(contentsOf: Target.module(
   path: "./serviceInterfaces/PermissionsServiceInterface"))
 
 targets.append(contentsOf: Target.module(
+  name: "MCPServiceInterface",
+  dependencies: [
+    "DependencyFoundation",
+    "ThreadSafe",
+  ],
+  path: "./serviceInterfaces/MCPServiceInterface"))
+
+targets.append(contentsOf: Target.module(
   name: "LLMServiceInterface",
   dependencies: [
     .product(name: "Dependencies", package: "swift-dependencies"),
@@ -1020,6 +1030,23 @@ targets.append(contentsOf: Target.module(
     .copy("resources/"),
   ],
   path: "./services/FileSuggestionService"))
+
+targets.append(contentsOf: Target.module(
+  name: "MCPService",
+  dependencies: [
+    "AppFoundation",
+    "DependencyFoundation",
+    "FoundationInterfaces",
+    "JSONFoundation",
+    "LoggingServiceInterface",
+    "MCPServiceInterface",
+    "SettingsServiceInterface",
+  ],
+  testDependencies: [
+    "MCPServiceInterface",
+    "SwiftTesting",
+  ],
+  path: "./services/MCPService"))
 
 targets.append(contentsOf: Target.module(
   name: "AppEventService",

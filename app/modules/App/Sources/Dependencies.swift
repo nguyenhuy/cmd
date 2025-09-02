@@ -12,6 +12,8 @@ import ChatService
 import ChatServiceInterface
 import CheckpointService
 import CheckpointServiceInterface
+import MCPService
+import MCPServiceInterface
 import Combine
 import Dependencies
 import FileSuggestionService
@@ -74,6 +76,12 @@ extension ChatContextRegistryServiceDependencyKey: DependencyKey {
 
 extension ChatCompletionServiceDependencyKey: DependencyKey {
   public static var liveValue: ChatCompletionService { AppScope.shared.chatCompletionService }
+}
+
+// MARK: - MCPServiceDependencyKey + DependencyKey
+
+extension MCPServiceDependencyKey: DependencyKey {
+  public static var liveValue: MCPService { AppScope.shared.mcpService }
 }
 
 // MARK: - CheckpointServiceDependencyKey + DependencyKey
@@ -179,6 +187,10 @@ extension AppScope: ChatContextRegistryServiceProviding { }
 // MARK: - AppScope + ChatCompletionServiceProviding
 
 extension AppScope: ChatCompletionServiceProviding { }
+
+// MARK: - AppScope + MCPServiceProviding
+
+extension AppScope: MCPServiceProviding { }
 
 // MARK: - AppScope + CheckpointServiceProviding
 
