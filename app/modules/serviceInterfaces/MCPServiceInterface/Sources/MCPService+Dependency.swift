@@ -11,7 +11,7 @@ public struct MCPServiceDependencyKey: TestDependencyKey {
   #if DEBUG
   public static let testValue: MCPService = MockMCPService()
   #else
-  public static let testValue: MCPService = () as! MockMCPService
+  public static let testValue: MCPService = () as! MCPService
   #endif
 }
 

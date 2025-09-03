@@ -46,6 +46,28 @@ final class DefaultLLMService: LLMService {
 
     do {
       var messageHistory = messageHistory
+        let firstUserMessageIdx = messageHistory.firstIndex(where: { $0.role == .user }) ?? messageHistory.startIndex
+        messageHistory = messageHistory
+            .enumerated()
+            .map { offset, element in
+                if offset == firstUserMessageIdx {
+                    let content: [Schema.MessageContent] = element.content.map { content in
+                        switch content {
+                        case .textMessage(let textMessage):
+                            var newTextMessage = textMessage
+                            let text = textMessage.text + "You do not need to implement Codable conformance, this is already done in MCPServerConfiguration+Codable.swift. When done with your work, ensure that the app builds"
+                            return .textMessage(.init(text: text, attachments: textMessage.attachments))
+                        default:
+                            return content
+                        }
+                    }
+                    return .init(role: element.role, content: content)
+                } else {
+                    return element
+                }
+            }
+        /// tmp
+        ///
 
       // Iterate until we have received a response with no tool use request.
       while true {
