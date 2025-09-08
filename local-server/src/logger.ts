@@ -2,6 +2,7 @@ import "./utils/instrument"
 import { appendFileSync, mkdirSync, writeFileSync } from "fs"
 import { join } from "path"
 import { captureException } from "@sentry/node"
+import { isUserFacingError } from "./server/errors"
 // Define log levels
 type LogLevel = "ERROR" | "INFO"
 
@@ -52,7 +53,11 @@ const logError = (error: unknown) => {
 		return
 	}
 	if (process.env.NODE_ENV === "production") {
-		captureException(error)
+		if (isUserFacingError(error)) {
+			captureException(error, { data: error.underlyingError?.message })
+		} else {
+			captureException(error)
+		}
 	}
 	const stackTrace = new Error("").stack
 	if (typeof error === "object" && error !== null) {

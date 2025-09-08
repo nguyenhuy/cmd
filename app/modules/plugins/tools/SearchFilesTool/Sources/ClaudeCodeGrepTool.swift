@@ -61,9 +61,12 @@ public final class ClaudeCodeGrepTool: ExternalTool {
 
     public func receive(output: JSON.Value) throws {
       let output = try requireStringOutput(from: output)
-      // Try parsing with the simple format first
-      if let result = parseSimpleGrepOutput(rawOutput: output, projectRoot: input.projectRoot) {
-        updateStatus.complete(with: .success(result))
+      if output == "No files found" {
+        updateStatus.complete(with: .success(Output(
+          outputForLLm: output,
+          results: [],
+          rootPath: input.projectRoot ?? "/",
+          hasMore: false)))
         return
       }
 
@@ -249,36 +252,6 @@ public struct ClaudeCodeGrepInput: Codable, Sendable {
   /// Additional property used internally for server request
   var projectRoot: String?
 
-}
-
-// MARK: - Parsing Functions
-
-/// Parse the simple Grep output from Claude Code
-/// The output is in a simple format showing file paths, like:
-/// ```
-/// Found 2 files
-/// /Users/me/cmd/app/modules/serviceInterfaces/LocalServerServiceInterface/Sources/sendMessageSchema.generated.swift
-/// /Users/me/cmd/app/modules/services/ChatHistoryService/Sources/Serialization.swift
-/// ```
-private func parseSimpleGrepOutput(rawOutput: String, projectRoot: String?) -> Schema.SearchFilesToolOutput? {
-  // Check if output starts with "Found X files"
-  let foundFilesRegex = #/^Found \d+ files?\n/#
-  guard rawOutput.starts(with: foundFilesRegex) else {
-    return nil
-  }
-
-  // Extract file paths (each on its own line after the header)
-  let lines = rawOutput.split(separator: "\n").dropFirst() // Skip "Found X files" line
-  let filePaths = lines.compactMap { line -> String? in
-    guard !line.isEmpty else { return nil }
-    return String(line)
-  }
-
-  return Schema.SearchFilesToolOutput(
-    outputForLLm: rawOutput,
-    results: filePaths.map { .init(path: $0, searchResults: []) },
-    rootPath: projectRoot ?? "/",
-    hasMore: false)
 }
 
 /// Parse the Grep output with context from Claude Code
