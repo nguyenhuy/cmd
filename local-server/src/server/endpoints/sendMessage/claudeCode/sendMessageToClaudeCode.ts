@@ -522,7 +522,7 @@ export const readConversationSummary = async (sessionId: string, threadId: strin
 					type: string
 					summary: string | undefined
 				}>) {
-					if ((data.type === "summary", data.summary !== undefined)) {
+					if (data.type === "summary" && data.summary !== undefined) {
 						logInfo(`sending conversation name: ${data.summary}`)
 						sendCommandToHostApp({
 							type: "execute-command",

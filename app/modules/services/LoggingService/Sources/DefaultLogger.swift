@@ -294,7 +294,7 @@ public final class DefaultLogger: LoggingServiceInterface.Logger {
   }
 
   private func stopBugsnag() {
-    SentrySDK.close()
+    Bugsnag.pauseSession()
   }
 
   /// Initializes Statsig SDK for event tracking and feature flags.
