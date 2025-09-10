@@ -147,8 +147,10 @@ targets.append(contentsOf: Target.module(
   dependencies: [
     "AppFoundation",
     "ConcurrencyFoundation",
+    "FoundationInterfaces",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "ShellServiceInterface",
   ],
   resources: [
     .process("Resources/fileIcons"),
@@ -395,6 +397,7 @@ targets.append(contentsOf: Target.module(
     "CodePreview",
     "ConcurrencyFoundation",
     "DLS",
+    "ExtensionEventsInterface",
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
     "FileSuggestionServiceInterface",
@@ -406,6 +409,7 @@ targets.append(contentsOf: Target.module(
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
@@ -454,6 +458,7 @@ targets.append(contentsOf: Target.module(
     "DLS",
     "FoundationInterfaces",
     "LLMFoundation",
+    "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
     "ShellServiceInterface",
@@ -489,7 +494,6 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "AppExtension",
   dependencies: [
-    "AccessibilityFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
     "LoggingService",
@@ -921,14 +925,19 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "LoggingService",
   dependencies: [
+    .product(name: "Bugsnag", package: "bugsnag-cocoa"),
     .product(name: "Sentry", package: "sentry-cocoa"),
     .product(name: "Statsig", package: "statsig-kit"),
+    "AppFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",
+    "SettingsServiceInterface",
     "ThreadSafe",
   ],
-  testDependencies: [],
+  testDependencies: [
+    "FoundationInterfaces",
+  ],
   path: "./services/LoggingService"))
 
 targets.append(contentsOf: Target.module(
@@ -960,7 +969,7 @@ targets.append(contentsOf: Target.module(
   resources: [
     .process("Resources/build.sha256"),
     .process("Resources/launch-server.sh"),
-    .process("Resources/main.bundle.cjs"),
+    .process("Resources/main.bundle.cjs.gz"),
     .process("Resources/main.bundle.cjs.map"),
   ],
   testDependencies: [
@@ -1119,6 +1128,7 @@ targets.append(contentsOf: Target.module(
     "ToolFoundation",
   ],
   testDependencies: [
+    .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
     "AppFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
@@ -1182,6 +1192,7 @@ let package = Package(
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
     .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
+    .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),

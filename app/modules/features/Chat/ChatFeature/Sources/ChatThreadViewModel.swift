@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppEventServiceInterface
 import AppFoundation
 import ChatFeatureInterface
 import ChatFoundation
@@ -9,6 +10,7 @@ import CheckpointServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import ExtensionEventsInterface
 import Foundation
 import FoundationInterfaces
 import JSONFoundation
@@ -18,6 +20,7 @@ import LocalServerServiceInterface
 import LoggingServiceInterface
 import Observation
 import SettingsServiceInterface
+import SharedValuesFoundation
 import ThreadSafe
 import ToolFoundation
 import XcodeObserverServiceInterface
@@ -72,26 +75,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
     input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
 
-    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
-      guard state.focusedWorkspace != nil else { return }
-      Task { @MainActor in
-        _ = self.updateProjectInfo()
-        self.workspaceRootObservation = nil
-      }
-    }
-
-    settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
-      Task { @MainActor in
-        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
-      }
-    }.store(in: &cancellables)
-
-    context.handle(requestPersistence: { [weak self] in
-      Task { await self?.persistThread() }
-    })
-
-    @Dependency(\.chatContextRegistry) var chatContextRegistry
-    chatContextRegistry.register(context: context, for: id.uuidString)
+    setUp()
   }
 
   typealias SelectedProjectInfo = ChatThreadModel.SelectedProjectInfo
@@ -406,6 +390,53 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     didSet {
       isStreamingResponse = streamingTask != nil
     }
+  }
+
+  private func handle(appEvent: AppEvent) async -> Bool {
+    switch appEvent {
+    case let event as ExecuteExtensionRequestEvent:
+      if event.command == "set_conversation_name" {
+        do {
+          let params = try JSONDecoder().decode(ExtensionRequest<Schema.NameConversationCommandParams>.self, from: event.data)
+            .input
+          if params.threadId == id.uuidString {
+            name = params.name
+            await persistThread()
+            return true
+          }
+        } catch {
+          defaultLogger.error("Failed to handle app event", error)
+        }
+      }
+      break
+
+    default:
+      break
+    }
+    return false
+  }
+
+  private func setUp() {
+    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+      guard state.focusedWorkspace != nil else { return }
+      Task { @MainActor in
+        _ = self.updateProjectInfo()
+        self.workspaceRootObservation = nil
+      }
+    }
+
+    settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
+      Task { @MainActor in
+        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
+      }
+    }.store(in: &cancellables)
+
+    context.handle(requestPersistence: { [weak self] in
+      Task { await self?.persistThread() }
+    })
+
+    @Dependency(\.chatContextRegistry) var chatContextRegistry
+    chatContextRegistry.register(context: context, for: id.uuidString)
   }
 
   private func recordEventAfterReceiving(messages: [AssistantMessage], startTime: Date) {

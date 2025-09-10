@@ -5,6 +5,7 @@ import AppFoundation
 import Dependencies
 import DLS
 import FoundationInterfaces
+import LocalServerServiceInterface
 import LoggingServiceInterface
 import SwiftUI
 
@@ -16,31 +17,45 @@ struct InternalSettingsView: View {
   @Binding var pointReleaseXcodeExtensionToDebugApp: Bool
   @Binding var showInternalSettingsInRelease: Bool
   @Binding var defaultChatPositionIsInverted: Bool
+  @Binding var enableAnalyticsAndCrashReporting: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 20) {
       VStack(spacing: 16) {
         InternalSettingsRow("Show internal settings in Debug app", value: $showInternalSettingsInRelease)
+
         InternalSettingsRow(
           "Repeat last LLM interaction",
           caption: "Enable for debugging LLM responses",
           value: $repeatLastLLMInteraction)
+
         InternalSettingsRow(
           "Show onboarding again",
           caption: "Show onboarding flow at next app launch",
           value: $showOnboardingScreenAgain)
+
         InternalSettingsRow(
           "Point Release Xcode Extension to Debug App",
           caption: "Use the debug version of the extension for development",
           value: $pointReleaseXcodeExtensionToDebugApp)
+
         InternalSettingsRow(
           "Invert the default chat position",
           caption: "Useful when using both the Debug and Release apps to avoid overlaps",
           value: $defaultChatPositionIsInverted)
+
+        #if DEBUG
+        InternalSettingsRow(
+          "Enable analytics and crash reporting",
+          caption: "Send usage data and crash reports for debugging",
+          value: $enableAnalyticsAndCrashReporting)
+        #endif
+
         HoveredButton(
           action: {
             Task {
-              defaultLogger.error(AppError("test error"))
+              let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+              defaultLogger.error(AppError(message))
               try await Task.sleep(nanoseconds: 1_000_000_000)
               let arr = [Int]()
               _ = arr[100]
@@ -50,7 +65,34 @@ struct InternalSettingsView: View {
           backgroundColor: colorScheme.secondarySystemBackground,
           padding: 6,
           cornerRadius: 8,
-          content: { Text("Crash the app") })
+          content: { Text("Crash the app (out of bound)") })
+
+        HoveredButton(
+          action: {
+            Task {
+              let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+              defaultLogger.error(AppError(message))
+              try await Task.sleep(nanoseconds: 1_000_000_000)
+              fatalError(message)
+            }
+          },
+          onHoverColor: colorScheme.tertiarySystemBackground,
+          backgroundColor: colorScheme.secondarySystemBackground,
+          padding: 6,
+          cornerRadius: 8,
+          content: { Text("Crash the app (fatal error)") })
+
+        HoveredButton(
+          action: {
+            Task {
+              _ = try? await server.getRequest(path: "error")
+            }
+          },
+          onHoverColor: colorScheme.tertiarySystemBackground,
+          backgroundColor: colorScheme.secondarySystemBackground,
+          padding: 6,
+          cornerRadius: 8,
+          content: { Text("Create server error") })
       }
       .padding(16)
       .background(Color(NSColor.controlBackgroundColor))
@@ -66,6 +108,8 @@ struct InternalSettingsView: View {
   @Environment(\.colorScheme) private var colorScheme
 
   @Dependency(\.userDefaults) private var userDefaults
+
+  @Dependency(\.localServer) private var server
 }
 
 // MARK: - InternalSettingsRow
