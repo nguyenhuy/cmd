@@ -74,6 +74,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
     input = ChatInputViewModel()
     input.didTapSendMessage = { Task { [weak self] in await self?.sendMessage() } }
     input.didCancelMessage = { [weak self] in self?.cancelCurrentMessage() }
+
+    setUp()
   }
 
   typealias SelectedProjectInfo = ChatThreadModel.SelectedProjectInfo
@@ -362,6 +364,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   /// Whether the chat thread has new changes to save.
   private var hasChangedSinceLastSave = true
 
+  @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
+
   @ObservationIgnored
   @Dependency(\.toolsPlugin) private var toolsPlugin: ToolsPlugin
 
@@ -378,6 +382,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
 
   @ObservationIgnored
   @Dependency(\.checkpointService) private var checkpointService: CheckpointService
+  @ObservationIgnored private var cancellables = Set<AnyCancellable>()
+
   private var summarizationTask: Task<Void, any Error>? = nil
 
   private var streamingTask: Task<Void, any Error>? = nil {
@@ -408,6 +414,29 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       break
     }
     return false
+  }
+
+  private func setUp() {
+    workspaceRootObservation = xcodeObserver.statePublisher.sink { @Sendable state in
+      guard state.focusedWorkspace != nil else { return }
+      Task { @MainActor in
+        _ = self.updateProjectInfo()
+        self.workspaceRootObservation = nil
+      }
+    }
+
+    settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
+      Task { @MainActor in
+        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
+      }
+    }.store(in: &cancellables)
+
+    context.handle(requestPersistence: { [weak self] in
+      Task { await self?.persistThread() }
+    })
+
+    @Dependency(\.chatContextRegistry) var chatContextRegistry
+    chatContextRegistry.register(context: context, for: id.uuidString)
   }
 
   private func recordEventAfterReceiving(messages: [AssistantMessage], startTime: Date) {
