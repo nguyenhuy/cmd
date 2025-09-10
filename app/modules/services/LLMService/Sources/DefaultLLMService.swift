@@ -145,6 +145,10 @@ final class DefaultLLMService: LLMService {
       defaultLogger.error("Unable to name conversation: no low tier model available")
       return "New conversation"
     }
+    if (try? settings.provider(for: lowTierModel))?.0.isExternalAgent == true {
+      // extenal agent cannot be called to name conversations. The conversation name might however be read from their output.
+      return "New conversation"
+    }
 
     let assistantMessage = try await streamCompletionResponse(
       system: """

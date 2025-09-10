@@ -395,6 +395,7 @@ targets.append(contentsOf: Target.module(
     "CodePreview",
     "ConcurrencyFoundation",
     "DLS",
+    "ExtensionEventsInterface",
     "FileDiffFoundation",
     "FileDiffTypesFoundation",
     "FileSuggestionServiceInterface",
@@ -406,6 +407,7 @@ targets.append(contentsOf: Target.module(
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "ShellServiceInterface",
     "ThreadSafe",
     "ToolFoundation",
@@ -413,6 +415,7 @@ targets.append(contentsOf: Target.module(
   ],
   resources: [.process("Resources")],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
     "AccessibilityFoundation",
     "AppEventServiceInterface",
     "ChatAppEvents",
@@ -421,12 +424,14 @@ targets.append(contentsOf: Target.module(
     "ChatServiceInterface",
     "CheckpointServiceInterface",
     "ConcurrencyFoundation",
+    "ExtensionEventsInterface",
     "FileSuggestionServiceInterface",
     "FoundationInterfaces",
     "LLMFoundation",
     "LLMServiceInterface",
     "LocalServerServiceInterface",
     "SettingsServiceInterface",
+    "SharedValuesFoundation",
     "SwiftTesting",
     "XcodeObserverServiceInterface",
   ],
@@ -913,8 +918,10 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "LoggingService",
   dependencies: [
+    .product(name: "Bugsnag", package: "bugsnag-cocoa"),
     .product(name: "Sentry", package: "sentry-cocoa"),
     .product(name: "Statsig", package: "statsig-kit"),
+    "AppFoundation",
     "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LoggingServiceInterface",
@@ -1148,7 +1155,7 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/appstefan/highlightswift", from: "1.1.0"),
     .package(url: "https://github.com/gsabran/Down", revision: "14309dd8781c7613063344727454ffbbebc8e8bd"),
-    .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.7.0"),
+    .package(url: "https://github.com/pointfreeco/swift-dependencies", from: "1.9.4"),
     .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", from: "2.2.4"),
     .package(url: "https://github.com/tuist/XcodeProj", from: "9.1.0"),
     .package(url: "https://github.com/ukushu/Ifrit", from: "3.0.0"),
@@ -1161,6 +1168,7 @@ let package = Package(
     .package(url: "https://github.com/gsabran/JSONScanner", from: "1.0.0"),
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
     .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
+    .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),

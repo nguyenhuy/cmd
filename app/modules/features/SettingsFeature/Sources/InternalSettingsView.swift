@@ -54,7 +54,8 @@ struct InternalSettingsView: View {
         HoveredButton(
           action: {
             Task {
-              defaultLogger.error(AppError("test error"))
+              let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+              defaultLogger.error(AppError(message))
               try await Task.sleep(nanoseconds: 1_000_000_000)
               let arr = [Int]()
               _ = arr[100]
@@ -64,7 +65,22 @@ struct InternalSettingsView: View {
           backgroundColor: colorScheme.secondarySystemBackground,
           padding: 6,
           cornerRadius: 8,
-          content: { Text("Crash the app") })
+          content: { Text("Crash the app (out of bound)") })
+
+        HoveredButton(
+          action: {
+            Task {
+              let message = "test error \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown")"
+              defaultLogger.error(AppError(message))
+              try await Task.sleep(nanoseconds: 1_000_000_000)
+              fatalError(message)
+            }
+          },
+          onHoverColor: colorScheme.tertiarySystemBackground,
+          backgroundColor: colorScheme.secondarySystemBackground,
+          padding: 6,
+          cornerRadius: 8,
+          content: { Text("Crash the app (fatal error)") })
 
         HoveredButton(
           action: {
