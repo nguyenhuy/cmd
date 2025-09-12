@@ -102,6 +102,9 @@ public struct SettingsView: View {
       case .keyboardShortcuts:
         KeyboardShortcutsSettingsView(keyboardShortcuts: $viewModel.keyboardShortcuts)
 
+      case .userDefinedXcodeShortcuts:
+        UserDefinedXcodeShortcutsSettingsView(userDefinedXcodeShortcuts: $viewModel.userDefinedXcodeShortcuts)
+
       case .internalSettings:
         InternalSettingsView(
           repeatLastLLMInteraction: $viewModel.repeatLastLLMInteraction,
@@ -134,6 +137,7 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
   case chatModes
   case tools
   case keyboardShortcuts
+  case userDefinedXcodeShortcuts
   case internalSettings
   case about
 
@@ -153,6 +157,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "Tools"
     case .keyboardShortcuts:
       "Keyboard Shortcuts"
+    case .userDefinedXcodeShortcuts:
+      "Xcode Shortcuts"
     case .internalSettings:
       "Internal Settings"
     case .about:
@@ -174,6 +180,8 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
       "wrench.and.screwdriver"
     case .keyboardShortcuts:
       "keyboard"
+    case .userDefinedXcodeShortcuts:
+      "command"
     case .internalSettings:
       "slider.horizontal.3"
     case .about:
@@ -248,6 +256,11 @@ private struct SettingsLandingView: View {
           SettingsCard(
             section: .keyboardShortcuts,
             description: "Configure app keyboard shortcuts",
+            action: onNavigate)
+
+          SettingsCard(
+            section: .userDefinedXcodeShortcuts,
+            description: "Configure new shortcuts that will be available in Xcode",
             action: onNavigate)
 
           SettingsCard(
