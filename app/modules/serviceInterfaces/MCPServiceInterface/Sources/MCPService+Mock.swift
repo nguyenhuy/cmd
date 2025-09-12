@@ -10,7 +10,7 @@ public final class MockMCPService: MCPService {
   public init() {}
   
   public var onLoadSettings: @Sendable () async throws -> MCPSettings = {
-    MCPSettings(enabledServers: [])
+    MCPSettings(enabledServers: [:])
   }
   
   public var onSaveSettings: @Sendable (MCPSettings) async throws -> Void = { _ in }

@@ -2,6 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import DLS
+import MCPServiceInterface
 import SwiftUI
 
 // MARK: - MCPSettingsView
@@ -17,12 +18,16 @@ public struct MCPSettingsView: View {
           ForEach(sampleMCPServers, id: \.name) { server in
             MCPServerCard(
               server: server,
-              isEnabled: enabledServers.contains(server.name),
+              isEnabled: enabledServers[server.name] != nil,
               onToggle: { isEnabled in
                 if isEnabled {
-                  enabledServers.insert(server.name)
+                  enabledServers[server.name] = .stdio(.init(
+                    name: server.name,
+                    command: "npx",
+                    args: ["@modelcontextprotocol/server-\(server.name)"]
+                  ))
                 } else {
-                  enabledServers.remove(server.name)
+                  enabledServers.removeValue(forKey: server.name)
                 }
               })
           }
@@ -32,7 +37,7 @@ public struct MCPSettingsView: View {
     }
   }
   
-  @State private var enabledServers: Set<String> = []
+  @State private var enabledServers: [String: MCPServerConfiguration] = [:]
 }
 
 // MARK: - MCPServer

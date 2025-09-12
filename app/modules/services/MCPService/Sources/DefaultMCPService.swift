@@ -31,7 +31,7 @@ final class DefaultMCPService: MCPService {
     
     guard fileManager.fileExists(atPath: settingsURL.path) else {
       // Return default settings if file doesn't exist
-      return MCPSettings(enabledServers: [])
+      return MCPSettings(enabledServers: [:])
     }
     
     let data = try Data(contentsOf: settingsURL)

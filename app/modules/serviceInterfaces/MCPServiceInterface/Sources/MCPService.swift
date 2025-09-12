@@ -17,10 +17,10 @@ public protocol MCPService: Sendable {
 // MARK: - MCPSettings
 
 public struct MCPSettings: Sendable, Codable {
-  /// Set of enabled MCP server names
-  public let enabledServers: Set<String>
+  /// Dictionary of enabled MCP server configurations keyed by server name
+  public let enabledServers: [String: MCPServerConfiguration]
   
-  public init(enabledServers: Set<String>) {
+  public init(enabledServers: [String: MCPServerConfiguration]) {
     self.enabledServers = enabledServers
   }
 }
@@ -31,7 +31,7 @@ public protocol MCPServiceProviding {
   var mcpService: MCPService { get }
 }
 
-public enum MCPServerConfiguration {
+public enum MCPServerConfiguration: Codable, Sendable {
     case stdio(_ configuration: MCPServerStdioConfiguration)
     case http(_ configuration: MCPServerHttpConfiguration)
     
@@ -62,7 +62,7 @@ public enum MCPServerConfiguration {
         }
     }
     
-    public struct MCPServerStdioConfiguration {
+    public struct MCPServerStdioConfiguration: Codable, Sendable {
         public let name: String
         public let command: String
         public let args: [String]?
@@ -80,7 +80,7 @@ public enum MCPServerConfiguration {
         }
     }
     
-    public struct MCPServerHttpConfiguration {
+    public struct MCPServerHttpConfiguration: Codable, Sendable {
         public let name: String
         public let url: String
         public let headers: [String: String]?
