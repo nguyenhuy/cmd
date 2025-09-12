@@ -11,6 +11,7 @@ import ChatServiceInterface
 import Combine
 import ConcurrencyFoundation
 import Dependencies
+import DependenciesTestSupport
 import Foundation
 import FoundationInterfaces
 import LLMFoundation
@@ -24,7 +25,15 @@ import XcodeObserverServiceInterface
 
 // MARK: - ChatViewModelTests
 
+@Suite(.dependencies {
+  $0.userDefaults = MockUserDefaults()
+  $0.chatHistoryService = MockChatHistoryService()
+  $0.fileManager = MockFileManager()
+  $0.llmService = MockLLMService()
+  $0.appEventHandlerRegistry = MockAppEventHandlerRegistry()
+})
 struct ChatViewModelTests {
+
   let dummyAXElement = AnyAXUIElement(AXUIElementCreateApplication(0))
 
   @MainActor
@@ -37,11 +46,11 @@ struct ChatViewModelTests {
   }
 
   @MainActor
-  @Test("adding a new tab replaces the current one")
+  @Test("adding a new tab replaces the current one", .dependencies {
+    $0.withAllModelAvailable()
+  })
   func test_addTab_increasesTabCount() async {
-    let viewModel = withAllModelAvailable {
-      ChatViewModel()
-    }
+    let viewModel = ChatViewModel()
     let firstTab = viewModel.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
     await firstTab.sendMessage()
@@ -72,12 +81,11 @@ struct ChatViewModelTests {
   func test_handleNewChatEvent() async {
     let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
-      } operation: {
-        ChatViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
+    } operation: {
+      ChatViewModel()
     }
 
     let firstTab = viewModel.tab
@@ -98,12 +106,12 @@ struct ChatViewModelTests {
     let mockAppEventHandlerRegistry = MockAppEventHandlerRegistry()
     let mockXcodeObserver = MockXcodeObserver(AXState<XcodeState>.unknown)
 
-    let viewModel = withAllModelAvailable { withDependencies {
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
       $0.appEventHandlerRegistry = mockAppEventHandlerRegistry
       $0.xcodeObserver = mockXcodeObserver
     } operation: {
       ChatViewModel()
-    }
     }
     let firstTab = viewModel.tab
     firstTab.input.textInput = TextInput([.text("Test input")])
@@ -798,7 +806,6 @@ struct ChatViewModelTests {
 
     mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
       let assistantMessage = AssistantMessage("Test response")
-      let messageStream = MutableCurrentValueStream<AssistantMessage>(assistantMessage)
       let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
 
       handleUpdateStream(updateStream)
@@ -811,12 +818,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     viewModel.input.textInput = TextInput([.text("Test message")])
@@ -861,12 +867,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     viewModel.input.textInput = TextInput([.text("Test message")])
@@ -913,12 +918,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     viewModel.input.textInput = TextInput([.text("User message")])
@@ -952,12 +956,11 @@ struct ChatViewModelTests {
           idx: 0))
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     let initialMessageCount = viewModel.messages.count
@@ -1026,12 +1029,11 @@ struct ChatViewModelTests {
       }
     }
 
-    let viewModel = withAllModelAvailable {
-      withDependencies {
-        $0.llmService = mockLLMService
-      } operation: {
-        ChatThreadViewModel()
-      }
+    let viewModel = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel()
     }
 
     // Send first message that will trigger summarization
@@ -1058,23 +1060,6 @@ struct ChatViewModelTests {
       ],
     ])
   }
-
-  /// Setup the settings and used default to allow for messages to be sent (there need to be an LLM model configured).
-  private func withAllModelAvailable<R>(
-    operation: () -> R)
-    -> R
-  {
-    let settingsService = MockSettingsService.allConfigured
-    let mockUserDefaults = MockUserDefaults(initialValues: [
-      "selectedLLMModel": "gpt-latest",
-    ])
-    return withDependencies({
-      $0.settingsService = settingsService
-      $0.userDefaults = mockUserDefaults
-    }) {
-      operation()
-    }
-  }
 }
 
 extension Schema.MessageContent {
@@ -1085,6 +1070,18 @@ extension Schema.MessageContent {
     default:
       nil
     }
+  }
+}
+
+extension DependencyValues {
+  /// Setup the settings and used default to allow for messages to be sent (there need to be an LLM model configured).
+  mutating func withAllModelAvailable() {
+    let settingsService = MockSettingsService.allConfigured
+    let mockUserDefaults = MockUserDefaults(initialValues: [
+      "selectedLLMModel": "gpt-latest",
+    ])
+    self.settingsService = settingsService
+    userDefaults = mockUserDefaults
   }
 }
 

@@ -1,5 +1,5 @@
 {
-  "originHash" : "6967bd3268bb19071bb16c9387000cc63ecf7d8a2db9c985e077e388c62f3dbf",
+  "originHash" : "5d913ff3f9fc7ba3ffa4b8d397985c208ff76e0283bcd838dee02a08f365bad3",
   "pins" : [
     {
       "identity" : "aexml",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "e048c8ee94967e8d8a1c2ec0e1156d6f7fa34d31",
         "version" : "1.20.0"
+      }
+    },
+    {
+      "identity" : "bugsnag-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/bugsnag/bugsnag-cocoa",
+      "state" : {
+        "revision" : "fdf9fbf8ff34ea919f151a8c066aadaa54a90a28",
+        "version" : "6.33.0"
       }
     },
     {
@@ -284,8 +293,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-dependencies",
       "state" : {
-        "revision" : "52b5e1a09dc016e64ce253e19ab3124b7fae9ac9",
-        "version" : "1.7.0"
+        "revision" : "a501eebe552fd23691c560adf474fca2169ad8aa",
+        "version" : "1.9.4"
       }
     },
     {

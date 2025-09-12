@@ -58,7 +58,8 @@ public struct Settings: Sendable, Equatable {
     reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
-    keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts())
+    keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
+    userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut] = [])
   {
     self.pointReleaseXcodeExtensionToDebugApp = pointReleaseXcodeExtensionToDebugApp
     self.allowAnonymousAnalytics = allowAnonymousAnalytics
@@ -72,6 +73,7 @@ public struct Settings: Sendable, Equatable {
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
     self.keyboardShortcuts = keyboardShortcuts
+    self.userDefinedXcodeShortcuts = userDefinedXcodeShortcuts
   }
 
   public struct LLMProviderSettings: Sendable, Codable, Equatable {
@@ -130,6 +132,7 @@ public struct Settings: Sendable, Equatable {
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts
+  public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
 
 }
 
@@ -154,6 +157,35 @@ extension Settings {
 }
 
 public typealias LLMProviderSettings = Settings.LLMProviderSettings
+
+// MARK: - User Defined Xcode Shortcuts
+
+public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiable {
+  public init(
+    id: UUID = UUID(),
+    name: String,
+    command: String,
+    keyBinding: Settings.KeyboardShortcut? = nil,
+    xcodeCommandIndex: Int)
+  {
+    self.id = id
+    self.name = name
+    self.command = command
+    self.keyBinding = keyBinding
+    self.xcodeCommandIndex = xcodeCommandIndex
+  }
+
+  public let id: UUID
+  public var name: String
+  public var command: String
+
+  public var keyBinding: Settings.KeyboardShortcut?
+  /// The index of the Xcode command this shortcut is associated with.
+  /// Xcode identifies commands by the class name they are mapped to (e.g. `UserDefinedXcodeShortcut0Command` for index 0).
+  /// We keep track to this index to keep it consistently associated with the same command.
+  public let xcodeCommandIndex: Int
+
+}
 
 // MARK: - Keyboard Shortcuts
 
