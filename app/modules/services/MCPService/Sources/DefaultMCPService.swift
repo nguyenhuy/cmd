@@ -7,62 +7,60 @@ import Foundation
 import FoundationInterfaces
 import JSONFoundation
 import LoggingServiceInterface
+import MCP
 import MCPServiceInterface
 import SettingsServiceInterface
 
 // MARK: - DefaultMCPService
 
 final class DefaultMCPService: MCPService {
-  
+
   // MARK: - Initialization
-  
+
   init(
     settingsService: SettingsService,
-    fileManager: FileManagerI
-  ) {
+    fileManager: FileManagerI)
+  {
     self.settingsService = settingsService
     self.fileManager = fileManager
   }
-  
+
+  func connect(to _: MCPServerConfiguration) async throws {
+    // TODO.
+  }
+
   // MARK: - MCPService
-  
-  func loadSettings() async throws -> MCPSettings {
-    let settingsURL = try mcpSettingsURL()
-    
-    guard fileManager.fileExists(atPath: settingsURL.path) else {
-      // Return default settings if file doesn't exist
-      return MCPSettings(enabledServers: [:])
-    }
-    
-    let data = try Data(contentsOf: settingsURL)
-    return try JSONDecoder().decode(MCPSettings.self, from: data)
-  }
-  
-  func saveSettings(_ settings: MCPSettings) async throws {
-    let settingsURL = try mcpSettingsURL()
-    
-    // Create directory if it doesn't exist
-    let settingsDirectory = settingsURL.deletingLastPathComponent()
-    try fileManager.createDirectory(
-      at: settingsDirectory,
-      withIntermediateDirectories: true,
-      attributes: nil
-    )
-    
-    let data = try JSONEncoder.sortingKeys.encode(settings)
-    try data.write(to: settingsURL)
-  }
-  
-  // MARK: - Private
-  
+
+//  func loadSettings() async throws -> MCPSettings {
+//    let settingsURL = try mcpSettingsURL()
+//
+//    guard fileManager.fileExists(atPath: settingsURL.path) else {
+//      // Return default settings if file doesn't exist
+//      return MCPSettings(enabledServers: [:])
+//    }
+//
+//    let data = try Data(contentsOf: settingsURL)
+//    return try JSONDecoder().decode(MCPSettings.self, from: data)
+//  }
+//
+//  func saveSettings(_ settings: MCPSettings) async throws {
+//    let settingsURL = try mcpSettingsURL()
+//
+//    // Create directory if it doesn't exist
+//    let settingsDirectory = settingsURL.deletingLastPathComponent()
+//    try fileManager.createDirectory(
+//      at: settingsDirectory,
+//      withIntermediateDirectories: true,
+//      attributes: nil
+//    )
+//
+//    let data = try JSONEncoder.sortingKeys.encode(settings)
+//    try data.write(to: settingsURL)
+//  }
+
   private let settingsService: SettingsService
   private let fileManager: FileManagerI
-  
-  private func mcpSettingsURL() throws -> URL {
-    return FileManager.default.homeDirectoryForCurrentUser
-      .appendingPathComponent(".cmd")
-      .appendingPathComponent("mcp-settings.json")
-  }
+
 }
 
 // MARK: - Dependency Registration
@@ -75,8 +73,7 @@ extension BaseProviding where
     shared {
       DefaultMCPService(
         settingsService: settingsService,
-        fileManager: fileManager
-      )
+        fileManager: fileManager)
     }
   }
 }

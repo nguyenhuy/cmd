@@ -254,7 +254,7 @@ final class DefaultChatCompletionService: ChatCompletionService {
 // MARK: - BroadcastedStream + AsyncResponseEncodable
 
 extension BroadcastedStream: AsyncResponseEncodable where Element: Encodable {
-  public func encodeResponse(for request: Request) async throws -> Response {
+  public func encodeResponse(for _: Request) async throws -> Response {
     let response = Response(status: .ok)
     response.headers.contentType = HTTPMediaType(type: "text", subType: "event-stream")
     response.body = Response.Body(managedAsyncStream: { writer in

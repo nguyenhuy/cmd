@@ -100,7 +100,7 @@ public struct SettingsView: View {
         ToolsConfigurationView(viewModel: viewModel.toolConfigurationViewModel)
 
       case .mcp:
-        MCPSettingsView()
+        MCPSettingsView(mcpServers: $viewModel.mcpServers)
 
       case .keyboardShortcuts:
         KeyboardShortcutsSettingsView(keyboardShortcuts: $viewModel.keyboardShortcuts)

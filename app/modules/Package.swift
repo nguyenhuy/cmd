@@ -466,6 +466,7 @@ targets.append(contentsOf: Target.module(
     "LLMFoundation",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
+    "MCPServiceInterface",
     "SettingsServiceInterface",
     "SharedValuesFoundation",
     "ShellServiceInterface",
@@ -721,6 +722,7 @@ targets.append(contentsOf: Target.module(
   name: "MCPServiceInterface",
   dependencies: [
     "DependencyFoundation",
+    "SettingsServiceInterface",
     "ThreadSafe",
   ],
   path: "./serviceInterfaces/MCPServiceInterface"))
@@ -1057,6 +1059,7 @@ targets.append(contentsOf: Target.module(
 targets.append(contentsOf: Target.module(
   name: "MCPService",
   dependencies: [
+    .product(name: "MCP", package: "swift-sdk"),
     "AppFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
@@ -1207,6 +1210,7 @@ let package = Package(
     .package(url: "https://github.com/MobileNativeFoundation/XCLogParser", from: "0.2.41"),
     .package(url: "https://github.com/groue/GRDB.swift", from: "7.5.0"),
     .package(url: "https://github.com/bugsnag/bugsnag-cocoa", from: "6.32.2"),
+    .package(url: "https://github.com/modelcontextprotocol/swift-sdk", from: "0.10.1"),
 
     // Testing dependencies:
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.18.0"),

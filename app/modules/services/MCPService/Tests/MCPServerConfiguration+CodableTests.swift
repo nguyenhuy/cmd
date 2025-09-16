@@ -10,7 +10,7 @@ import Testing
 
 @Suite("MCPServerConfiguration Codable Tests")
 struct MCPServerConfigurationCodableTests {
-  
+
   @Test("Decode MCPServerConfigurations with mixed server types")
   func testMixedServerTypesDecoding() throws {
     let json = """
@@ -40,11 +40,11 @@ struct MCPServerConfigurationCodableTests {
         }
       }
       """
-    
+
     let decoded = try JSONDecoder().decode(MCPServerConfigurations.self, from: json.data(using: .utf8)!)
-    
+
     #expect(decoded.configurations.count == 3)
-    
+
     // Verify database server (stdio, disabled)
     if case .stdio(let dbConfig) = decoded.configurations["database"] {
       #expect(dbConfig.name == "database")
@@ -54,7 +54,7 @@ struct MCPServerConfigurationCodableTests {
     } else {
       Issue.record("Expected stdio configuration for database server")
     }
-    
+
     // Verify web API server (http)
     if case .http(let apiConfig) = decoded.configurations["web-api"] {
       #expect(apiConfig.name == "web-api")
@@ -64,7 +64,7 @@ struct MCPServerConfigurationCodableTests {
     } else {
       Issue.record("Expected http configuration for web-api server")
     }
-    
+
     // Verify local tools server (stdio with autoApprove)
     if case .stdio(let toolsConfig) = decoded.configurations["local-tools"] {
       #expect(toolsConfig.name == "local-tools")
@@ -76,4 +76,3 @@ struct MCPServerConfigurationCodableTests {
     }
   }
 }
-

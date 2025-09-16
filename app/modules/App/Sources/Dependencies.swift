@@ -12,8 +12,6 @@ import ChatService
 import ChatServiceInterface
 import CheckpointService
 import CheckpointServiceInterface
-import MCPService
-import MCPServiceInterface
 import Combine
 import Dependencies
 import FileSuggestionService
@@ -26,6 +24,8 @@ import LLMServiceInterface
 import LocalServerService
 import LocalServerServiceInterface
 import LoggingServiceInterface
+import MCPService
+import MCPServiceInterface
 import PermissionsService
 import PermissionsServiceInterface
 import SettingsService

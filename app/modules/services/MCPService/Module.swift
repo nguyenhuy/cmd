@@ -1,6 +1,7 @@
 Target.module(
   name: "MCPService",
   dependencies: [
+    .product(name: "MCP", package: "swift-sdk"),
     "AppFoundation",
     "DependencyFoundation",
     "FoundationInterfaces",
