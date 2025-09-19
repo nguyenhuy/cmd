@@ -2,10 +2,13 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppEventServiceInterface
+import ChatFeatureInterface
+import Combine
 import ConcurrencyFoundation
 import Dependencies
 import ExtensionEventsInterface
 import Foundation
+import LLMServiceInterface
 import LocalServerServiceInterface
 import SharedValuesFoundation
 import SwiftTesting
@@ -152,6 +155,7 @@ struct ChatThreadViewModelTests {
 
     // Assert
     #expect(handled == false)
+    #expect(sut.name == nil) // Name should remain unchanged
   }
 
   @MainActor
@@ -181,6 +185,82 @@ struct ChatThreadViewModelTests {
     // Assert
     #expect(handled == false)
     _ = sut // Keep reference
+  }
+
+  @MainActor
+  @Test("receiving messages updates state")
+  func test_receivingMessages_updatesState() async throws {
+    // given
+    let mockLLMService = MockLLMService()
+
+    let testThreadId = UUID()
+
+    let sut = withDependencies {
+      $0.withAllModelAvailable()
+      $0.llmService = mockLLMService
+    } operation: {
+      ChatThreadViewModel(id: testThreadId)
+    }
+
+    let isDoneStreaming = expectation(description: "is done streaming")
+    let hasProcessedFirstMessage = expectation(description: "has processed first message")
+
+    mockLLMService.onSendMessage = { _, _, _, _, _, handleUpdateStream in
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>([])
+      handleUpdateStream(updateStream)
+
+      let message = MutableCurrentValueStream<AssistantMessage>(.init(content: []))
+      updateStream.update(with: [message])
+
+      let firstTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "", deltas: []))
+      message.update(with: AssistantMessage(content: [.text(firstTextContent)]))
+      firstTextContent.update(with: .init(content: "hello", deltas: ["hello"]))
+      firstTextContent.finish()
+
+      try await fulfillment(of: hasProcessedFirstMessage)
+
+      let secondTextContent = MutableCurrentValueStream<TextContentMessage>(.init(content: "", deltas: []))
+      message.update(with: AssistantMessage(content: [.text(firstTextContent), .text(secondTextContent)]))
+      secondTextContent.update(with: .init(content: "world", deltas: ["world"]))
+      secondTextContent.finish()
+
+      message.finish()
+      updateStream.finish()
+
+      return SendMessageResponse(newMessages: [], usageInfo: nil)
+    }
+
+    var cancellables = Set<AnyCancellable>()
+
+    let eventsHistory = Atomic<[[String]]>([])
+    sut.observeChanges(to: \.events) { value in
+      MainActor.assumeIsolated {
+        let newValue = value.compactMap { $0.message?.content.asText?.text }
+        let events = eventsHistory.mutate { events in
+          if events.last != newValue {
+            events.append(newValue)
+          }
+          return events
+        }
+        if value.count == 2 {
+          hasProcessedFirstMessage.fulfillAtMostOnce()
+        }
+        if value.count == 3 {
+          isDoneStreaming.fulfillAtMostOnce()
+        }
+      }
+    }.store(in: &cancellables)
+
+    // when
+    sut.input.textInput = .init(NSAttributedString(string: "sup?"))
+    await sut.sendMessage()
+
+    // then
+    try await fulfillment(of: isDoneStreaming)
+    #expect(eventsHistory.value == [["sup?"], ["sup?", "hello"], ["sup?", "hello", "world"]])
+
+    // Clean up
+    _ = cancellables
   }
 
 }
