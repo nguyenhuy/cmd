@@ -8,6 +8,7 @@
       <item>
         <title>Version 0.1.20</title>
         <link>https://sparkle-project.org</link>
+        <sparkle:channel>stable</sparkle:channel>>
         <sparkle:version>0.1.20</sparkle:version>
         <description>
           <![CDATA[
