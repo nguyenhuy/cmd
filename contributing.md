@@ -19,6 +19,8 @@ brew install --cask swiftformat-for-xcode
 brew install jc
 brew install jq
 brew install shfmt
+brew install yarn
+
 cp -R ./tools/githooks/. .git/hooks
 
 # helper for dev tools to bashrc
