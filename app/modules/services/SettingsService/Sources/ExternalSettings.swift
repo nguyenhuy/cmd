@@ -197,16 +197,17 @@ extension Encodable {
   /// Write the object to the desired location.
   /// Only write entries that either have a non-default value, or already that exist in the file.
   /// If a file already exist at the target location, all existing keys that are not key of the new object are preserved.
-  func writeNonDefaultValues(to path: FilePath, fileManager: FileManagerI) throws {
-    let fileUrl = URL(filePath: path.string)
-    try fileManager.createDirectories(requiredForFileAt: fileUrl)
+  func writeNonDefaultValues(to url: URL, fileManager: FileManagerI) throws {
+    try fileManager.createDirectories(requiredForFileAt: url)
 
-    if !fileManager.fileExists(atPath: path.string) {
+    if
+      !fileManager.fileExists(atPath: url.absoluteString)
+    {
       let encoder = JSONEncoder()
       encoder.userInfo[.doNotEncodeDefaultValues] = true
       encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
       let data = try encoder.encode(self)
-      try fileManager.write(data: data, to: fileUrl)
+      try fileManager.write(data: data, to: url)
       return
     }
     // If a file exist:
@@ -222,7 +223,7 @@ extension Encodable {
     let partiallyEncodedData = try partialEncoder.encode(self)
     let partiallyEncoded = try JSONSerialization.jsonObject(with: partiallyEncodedData) as? [String: Any]
     let existing = try? {
-      let data = try fileManager.read(dataFrom: fileUrl)
+      let data = try fileManager.read(dataFrom: url)
       return try JSONSerialization.jsonObject(with: data) as? [String: Any]
     }()
     var merged = existing ?? [:]
@@ -235,7 +236,7 @@ extension Encodable {
       }
     }
     let mergedData = try JSONSerialization.data(withJSONObject: merged, options: [.prettyPrinted, .sortedKeys])
-    try fileManager.write(data: mergedData, to: fileUrl)
+    try fileManager.write(data: mergedData, to: url)
   }
 }
 

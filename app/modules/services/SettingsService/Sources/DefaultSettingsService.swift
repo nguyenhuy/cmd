@@ -98,8 +98,8 @@ final class DefaultSettingsService: SettingsService {
   private let sharedUserDefaults: UserDefaultsI
   private let releaseSharedUserDefaults: UserDefaultsI?
 
-  private var globalSettingsLocation: FilePath {
-    "~/.cmd/settings.json"
+  private var globalSettingsLocation: URL {
+    fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json")
   }
 
   private func loadSettings() -> Settings {
@@ -122,7 +122,7 @@ final class DefaultSettingsService: SettingsService {
     internalSettings.pointReleaseXcodeExtensionToDebugApp = sharedUserDefaults
       .bool(forKey: SharedKeys.pointReleaseXcodeExtensionToDebugApp)
 
-    var externalSettings: ExternalSettings = (try? fileManager.read(dataFrom: URL(filePath: globalSettingsLocation)!))
+    var externalSettings: ExternalSettings = (try? fileManager.read(dataFrom: globalSettingsLocation))
       .map { data in
         do {
           return try JSONDecoder().decode(ExternalSettings.self, from: data)
