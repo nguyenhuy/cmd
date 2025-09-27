@@ -200,7 +200,7 @@ extension Encodable {
   func writeNonDefaultValues(to url: URL, fileManager: FileManagerI) throws {
     try fileManager.createDirectories(requiredForFileAt: url)
 
-    if !fileManager.fileExists(atPath: url.absoluteString) {
+    if !fileManager.fileExists(atPath: url.path) {
       let encoder = JSONEncoder()
       encoder.userInfo[.doNotEncodeDefaultValues] = true
       encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
