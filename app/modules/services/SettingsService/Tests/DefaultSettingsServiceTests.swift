@@ -24,7 +24,7 @@ struct DefaultSettingsServiceTests {
     let sharedUserDefaults = MockUserDefaults()
 
     // Test
-    let service = try DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(fileManager: fileManager, sharedUserDefaults: sharedUserDefaults)
 
     // Verify
     #expect(service.value(for: \.pointReleaseXcodeExtensionToDebugApp) == false)
@@ -38,7 +38,7 @@ struct DefaultSettingsServiceTests {
   func test_apiKeyKeychainMapping() async throws {
     // Setup
     let sharedUserDefaults = MockUserDefaults()
-    let service = try DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
     // Test individual provider key mapping
     let groqSettings = LLMProviderSettings(
@@ -78,7 +78,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_updateAndRetrieveValues() throws {
     // Setup
-    let service = try DefaultSettingsService()
+    let service = DefaultSettingsService()
 
     // Test updating values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -102,7 +102,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_resetIndividualSettings() throws {
     // Setup
-    let service = try DefaultSettingsService()
+    let service = DefaultSettingsService()
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -128,7 +128,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_resetAllSettings() throws {
     // Setup
-    let service = try DefaultSettingsService()
+    let service = DefaultSettingsService()
 
     // Set initial values
     service.update(setting: \.pointReleaseXcodeExtensionToDebugApp, to: true)
@@ -162,7 +162,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_liveValuesUpdate() async throws {
     // Setup
-    let service = try DefaultSettingsService()
+    let service = DefaultSettingsService()
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
@@ -194,7 +194,7 @@ struct DefaultSettingsServiceTests {
   func test_liveValuesUpdateFromDiskChange() async throws {
     // Setup
     let sharedUserDefaults = MockUserDefaults()
-    let service = try DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
+    let service = DefaultSettingsService(sharedUserDefaults: sharedUserDefaults)
 
     // Test live values
     var cancellables = Set<AnyCancellable>()
@@ -228,7 +228,7 @@ struct DefaultSettingsServiceTests {
   @MainActor
   func test_allLiveValuesUpdate() async throws {
     // Setup
-    let service = try DefaultSettingsService()
+    let service = DefaultSettingsService()
 
     // Test live all values
     var cancellables = Set<AnyCancellable>()
@@ -269,7 +269,6 @@ struct DefaultSettingsServiceTests {
     let sharedUserDefaults = MockUserDefaults()
     let service = DefaultSettingsService(
       fileManager: fileManager,
-      settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
       releaseSharedUserDefaults: nil)
 
@@ -435,7 +434,6 @@ struct DefaultSettingsServiceTests {
     // when
     let sut = DefaultSettingsService(
       fileManager: fileManager,
-      settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
       releaseSharedUserDefaults: nil)
 
@@ -460,17 +458,9 @@ extension DefaultSettingsService {
   fileprivate convenience init(
     fileManager: FileManagerI = MockFileManager(),
     sharedUserDefaults: UserDefaultsI = MockUserDefaults())
-    throws
   {
-    let settingsDirLocation = fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd")
-    let settingsFileLocation = settingsDirLocation.appending(path: "settings.json")
-
-    // Create the .cmd directory
-    try fileManager.createDirectory(at: settingsDirLocation, withIntermediateDirectories: true, attributes: nil)
-
     self.init(
       fileManager: fileManager,
-      settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
       releaseSharedUserDefaults: nil)
   }

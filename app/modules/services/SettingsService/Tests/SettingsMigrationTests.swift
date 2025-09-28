@@ -63,7 +63,6 @@ struct SettingsMigrationTests {
     // when
     let sut = DefaultSettingsService(
       fileManager: fileManager,
-      settingsFileLocation: settingsFileLocation,
       sharedUserDefaults: sharedUserDefaults,
       releaseSharedUserDefaults: nil)
 

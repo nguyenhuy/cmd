@@ -22,26 +22,13 @@ final class DefaultSettingsService: SettingsService {
 
   // MARK: - Initialization
 
-  convenience init(
-    fileManager: FileManagerI,
-    sharedUserDefaults: UserDefaultsI,
-    releaseSharedUserDefaults: UserDefaultsI?)
-  {
-    self.init(
-      fileManager: fileManager,
-      settingsFileLocation: fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json"),
-      sharedUserDefaults: sharedUserDefaults,
-      releaseSharedUserDefaults: releaseSharedUserDefaults)
-  }
-
   init(
     fileManager: FileManagerI,
-    settingsFileLocation: URL,
     sharedUserDefaults: UserDefaultsI,
     releaseSharedUserDefaults: UserDefaultsI?)
   {
     self.fileManager = fileManager
-    self.settingsFileLocation = settingsFileLocation
+    settingsFileLocation = fileManager.homeDirectoryForCurrentUser.appending(path: ".cmd/settings.json")
     self.sharedUserDefaults = sharedUserDefaults
     self.releaseSharedUserDefaults = releaseSharedUserDefaults
     settings = CurrentValueSubject<Settings, Never>(defaultSettings)
