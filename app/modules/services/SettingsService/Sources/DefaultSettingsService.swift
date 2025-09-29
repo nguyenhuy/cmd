@@ -34,7 +34,7 @@ final class DefaultSettingsService: SettingsService {
       releaseSharedUserDefaults: releaseSharedUserDefaults)
   }
 
-  init(
+  package init(
     fileManager: FileManagerI,
     settingsFileLocation: URL,
     sharedUserDefaults: UserDefaultsI,
