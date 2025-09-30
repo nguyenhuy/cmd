@@ -120,6 +120,6 @@ extension AXUIElement {
   func caching(_ operation: @Sendable (AXUIElement) -> AXUIElement, cacheKey: String) -> AXUIElement {
     AXCache.shared.caching(from: self, {
       [operation($0)].compactMap(\.self)
-    }, cacheKey: cacheKey).first ?? operation(self) // The later fallback cannot be executed, but it reads better than `!`.
+    }, cacheKey: cacheKey).first ?? operation(self) // The latter fallback cannot be executed, but it reads better than `!`.
   }
 }
