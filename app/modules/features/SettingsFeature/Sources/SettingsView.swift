@@ -9,7 +9,7 @@ import SwiftUI
 
 public struct SettingsView: View {
   public init(viewModel: SettingsViewModel, onDismiss: @MainActor @escaping () -> Void = { }) {
-    _viewModel = State(initialValue: viewModel)
+    self.viewModel = viewModel
     self.onDismiss = onDismiss
   }
 
@@ -21,7 +21,7 @@ public struct SettingsView: View {
             currentView = section
           },
           onDismiss: onDismiss,
-          hasAvailableLLMModels: !viewModel.availableModels.isEmpty,
+          hasAvailableModels: !viewModel.llmSettings.availableModels.isEmpty,
           showInternalSettingsInRelease: viewModel.showInternalSettingsInRelease)
       }
 
@@ -41,7 +41,8 @@ public struct SettingsView: View {
   }
 
   @Environment(\.colorScheme) private var colorScheme
-  @State private var viewModel: SettingsViewModel
+  @Bindable private var viewModel: SettingsViewModel
+
   @State private var currentView = SettingsSection.landing
 
   private let onDismiss: @MainActor () -> Void
@@ -51,21 +52,7 @@ public struct SettingsView: View {
     VStack(spacing: 0) {
       // Header with back button
       HStack {
-        HoveredButton(
-          action: {
-            currentView = .landing
-          },
-          onHoverColor: colorScheme.secondarySystemBackground,
-          padding: 6,
-          cornerRadius: 8)
-        {
-          HStack(spacing: 6) {
-            Image(systemName: "chevron.left")
-              .font(.system(size: 12, weight: .medium))
-            Text("Back")
-          }
-        }
-
+        BackButton { currentView = .landing }
         Spacer()
       }
 
@@ -83,15 +70,10 @@ public struct SettingsView: View {
 
       switch currentView {
       case .providers:
-        ProvidersView(providerSettings: $viewModel.providerSettings)
+        AIProvidersView(viewModel: viewModel.llmSettings)
 
       case .models:
-        ModelsView(
-          availableModels: viewModel.availableModels,
-          availableProviders: viewModel.availableProviders,
-          providerForModels: $viewModel.providerForModels,
-          inactiveModels: $viewModel.inactiveModels,
-          reasoningModels: $viewModel.reasoningModels)
+        ModelsView(viewModel: viewModel.llmSettings)
 
       case .chatModes:
         ChatModeView(customInstructions: $viewModel.customInstructions)
@@ -205,26 +187,12 @@ private enum SettingsSection: String, Identifiable, CaseIterable {
 private struct SettingsLandingView: View {
   let onNavigate: (SettingsSection) -> Void
   let onDismiss: () -> Void
-  let hasAvailableLLMModels: Bool
+  let hasAvailableModels: Bool
   let showInternalSettingsInRelease: Bool
 
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
-      // Back button
-      HoveredButton(
-        action: {
-          onDismiss()
-        },
-        onHoverColor: colorScheme.secondarySystemBackground,
-        padding: 6,
-        cornerRadius: 8)
-      {
-        HStack(spacing: 6) {
-          Image(systemName: "chevron.left")
-            .font(.system(size: 12, weight: .medium))
-          Text("Back")
-        }
-      }
+      BackButton { onDismiss() }
 
       // Header
       HStack {
@@ -246,7 +214,7 @@ private struct SettingsLandingView: View {
             description: "Manage API keys and setup LLM providers",
             action: onNavigate)
 
-          if hasAvailableLLMModels {
+          if hasAvailableModels {
             SettingsCard(
               section: .models,
               description: "Models configuration",

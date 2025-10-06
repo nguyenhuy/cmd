@@ -9,6 +9,7 @@ Target.module(
     "ExtensionEventsInterface",
     "FoundationInterfaces",
     "LLMFoundation",
+    "LLMServiceInterface",
     "LocalServerServiceInterface",
     "LoggingServiceInterface",
     "MCPServiceInterface",
@@ -20,8 +21,11 @@ Target.module(
     "XcodeObserverServiceInterface",
   ],
   testDependencies: [
+    .product(name: "DependenciesTestSupport", package: "swift-dependencies"),
+    "ConcurrencyFoundation",
     "FoundationInterfaces",
     "LLMFoundation",
+    "LLMServiceInterface",
     "SettingsServiceInterface",
     "SwiftTesting",
   ])

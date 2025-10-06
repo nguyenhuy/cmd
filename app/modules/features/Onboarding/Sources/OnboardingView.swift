@@ -9,13 +9,13 @@ import SwiftUI
 
 struct OnboardingView: View {
   /// Create a view to guide the user through a few onboarding steps.
-  /// - Parameter showLLMProviders: returns a view to configure LLM providers. It receive a closure to call when the user is ready to proceed.
+  /// - Parameter showAIProviders: returns a view to configure LLM providers. It receive a closure to call when the user is ready to proceed.
   init(
     viewModel: OnboardingViewModel,
-    createLLMProvidersView: @MainActor @escaping (@MainActor @escaping () -> Void) -> AnyView)
+    createAIAIProvidersView: @MainActor @escaping () -> AnyView)
   {
     self.viewModel = viewModel
-    self.createLLMProvidersView = createLLMProvidersView
+    self.createAIAIProvidersView = createAIAIProvidersView
   }
 
   enum Constants {
@@ -24,24 +24,28 @@ struct OnboardingView: View {
 
   var body: some View {
     ZStack {
-      WelcomeView(onGetStarted: {
-        viewModel.handleMoveToNextStep()
-      })
-      .readingSize($referenceViewSize)
-      .isHidden(viewModel.currentStep != .welcome)
+      Rectangle()
+        .foregroundColor(.clear)
+        .background(colorScheme.primaryBackground)
+      Group {
+        WelcomeView(onGetStarted: {
+          viewModel.handleMoveToNextStep()
+        })
+        .readingSize($referenceViewSize)
+        .isHidden(viewModel.currentStep != .welcome)
 
-      if viewModel.currentStep == .accessibilityPermission || viewModel.currentStep == .xcodeExtensionPermission {
-        PermissionsView(viewModel: viewModel)
-      } else if viewModel.currentStep == .providersSetup {
-        llmProviderSetupView
-          .isHidden(viewModel.currentStep != .providersSetup)
-      } else if viewModel.currentStep == .setupComplete {
-        OnboardingCompletedView(onDone: viewModel.handleMoveToNextStep)
+        if viewModel.currentStep == .accessibilityPermission || viewModel.currentStep == .xcodeExtensionPermission {
+          PermissionsView(viewModel: viewModel)
+        } else if viewModel.currentStep == .providersSetup {
+          llmProviderSetupView
+            .isHidden(viewModel.currentStep != .providersSetup)
+        } else if viewModel.currentStep == .setupComplete {
+          OnboardingCompletedView(onDone: viewModel.handleMoveToNextStep)
+        }
       }
+      .frame(height: referenceViewSize.height)
+      .padding(40)
     }
-    .frame(height: referenceViewSize.height)
-    .padding(40)
-    .background(colorScheme.primaryBackground)
   }
 
   @State private var referenceViewSize = CGSize.zero
@@ -50,7 +54,7 @@ struct OnboardingView: View {
 
   @Bindable private var viewModel: OnboardingViewModel
 
-  private let createLLMProvidersView: @MainActor (@MainActor @escaping () -> Void) -> AnyView
+  private let createAIAIProvidersView: @MainActor () -> AnyView
 
   @ViewBuilder
   private var llmProviderSetupView: some View {
@@ -67,9 +71,7 @@ struct OnboardingView: View {
         Spacer(minLength: 0)
       }
 
-      createLLMProvidersView {
-        viewModel.handleMoveToNextStep()
-      }
+      createAIAIProvidersView()
 
       if viewModel.canSkipProviderSetup {
         HoveredButton(

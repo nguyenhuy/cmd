@@ -4,28 +4,18 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let anthropic = LLMProvider(
+  public static let anthropic = AIProvider(
     id: "anthropic",
     name: "Anthropic",
     keychainKey: "ANTHROPIC_API_KEY",
-    supportedModels: [
-      .claudeHaiku_3_5,
-      .claudeSonnet,
-      .claudeOpus,
-    ],
     websiteURL: URL(string: "https://www.anthropic.com/claude"),
     apiKeyCreationURL: URL(string: "https://console.anthropic.com/settings/keys"),
-    idForModel: { model in
-      switch model {
-      case .claudeHaiku_3_5: return "claude-3-5-haiku-latest"
-      case .claudeSonnet: return "claude-sonnet-4-5-20250929"
-      case .claudeOpus: return "claude-opus-4-1-20250805"
-      default: throw AppError(message: "Model \(model) is not supported by Anthropic provider.")
-      }
-    },
-    priceForModel: { model in
-      model.defaultPricing
-    })
+    lowTierModelId: "anthropic/claude-3.5-haiku",
+    modelsEnabledByDefault: [
+      "anthropic/claude-opus-4.1",
+      "anthropic/claude-sonnet-4.5",
+      "anthropic/claude-3.5-haiku",
+    ])
 }

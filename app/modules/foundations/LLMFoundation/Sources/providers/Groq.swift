@@ -4,30 +4,17 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let groq = LLMProvider(
+  public static let groq = AIProvider(
     id: "groq",
     name: "Groq",
     keychainKey: "GROQ_API_KEY",
-    supportedModels: [
-      .qwen3_32b,
-      .gpt_oss_120b,
-      .gpt_oss_20b,
-      .llama_4_maverick_17b,
-    ],
     websiteURL: URL(string: "https://groq.com/"),
     apiKeyCreationURL: URL(string: "https://console.groq.com/keys"),
-    idForModel: { model in
-      switch model {
-      case .qwen3_32b: return "qwen/qwen3-32b"
-      case .gpt_oss_120b: return "openai/gpt-oss-120b"
-      case .gpt_oss_20b: return "openai/gpt-oss-20b"
-      case .llama_4_maverick_17b: return "meta-llama/llama-4-maverick-17b-128e-instruct"
-      default: throw AppError(message: "Model \(model) is not supported by Groq provider.")
-      }
-    },
-    priceForModel: { model in
-      model.defaultPricing
-    })
+    lowTierModelId: "openai/gpt-oss-120b",
+    modelsEnabledByDefault: [
+      "moonshotai/kimi-k2-instruct-0905",
+      "openai/gpt-oss-120b",
+    ])
 }

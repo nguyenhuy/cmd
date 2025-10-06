@@ -3,11 +3,11 @@
 
 import Foundation
 
-// MARK: - LLMProvider
+// MARK: - AIProvider
 
-public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRepresentable {
+public struct AIProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRepresentable {
   public init?(rawValue: String) {
-    if let provider = LLMProvider.allCases.first(where: { $0.id == rawValue }) {
+    if let provider = AIProvider.allCases.first(where: { $0.id == rawValue }) {
       self = provider
     } else {
       return nil
@@ -18,23 +18,21 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
     id: String,
     name: String,
     keychainKey: String,
-    supportedModels: [LLMModel] = [],
     websiteURL: URL? = nil,
     apiKeyCreationURL: URL? = nil,
-    idForModel: @escaping @Sendable (LLMModel) throws -> String,
-    priceForModel: @escaping @Sendable (LLMModel) -> ModelPricing?)
+    lowTierModelId: AIModelID? = nil,
+    modelsEnabledByDefault: [AIModelID])
   {
     self.id = id
     self.name = name
     self.keychainKey = keychainKey
-    self.supportedModels = supportedModels
     self.websiteURL = websiteURL
     self.apiKeyCreationURL = apiKeyCreationURL
-    self.idForModel = idForModel
-    self.priceForModel = priceForModel
+    self.lowTierModelId = lowTierModelId
+    self.modelsEnabledByDefault = modelsEnabledByDefault
   }
 
-  public static var allCases: [LLMProvider] {
+  public static var allCases: [AIProvider] {
     [
       .openRouter,
       .anthropic,
@@ -48,41 +46,31 @@ public struct LLMProvider: Hashable, Identifiable, CaseIterable, Sendable, RawRe
   public let id: String
   public let name: String
   public let keychainKey: String
-  public let supportedModels: [LLMModel]
   public let websiteURL: URL?
   public let apiKeyCreationURL: URL?
+  public let lowTierModelId: AIModelID?
+  public let modelsEnabledByDefault: [AIModelID]
 
   public var rawValue: String { id }
 
-  public static func ==(lhs: LLMProvider, rhs: LLMProvider) -> Bool {
+  public static func ==(lhs: AIProvider, rhs: AIProvider) -> Bool {
     lhs.id == rhs.id
-  }
-
-  public func id(for model: LLMModel) throws -> String {
-    try idForModel(model)
-  }
-
-  public func price(for model: LLMModel) -> ModelPricing? {
-    priceForModel(model)
   }
 
   public func hash(into hasher: inout Hasher) {
     hasher.combine(id)
   }
 
-  private let idForModel: @Sendable (LLMModel) throws -> String
-  private let priceForModel: @Sendable (LLMModel) -> ModelPricing?
-
 }
 
 // MARK: Codable
 
-extension LLMProvider: Codable {
+extension AIProvider: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.singleValueContainer()
     let id = try container.decode(String.self)
-    guard let provider = LLMProvider(rawValue: id) else {
-      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid LLMProvider \(id)")
+    guard let provider = AIProvider(rawValue: id) else {
+      throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid AIProvider \(id)")
     }
     self = provider
   }

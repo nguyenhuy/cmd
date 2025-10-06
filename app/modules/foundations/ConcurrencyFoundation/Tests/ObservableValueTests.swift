@@ -25,14 +25,9 @@ struct ObservableValueTests {
     #expect(observable.value == 0)
 
     let updates = expectation(description: "Updates received")
-    let values = Atomic([Int]())
 
-    let cancellable = observe(observable) { previousValue in
-      let count = values.mutate {
-        $0.append(previousValue)
-        return $0.count
-      }
-      if count == 3 {
+    let cancellable = observable.observeChanges(to: \.value) { value in
+      if value == 3 {
         updates.fulfill()
       }
     }
@@ -43,7 +38,6 @@ struct ObservableValueTests {
     subject.send(3)
 
     try await fulfillment(of: [updates])
-    #expect(values.value == [0, 1, 2])
     #expect(observable.value == 3)
   }
 
@@ -57,7 +51,7 @@ struct ObservableValueTests {
     let updates = expectation(description: "Updates received")
     let values = Atomic([Int]())
 
-    let cancellable = observe(observable) { value in
+    let cancellable = observable.observeChanges(to: \.value) { value in
       let count = values.mutate {
         $0.append(value)
         return $0.count
@@ -73,7 +67,7 @@ struct ObservableValueTests {
     continuation.yield(3)
 
     try await fulfillment(of: [updates])
-    #expect(values.value == [0, 1, 2])
+    #expect(values.value == [1, 2, 3])
     #expect(observable.value == 3)
   }
 
@@ -116,40 +110,22 @@ struct ObservableValueTests {
     observable = nil
     #expect(weakObservable == nil)
   }
-}
 
-// MARK: - Helpers
+  @Test("Map ObservableValue")
+  func map() async throws {
+    let observable = ObservableValue(2)
+    let mapped = observable.map { $0 * 3 }
+    #expect(mapped.value == 6)
 
-extension ObservableValueTests {
-  /// Observes changes to the ObservableValue.
-  /// - Parameters:
-  ///  - onChange: The closure to call when the value changes. It is called with the previous value.
-  @MainActor
-  private func observe<Value>(_ observable: ObservableValue<Value>, onChange: @escaping (Value) -> Void) -> AnyCancellable {
-    let observeOnce: (@MainActor (@MainActor @escaping () -> Void) -> Void) = { @MainActor callback in
-      withObservationTracking {
-        _ = observable.value
-      } onChange: {
-        MainActor.assumeIsolated {
-          callback()
-        }
-      }
+    let hasChanged = expectation(description: "Mapped value changed")
+    let cancellable = mapped.observeChanges(to: \.value) { newValue in
+      #expect(newValue == 12)
+      hasChanged.fulfill()
     }
+    observable.value = 4
 
-    let task = Task {
-      var loop: (@MainActor () -> Void)?
-      loop = {
-        observeOnce {
-          guard !Task.isCancelled else { return }
-          onChange(observable.value)
-          loop?()
-        }
-      }
-      loop?()
-    }
-
-    return AnyCancellable {
-      task.cancel()
-    }
+    try await fulfillment(of: hasChanged)
+    #expect(mapped.value == 12)
+    _ = cancellable
   }
 }

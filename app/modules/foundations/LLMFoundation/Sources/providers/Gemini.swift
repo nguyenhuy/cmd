@@ -4,28 +4,17 @@
 import AppFoundation
 import Foundation
 
-extension LLMProvider {
+extension AIProvider {
 
-  public static let gemini = LLMProvider(
+  public static let gemini = AIProvider(
     id: "gemini",
     name: "Google Gemini",
     keychainKey: "GEMINI_API_KEY",
-    supportedModels: [
-      .gemini_2_5_pro,
-      .gemini_2_5_flash,
-      .gemini_2_5_flash_lite,
-    ],
     websiteURL: URL(string: "https://ai.google.dev/"),
     apiKeyCreationURL: URL(string: "https://aistudio.google.com/app/apikey"),
-    idForModel: { model in
-      switch model {
-      case .gemini_2_5_pro: return "gemini-2.5-pro"
-      case .gemini_2_5_flash: return "gemini-2.5-flash"
-      case .gemini_2_5_flash_lite: return "gemini-2.5-flash-lite"
-      default: throw AppError(message: "Model \(model) is not supported by Gemini provider.")
-      }
-    },
-    priceForModel: { model in
-      model.defaultPricing
-    })
+    lowTierModelId: "google/gemini-2.5-flash-lite",
+    modelsEnabledByDefault: [
+      "google/gemini-2.5-pro",
+      "google/gemini-2.5-flash-lite",
+    ])
 }

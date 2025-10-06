@@ -20,10 +20,10 @@ struct ExternalSettings: Sendable, Equatable {
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,
     fileEditMode: FileEditMode = .directIO,
-    preferedProviders: [LLMModel: LLMProvider] = [:],
-    llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
-    inactiveModels: [LLMModel] = [],
-    reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
+    preferedProviders: [String: AIProvider] = [:],
+    llmProviderSettings: [AIProvider: AIProviderSettings] = [:],
+    enabledModels: [AIModelID] = [],
+    reasoningModels: [AIModelID: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
@@ -36,7 +36,7 @@ struct ExternalSettings: Sendable, Equatable {
     self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
-    self.inactiveModels = inactiveModels
+    self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
@@ -53,11 +53,11 @@ struct ExternalSettings: Sendable, Equatable {
   let automaticallyUpdateXcodeSettings: Bool
   let fileEditMode: FileEditMode
   // LLM settings
-  let preferedProviders: [LLMModel: LLMProvider]
-  var llmProviderSettings: [LLMProvider: LLMProviderSettings]
-  let reasoningModels: [LLMModel: LLMReasoningSetting]
+  let preferedProviders: [String: AIProvider]
+  var llmProviderSettings: [AIProvider: AIProviderSettings]
+  let reasoningModels: [AIModelID: LLMReasoningSetting]
 
-  let inactiveModels: [LLMModel]
+  let enabledModels: [AIModelID]
   let customInstructions: CustomInstructions
   let toolPreferences: [ToolPreference]
   let keyboardShortcuts: KeyboardShortcuts
@@ -83,6 +83,14 @@ extension ExternalSettings: Codable {
 
   init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: String.self)
+
+    let llmProviderSettings: [AIProvider: AIProviderSettings] = container
+      .resilientlyDecodeIfPresent([String: AIProviderSettings].self, forKey: "llmProviderSettings")?
+      .reduce(into: [AIProvider: AIProviderSettings]()) { acc, el in
+        guard let provider = AIProvider(rawValue: el.key) else { return }
+        acc[provider] = el.value
+      } ?? Self.defaultSettings.llmProviderSettings
+
     self.init(
       allowAnonymousAnalytics: container.resilientlyDecodeIfPresent(Bool.self, forKey: "allowAnonymousAnalytics") ?? Self
         .defaultSettings.allowAnonymousAnalytics,
@@ -95,25 +103,16 @@ extension ExternalSettings: Codable {
       fileEditMode: container.resilientlyDecodeIfPresent(FileEditMode.self, forKey: "fileEditMode") ?? Self.defaultSettings
         .fileEditMode,
       preferedProviders: container.resilientlyDecodeIfPresent([String: String].self, forKey: "preferedProviders")?
-        .reduce(into: [LLMModel: LLMProvider]()) { acc, el in
-          guard let model = LLMModel(rawValue: el.key), let provider = LLMProvider(rawValue: el.value) else { return }
-          acc[model] = provider
+        .reduce(into: [String: AIProvider]()) { acc, el in
+          guard let provider = AIProvider(rawValue: el.value), llmProviderSettings[provider] != nil else { return }
+          acc[el.key] = provider
         } ?? Self.defaultSettings.preferedProviders,
-      llmProviderSettings: container
-        .resilientlyDecodeIfPresent([String: LLMProviderSettings].self, forKey: "llmProviderSettings")?
-        .reduce(into: [LLMProvider: LLMProviderSettings]()) { acc, el in
-          guard let provider = LLMProvider(rawValue: el.key) else { return }
-          acc[provider] = el.value
-        } ?? Self.defaultSettings.llmProviderSettings,
-      inactiveModels: container
-        .resilientlyDecodeIfPresent([String].self, forKey: "inactiveModels")?
-        .compactMap { modelName in LLMModel(rawValue: modelName) } ?? Self.defaultSettings.inactiveModels,
+      llmProviderSettings: llmProviderSettings,
+      enabledModels: container.resilientlyDecodeIfPresent([String].self, forKey: "enabledModels") ?? Self.defaultSettings
+        .enabledModels,
       reasoningModels: container
-        .resilientlyDecodeIfPresent([String: LLMReasoningSetting].self, forKey: "reasoningModels")?
-        .reduce(into: [LLMModel: LLMReasoningSetting]()) { acc, el in
-          guard let provider = LLMModel(rawValue: el.key) else { return }
-          acc[provider] = el.value
-        } ?? Self.defaultSettings.reasoningModels,
+        .resilientlyDecodeIfPresent([AIModelID: LLMReasoningSetting].self, forKey: "reasoningModels") ?? Self.defaultSettings
+        .reasoningModels,
       customInstructions: container
         .resilientlyDecodeIfPresent(Settings.CustomInstructions.self, forKey: "customInstructions") ?? Self.defaultSettings
         .customInstructions,
@@ -146,22 +145,18 @@ extension ExternalSettings: Codable {
       try container.encode(automaticallyUpdateXcodeSettings, forKey: "automaticallyUpdateXcodeSettings")
     }
     if encodeAllValues || preferedProviders != Self.defaultSettings.preferedProviders {
-      try container.encode(preferedProviders.reduce(into: [String: String]()) { acc, el in
-        acc[el.key.rawValue] = el.value.rawValue
-      }, forKey: "preferedProviders")
+      try container.encode(preferedProviders, forKey: "preferedProviders")
     }
     if encodeAllValues || llmProviderSettings != Self.defaultSettings.llmProviderSettings {
-      try container.encode(llmProviderSettings.reduce(into: [String: LLMProviderSettings]()) { acc, el in
+      try container.encode(llmProviderSettings.reduce(into: [String: AIProviderSettings]()) { acc, el in
         acc[el.key.rawValue] = el.value
       }, forKey: "llmProviderSettings")
     }
-    if encodeAllValues || inactiveModels != Self.defaultSettings.inactiveModels {
-      try container.encode(inactiveModels.map(\.rawValue), forKey: "inactiveModels")
+    if encodeAllValues || enabledModels != Self.defaultSettings.enabledModels {
+      try container.encode(enabledModels, forKey: "enabledModels")
     }
     if encodeAllValues || reasoningModels != Self.defaultSettings.reasoningModels {
-      try container.encode(reasoningModels.reduce(into: [String: LLMReasoningSetting]()) { acc, el in
-        acc[el.key.rawValue] = el.value
-      }, forKey: "reasoningModels")
+      try container.encode(reasoningModels, forKey: "reasoningModels")
     }
     if encodeAllValues || customInstructions != Self.defaultSettings.customInstructions {
       try container.encode(customInstructions, forKey: "customInstructions")
@@ -255,7 +250,7 @@ extension Settings {
       fileEditMode: externalSettings.fileEditMode,
       preferedProviders: externalSettings.preferedProviders,
       llmProviderSettings: externalSettings.llmProviderSettings,
-      inactiveModels: externalSettings.inactiveModels,
+      enabledModels: externalSettings.enabledModels,
       reasoningModels: externalSettings.reasoningModels,
       customInstructions: externalSettings.customInstructions,
       toolPreferences: externalSettings.toolPreferences,
@@ -272,7 +267,7 @@ extension Settings {
       fileEditMode: fileEditMode,
       preferedProviders: preferedProviders,
       llmProviderSettings: llmProviderSettings,
-      inactiveModels: inactiveModels,
+      enabledModels: enabledModels,
       reasoningModels: reasoningModels,
       customInstructions: customInstructions,
       toolPreferences: toolPreferences,

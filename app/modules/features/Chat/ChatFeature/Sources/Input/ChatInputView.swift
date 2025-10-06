@@ -149,8 +149,10 @@ struct ChatInputView: View {
       PopUpSelectionMenu(
         selectedItem: $inputViewModel.selectedModel,
         availableItems: inputViewModel.activeModels,
+        searchKey: inputViewModel.activeModels.count > 5 ? { item in item.name } : nil,
         emptySelectionText: "No model configured",
-        isExpanded: $inputViewModel.isModelSelectionExpanded)
+        isExpanded: $inputViewModel.isModelSelectionExpanded,
+        maxHeight: 200)
       { model in
         Text(model.name)
       }
@@ -298,9 +300,9 @@ struct ChatInputView: View {
   }
 }
 
-// MARK: - LLMModel + MenuItem
+// MARK: - AIModel + MenuItem
 
-extension LLMModel: MenuItem { }
+extension AIModel: MenuItem { }
 
 // MARK: - ChatMode + MenuItem
 

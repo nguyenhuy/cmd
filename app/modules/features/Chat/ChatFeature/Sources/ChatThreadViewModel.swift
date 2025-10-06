@@ -99,7 +99,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   var input: ChatInputViewModel
   // TODO: look at making this a private(set). It's needed for a finding, that ideally would be readonly
   var isStreamingResponse = false
-  var hasSomeLLMModelsAvailable = true
+  var hasSomeModelsAvailable = true
 
   private(set) var messages = [ChatMessageViewModel]()
 
@@ -389,8 +389,8 @@ final class ChatThreadViewModel: Identifiable, Equatable {
   @ObservationIgnored private var workspaceRootObservation: AnyCancellable?
   private let toolsPlugin: ToolsPlugin
   private let settingsService: SettingsService
+  private let llmService: LLMService
 
-  @MainActor private let llmService: LLMService
   private let xcodeObserver: XcodeObserver
   private let fileManager: FileManagerI
   private let checkpointService: CheckpointService
@@ -464,9 +464,9 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       }
     }
 
-    settingsService.liveValues().map(\.activeModels).removeDuplicates().sink { @Sendable [weak self] activeModels in
+    llmService.activeModels.sink { @Sendable [weak self] activeModels in
       Task { @MainActor in
-        self?.hasSomeLLMModelsAvailable = !activeModels.isEmpty
+        self?.hasSomeModelsAvailable = !activeModels.isEmpty
       }
     }.store(in: &cancellables)
 
@@ -510,7 +510,7 @@ final class ChatThreadViewModel: Identifiable, Equatable {
       ])
   }
 
-  private func handle(usageInfo: LLMUsageInfo, model: LLMModel) async throws {
+  private func handle(usageInfo: LLMUsageInfo, model: AIModel) async throws {
     // Handle usage info, including if the conversation needs compatcing
     if usageInfo.inputTokens + usageInfo.outputTokens > Int(Float(model.contextSize) * 0.8) {
       defaultLogger.log("Summarizing conversation")

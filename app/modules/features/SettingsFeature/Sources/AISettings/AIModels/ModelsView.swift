@@ -1,27 +1,33 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import Combine
 import ConcurrencyFoundation
+import Dependencies
 import DLS
 import LLMFoundation
+import LLMServiceInterface
 import SettingsServiceInterface
 import SwiftUI
 
 // MARK: - ModelsView
 
 struct ModelsView: View {
+  /// - Parameters:
+  ///   - availableModels: When provided, only those models are shown in the view. Otherwise all available models are shown.
   init(
-    availableModels: [LLMModel],
-    availableProviders: [LLMProvider],
-    providerForModels: Binding<[LLMModel: LLMProvider]>,
-    inactiveModels: Binding<[LLMModel]>,
-    reasoningModels: Binding<[LLMModel: LLMReasoningSetting]>)
+    viewModel: LLMSettingsViewModel,
+    provider: AIProvider? = nil)
   {
+    self.viewModel = viewModel
+    let availableModels: ObservableValue<[AIModel]> =
+      if let provider {
+        viewModel.modelsAvailable(for: provider).map({ $0.map(\.modelInfo) })
+      } else {
+        .init(viewModel.availableModels)
+      }
     self.availableModels = availableModels
-    self.availableProviders = availableProviders
-    _providerForModels = providerForModels
-    _inactiveModels = inactiveModels
-    _reasoningModels = reasoningModels
+    _initialModelsOrder = .init(initialValue: availableModels.wrappedValue.sorted(by: viewModel.enabledModels))
   }
 
   var body: some View {
@@ -46,69 +52,48 @@ struct ModelsView: View {
           ForEach(filteredModels, id: \.id) { model in
             ModelCard(
               model: model,
-              provider: provider(for: model),
-              isActive: isActive(for: model),
-              availableProviders: availableProviders.filter { $0.supportedModels.contains(model) },
-              reasoningSetting: reasoningSetting(for: model))
+              provider: viewModel.provider(for: model),
+              isActive: viewModel.isActive(for: model),
+              availableProviders: viewModel.providersAvailable(for: model),
+              reasoningSetting: viewModel.reasoningSetting(for: model))
           }
         }
         .padding(.bottom, 20)
       }
       .scrollIndicators(.hidden)
     }
+//    .onReceive(modelsPublisher.receive(on: DispatchQueue.main), perform: { availableModels = $0 })
   }
 
-  @Binding private var providerForModels: [LLMModel: LLMProvider]
-  @Binding private var inactiveModels: [LLMModel]
-  @Binding private var reasoningModels: [LLMModel: LLMReasoningSetting]
+  @Bindable private var availableModels: ObservableValue<[AIModel]>
+
+  @State private var initialModelsOrder: [AIModelID: Int]
+  @Bindable private var viewModel: LLMSettingsViewModel
   @State private var searchText = ""
 
-  private let availableModels: [LLMModel]
-  private let availableProviders: [LLMProvider]
+//  @State private var availableModels: [AIModel]
 
-  private var filteredModels: [LLMModel] {
-    searchText.isEmpty
-      ? availableModels
-      : availableModels.filter {
-        $0.name.localizedCaseInsensitiveContains(searchText)
+//  private let modelsPublisher: AnyPublisher<[AIModel], Never>
+
+  private var filteredModels: [AIModel] {
+    availableModels
+      .wrappedValue
+      .filter {
+        searchText.isEmpty ? true : $0.name.localizedCaseInsensitiveContains(searchText)
       }
-  }
-
-  private func provider(for model: LLMModel) -> Binding<LLMProvider> {
-    .init(get: {
-      providerForModels[model] ?? LLMProvider.openAI
-    }, set: { provider in
-      providerForModels[model] = provider
-    })
-  }
-
-  private func isActive(for model: LLMModel) -> Binding<Bool> {
-    .init(get: { !inactiveModels.contains(model) }, set: { isActive in
-      if isActive {
-        inactiveModels.removeAll { $0 == model }
-      } else {
-        if !inactiveModels.contains(model) {
-          inactiveModels.append(model)
-        }
-      }
-    })
-  }
-
-  private func reasoningSetting(for model: LLMModel) -> Binding<LLMReasoningSetting>? {
-    guard let reasoning = reasoningModels[model] else { return nil }
-    return .init(get: { reasoning }, set: { reasoningModels[model] = $0 })
+      .sorted(respecting: initialModelsOrder)
   }
 
 }
 
 // MARK: - ModelCard
 
-private struct ModelCard: View {
+struct ModelCard: View {
   init(
-    model: LLMModel,
-    provider: Binding<LLMProvider>,
+    model: AIModel,
+    provider: Binding<AIProvider>,
     isActive: Binding<Bool>,
-    availableProviders: [LLMProvider],
+    availableProviders: [AIProvider],
     reasoningSetting: Binding<LLMReasoningSetting>?)
   {
     self.model = model
@@ -202,7 +187,7 @@ private struct ModelCard: View {
         .padding(.top, 8)
       }
 
-      if let pricing = provider.price(for: model) ?? model.defaultPricing {
+      if let pricing = model.defaultPricing {
         HStack {
           Text("Pricing:")
             .font(.headline)
@@ -227,17 +212,17 @@ private struct ModelCard: View {
     .with(cornerRadius: 6, borderColor: Color.gray.opacity(0.2))
   }
 
-  @Binding private var provider: LLMProvider
+  @Binding private var provider: AIProvider
   @Binding private var isActive: Bool
   @Environment(\.colorScheme) private var colorScheme
   @State private var isSelectingProvider = false
 
   private let reasoningSetting: Binding<LLMReasoningSetting>?
 
-  private let model: LLMModel
-  private let availableProviders: [LLMProvider]
+  private let model: AIModel
+  private let availableProviders: [AIProvider]
 
-  private var otherProviderOptions: [LLMProvider] {
+  private var otherProviderOptions: [AIProvider] {
     availableProviders.filter { $0 != provider }
   }
 
@@ -248,4 +233,28 @@ private struct ModelCard: View {
     return "$\(String(format: "%.2f", price))"
   }
 
+}
+
+extension [AIModel] {
+  func sorted(by enabled: [AIModelID]) -> [AIModelID: Int] {
+    sorted(by: { a, b in
+      switch (enabled.contains(a.id), enabled.contains(b.id)) {
+      case (true, false):
+        true
+      case (false, true):
+        false
+      default:
+        a.rankForProgramming < b.rankForProgramming
+      }
+    })
+    .reduce(into: [:], { acc, model in
+      acc[model.id] = acc.count
+    })
+  }
+
+  func sorted(respecting initialOrder: [AIModelID: Int]) -> [AIModel] {
+    sorted(by: { a, b in
+      (initialOrder[a.id] ?? Int.max) < (initialOrder[b.id] ?? Int.max)
+    })
+  }
 }

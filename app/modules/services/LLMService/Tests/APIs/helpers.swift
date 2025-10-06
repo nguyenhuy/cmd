@@ -22,24 +22,28 @@ extension DefaultLLMService {
     settingsService: MockSettingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "anthropic-key",
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openAI: LLMProviderSettings(
+        .openAI: AIProviderSettings(
           apiKey: "openai-key",
           baseUrl: nil,
           executable: nil,
           createdOrder: 2),
       ])),
-    shellService: MockShellService = MockShellService())
+    shellService: MockShellService = MockShellService(),
+    fileManager: MockFileManager = MockFileManager(),
+    llmModelsManager: MockAIModelsManager = MockAIModelsManager())
   {
     self.init(
       server: server as LocalServer,
       settingsService: settingsService as SettingsService,
       userDefaults: MockUserDefaults(),
-      shellService: shellService)
+      shellService: shellService,
+      fileManager: fileManager,
+      llmModelsManager: llmModelsManager)
   }
 
   func sendMessage(

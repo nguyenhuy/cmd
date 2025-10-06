@@ -2,10 +2,13 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 @preconcurrency import Combine
+import Foundation
+import os
 
 // MARK: - ReadonlyCurrentValueSubject
 
-/// Like `CurrentValueSubject`, but does not allow to mutate the value.
+/// `ReadonlyCurrentValueSubject` is a readonly version of `CurrentValueSubject`.
+/// It can be used to represent a value that can be observed but not modified directly.
 public final class ReadonlyCurrentValueSubject<Output: Sendable, Failure: Error>: Publisher, Sendable {
 
   public init(_ value: Output, publisher: AnyPublisher<Output, Failure>) {
@@ -19,6 +22,10 @@ public final class ReadonlyCurrentValueSubject<Output: Sendable, Failure: Error>
 
   public var currentValue: Output {
     value.value
+  }
+
+  public static func just(_ value: Output) -> Self {
+    .init(value, publisher: CurrentValueSubject(value).eraseToAnyPublisher())
   }
 
   public func receive<S>(subscriber: S) where S: Subscriber, S.Failure == Failure, S.Input == Output {

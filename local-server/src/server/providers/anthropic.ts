@@ -1,13 +1,25 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import { AIProvider, AIProviderInput, AIProviderOutput, ProviderModel, ProviderConfig } from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { AnthropicProviderOptions, createAnthropic } from "@ai-sdk/anthropic"
 import { ModelMessage } from "ai"
 import { ToolModelWithName } from "../endpoints/sendMessage/sendMessage"
+import { UserFacingError } from "../errors"
+import { ProviderModelFullInfo } from "./provider"
+import { matchModelData } from "./provider-utils"
 
-export class AnthropicModelProvider implements ModelProvider {
+type ModelBaseInfo = {
+	id: string
+	display_name: string
+}
+
+export class AnthropicAIProvider implements AIProvider {
 	name: APIProviderName = "anthropic"
-	build(params: ModelProviderInput): ModelProviderOutput {
-		const { modelName, apiKey, baseUrl, reasoningBudget } = params
+	build(params: AIProviderInput): AIProviderOutput {
+		const {
+			provider: { apiKey, baseUrl },
+			modelName,
+			reasoningBudget,
+		} = params
 		const provider = createAnthropic({
 			apiKey: apiKey,
 			baseURL: process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? baseUrl,
@@ -24,6 +36,62 @@ export class AnthropicModelProvider implements ModelProvider {
 			addProviderOptionsToMessages: (messages) => addCacheControlToMessages(messages, this.name),
 			addProviderOptionsToTools: (tools) => addCacheControlToTools(tools, this.name),
 		}
+	}
+	async listModels(params: ProviderConfig, referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
+		const baseUrl = process.env["ANTHROPIC_LOCAL_SERVER_PROXY"] ?? params.baseUrl ?? "https://api.anthropic.com/v1"
+		const allModels: ModelBaseInfo[] = []
+		let afterId: string | undefined = undefined
+
+		do {
+			const url = new URL(`${baseUrl}/models`)
+			if (afterId) {
+				url.searchParams.set("after_id", afterId)
+			}
+			const response = await fetch(url.toString(), {
+				headers: {
+					"x-api-key": params.apiKey || "",
+					"anthropic-version": "2023-06-01",
+				},
+			})
+			if (!response.ok) {
+				throw new UserFacingError({
+					message: response.statusText,
+					statusCode: response.status,
+					underlyingError: new Error(`Failed to fetch models for provider`),
+				})
+			}
+			const data = await response.json()
+			const models: ModelBaseInfo[] = data.data?.map((model: ModelBaseInfo): ModelBaseInfo => model) || []
+			allModels.push(...models)
+
+			afterId = data.has_more ? data.last_id : undefined
+		} while (afterId)
+
+		return matchModelData(
+			allModels.map((model) => model.id),
+			this.name,
+			referenceModels,
+			(_, idx) => this.identifyModel(allModels[idx], referenceModels),
+		)
+	}
+	identifyModel(model: ModelBaseInfo, models: ProviderModelFullInfo[]): ProviderModel | undefined {
+		// Anthropic.model.id claude-sonnet-4-5-20250929
+		// OpenRoutermodel.id: anthropic/claude-sonnet-4.5
+		// OpenRoutermodel.canonical_slug: anthropic/claude-4.5-sonnet-20250929
+		const modelIdWithoutDate = model.id.replace(/-[0-9]{8}$/, "")
+		const modelWithDotId = modelIdWithoutDate.replace(/([0-9]+)-([0-9]+)/g, "$1.$2")
+		const slug = `anthropic/${modelWithDotId}`
+		const match = models.find((m) => m.id === slug)
+		if (match) {
+			return {
+				...match,
+				providerId: model.id,
+				globalId: match.id,
+				name: model.display_name || match.name,
+				max_completion_tokens: match.top_provider.max_completion_tokens,
+			}
+		}
+		return undefined
 	}
 }
 

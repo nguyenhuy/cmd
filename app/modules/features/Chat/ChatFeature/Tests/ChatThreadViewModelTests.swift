@@ -4,12 +4,14 @@
 import AccessibilityFoundation
 import AppEventServiceInterface
 import ChatFeatureInterface
+import ChatFoundation
 import Combine
 import ConcurrencyFoundation
 import Dependencies
 import DependenciesTestSupport
 import ExtensionEventsInterface
 import Foundation
+import LLMFoundation
 import LLMServiceInterface
 import LocalServerServiceInterface
 import SharedValuesFoundation
@@ -193,7 +195,7 @@ struct ChatThreadViewModelTests {
   @Test("receiving messages updates state")
   func test_receivingMessages_updatesState() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
 
     let testThreadId = UUID()
 
@@ -271,7 +273,7 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file")
   func sendMessageIncludesFocussedFile() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
@@ -306,7 +308,7 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file only once if it doesn't change")
   func sendMessageIncludesFocussedFileOnlyOnceIfItDoesNotChange() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
@@ -343,7 +345,7 @@ struct ChatThreadViewModelTests {
   @Test("sendMessage includes focussed file twice if it changed")
   func sendMessageIncludesFocussedFileTwiceIfItChanged() async throws {
     // given
-    let mockLLMService = MockLLMService()
+    let mockLLMService = MockLLMService(activeModels: [.claudeSonnet])
     let messagesSent = Atomic<[Schema.Message]>([])
 
     mockLLMService.onSendMessage = { messages, _, _, _, _, _ in
@@ -396,6 +398,274 @@ struct ChatThreadViewModelTests {
       ["How do I fix this?"],
       ["The file currently focused in the editor is: /Users/test/MyProject/OtherFile.swift"],
       ["Thanks"],
+    ])
+  }
+
+  // MARK: - Summarization Tests
+
+  @MainActor
+  @Test("conversation summarization is triggered when token usage exceeds 80% of context size", .dependencies {
+    $0.withAllModelAvailable()
+  })
+  func conversationSummarizationTriggeredWhenTokensExceedThreshold() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    let summarizeConversationCalled = Atomic(false)
+    let expectedSummary = "This is a conversation summary"
+
+    mockLLMService.onSummarizeConversation = { _, _ in
+      summarizeConversationCalled.set(to: true)
+      return expectedSummary
+    }
+
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
+      let assistantMessage = AssistantMessage("Test response")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+
+      handleUpdateStream(updateStream)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: LLMUsageInfo(
+          inputTokens: model.contextSize * 4 / 5, // 80% of context
+          outputTokens: 15000, // Total > 80% of context
+          idx: 0))
+    }
+
+    let sut = ChatThreadViewModel()
+    sut.input.textInput = TextInput([.text("Test message")])
+
+    // when
+    await sut.sendMessage()
+
+    // then
+    #expect(summarizeConversationCalled.value == true)
+
+    let summaryMessages = sut.messages.filter { message in
+      message.content.contains { content in
+        if case .conversationSummary(let summary) = content {
+          return summary.text == expectedSummary
+        }
+        return false
+      }
+    }
+    #expect(summaryMessages.count == 1)
+  }
+
+  @MainActor
+  @Test("conversation summarization is not triggered when token usage is below threshold")
+  func conversationSummarizationNotTriggeredWhenTokensBelowThreshold() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    let summarizeConversationCalled = Atomic(false)
+
+    mockLLMService.onSummarizeConversation = { _, _ in
+      summarizeConversationCalled.set(to: true)
+      return "This should not be called"
+    }
+
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
+      let assistantMessage = AssistantMessage("Test response")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+
+      handleUpdateStream(updateStream)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: LLMUsageInfo(
+          inputTokens: model.contextSize * 3 / 5, // 60% of context
+          outputTokens: 10000, // Total < 80% of context
+          idx: 0))
+    }
+
+    let sut = ChatThreadViewModel()
+    sut.input.textInput = TextInput([.text("Test message")])
+
+    // when
+    await sut.sendMessage()
+
+    // then
+    #expect(summarizeConversationCalled.value == false)
+
+    let summaryMessages = sut.messages.filter { message in
+      message.content.contains { content in
+        if case .conversationSummary = content {
+          return true
+        }
+        return false
+      }
+    }
+    #expect(summaryMessages.count == 0)
+  }
+
+  @MainActor
+  @Test("summarization uses correct model and message history", .dependencies {
+    $0.withAllModelAvailable()
+  })
+  func summarizationUsesCorrectParameters() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    mockLLMService._activeModels.send([.gpt])
+    let capturedMessageHistory = Atomic<[Schema.Message]?>(nil)
+    let capturedModel = Atomic<AIModel?>(nil)
+
+    mockLLMService.onSummarizeConversation = { messageHistory, model in
+      capturedModel.set(to: model)
+      capturedMessageHistory.set(to: messageHistory)
+      return "Summary"
+    }
+
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
+      let assistantMessage = AssistantMessage("Assistant response")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+
+      handleUpdateStream(updateStream)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: LLMUsageInfo(
+          inputTokens: model.contextSize * 4 / 5, // 80% of context
+          outputTokens: 15000, // Total > 80% of context
+          idx: 0))
+    }
+
+    let sut = ChatThreadViewModel()
+    sut.input.textInput = TextInput([.text("User message")])
+
+    // when
+    await sut.sendMessage()
+
+    // then
+    #expect(capturedModel.value == .gpt)
+    #expect(capturedMessageHistory.value?.first?.role == .user)
+  }
+
+  @MainActor
+  @Test("summarization handles errors gracefully", .dependencies {
+    $0.withAllModelAvailable()
+  })
+  func summarizationHandlesErrorsGracefully() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+
+    mockLLMService.onSummarizeConversation = { _, _ in
+      throw NSError(domain: "TestError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Summarization failed"])
+    }
+
+    mockLLMService.onSendMessage = { _, _, model, _, _, handleUpdateStream in
+      let assistantMessage = AssistantMessage("Test response")
+      let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+
+      handleUpdateStream(updateStream)
+
+      return SendMessageResponse(
+        newMessages: [assistantMessage],
+        usageInfo: LLMUsageInfo(
+          inputTokens: model.contextSize * 4 / 5, // 80% of context
+          outputTokens: 15000, // Total > 80% of context
+          idx: 0))
+    }
+
+    let sut = ChatThreadViewModel()
+    let initialMessageCount = sut.messages.count
+    sut.input.textInput = TextInput([.text("Test message")])
+
+    // when
+    await sut.sendMessage()
+
+    // then
+    #expect(sut.messages.count > initialMessageCount)
+
+    let summaryMessages = sut.messages.filter { message in
+      message.content.contains { content in
+        if case .conversationSummary = content {
+          return true
+        }
+        return false
+      }
+    }
+    #expect(summaryMessages.count == 0)
+  }
+
+  @MainActor
+  @Test("message sent during summarization waits for completion and uses summarized context", .dependencies {
+    $0.withAllModelAvailable()
+  })
+  func messageDuringSummarizationWaitsAndUsesSummarizedContext() async throws {
+    // given
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
+    let summarizationStarted = expectation(description: "Summarization started")
+    let secondMessageSentByUser = expectation(description: "Second message sent by user")
+
+    let messagesSent = Atomic<[[Schema.Message]]>([])
+
+    mockLLMService.onSummarizeConversation = { _, _ in
+      summarizationStarted.fulfill()
+      // Complete summarization after the second message is sent to test concurrent behavior.
+      try await fulfillment(of: secondMessageSentByUser)
+      return "Conversation summary of previous messages"
+    }
+
+    let sendMessageCallCount = Atomic(0)
+    mockLLMService.onSendMessage = { messageHistory, _, model, _, _, handleUpdateStream in
+      messagesSent.mutate { $0.append(messageHistory) }
+
+      switch sendMessageCallCount.increment() {
+      case 1:
+        // First message - trigger summarization
+        let assistantMessage = AssistantMessage("First response")
+        let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+        handleUpdateStream(updateStream)
+
+        return SendMessageResponse(
+          newMessages: [assistantMessage],
+          usageInfo: LLMUsageInfo(
+            inputTokens: model.contextSize * 4 / 5, // 80% of context - triggers summarization
+            outputTokens: 15000,
+            idx: 0))
+
+      default:
+        // Second message - should only be called after summarization completes
+        let assistantMessage = AssistantMessage("Second response")
+        let updateStream = MutableCurrentValueStream<[CurrentValueStream<AssistantMessage>]>(assistantMessage)
+        handleUpdateStream(updateStream)
+
+        return SendMessageResponse(
+          newMessages: [assistantMessage],
+          usageInfo: nil)
+      }
+    }
+
+    let sut = ChatThreadViewModel()
+    sut.input.textInput = TextInput([.text("First message")])
+
+    // when
+    async let firstMessage: Void = sut.sendMessage()
+    try await fulfillment(of: summarizationStarted)
+
+    sut.input.textInput = TextInput([.text("Second message")])
+    async let secondMessage: Void = sut.sendMessage()
+    secondMessageSentByUser.fulfill()
+
+    _ = await firstMessage
+    _ = await secondMessage
+
+    // then
+    let messages = messagesSent.value.map { $0.flatMap { $0.content.map(\.text) } }
+    #expect(messages.count == 2)
+    #expect(messages == [
+      [
+        "First message",
+      ],
+      [
+        "Conversation summary of previous messages",
+        "Second message",
+      ],
     ])
   }
 

@@ -52,10 +52,10 @@ public struct Settings: Sendable, Equatable {
     automaticallyCheckForUpdates: Bool = true,
     automaticallyUpdateXcodeSettings: Bool = false,
     fileEditMode: FileEditMode = .directIO,
-    preferedProviders: [LLMModel: LLMProvider] = [:],
-    llmProviderSettings: [LLMProvider: LLMProviderSettings] = [:],
-    inactiveModels: [LLMModel] = [],
-    reasoningModels: [LLMModel: LLMReasoningSetting] = [:],
+    preferedProviders: [AIModelID: AIProvider] = [:],
+    llmProviderSettings: [AIProvider: AIProviderSettings] = [:],
+    enabledModels: [AIModelID] = [],
+    reasoningModels: [AIModelID: LLMReasoningSetting] = [:],
     customInstructions: CustomInstructions = CustomInstructions(),
     toolPreferences: [ToolPreference] = [],
     keyboardShortcuts: KeyboardShortcuts = KeyboardShortcuts(),
@@ -69,7 +69,7 @@ public struct Settings: Sendable, Equatable {
     self.fileEditMode = fileEditMode
     self.preferedProviders = preferedProviders
     self.llmProviderSettings = llmProviderSettings
-    self.inactiveModels = inactiveModels
+    self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
     self.customInstructions = customInstructions
     self.toolPreferences = toolPreferences
@@ -78,7 +78,7 @@ public struct Settings: Sendable, Equatable {
     self.mcpServers = mcpServers
   }
 
-  public struct LLMProviderSettings: Sendable, Codable, Equatable {
+  public struct AIProviderSettings: Sendable, Codable, Equatable {
     /// To help keep track of which Provider was setup first, we use an incrementing order.
     /// This order can be useful for determining which provider to default to when multiple are available.
     public let createdOrder: Int
@@ -126,11 +126,11 @@ public struct Settings: Sendable, Equatable {
   public var automaticallyUpdateXcodeSettings: Bool
   public var fileEditMode: FileEditMode
   // LLM settings
-  public var preferedProviders: [LLMModel: LLMProvider]
-  public var llmProviderSettings: [LLMProvider: LLMProviderSettings]
-  public var reasoningModels: [LLMModel: LLMReasoningSetting]
+  public var preferedProviders: [AIModelID: AIProvider]
+  public var llmProviderSettings: [AIProvider: AIProviderSettings]
+  public var reasoningModels: [AIModelID: LLMReasoningSetting]
 
-  public var inactiveModels: [LLMModel]
+  public var enabledModels: [AIModelID]
   public var customInstructions: CustomInstructions
   public var toolPreferences: [ToolPreference]
   public var keyboardShortcuts: KeyboardShortcuts
@@ -158,7 +158,7 @@ extension Settings {
   }
 }
 
-public typealias LLMProviderSettings = Settings.LLMProviderSettings
+public typealias AIProviderSettings = Settings.AIProviderSettings
 
 // MARK: - UserDefinedXcodeShortcut
 

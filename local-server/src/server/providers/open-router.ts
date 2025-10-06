@@ -1,12 +1,23 @@
-import { ModelProvider, ModelProviderInput, ModelProviderOutput } from "./provider"
+import {
+	AIProvider,
+	AIProviderInput,
+	AIProviderOutput,
+	ProviderModel,
+	ProviderConfig,
+	ProviderModelFullInfo,
+} from "./provider"
 import { APIProviderName } from "@/server/schemas/sendMessageSchema"
 import { createOpenRouter, OpenRouterProviderOptions } from "@openrouter/ai-sdk-provider"
 import { addCacheControlToMessages } from "./anthropic"
 
-export class OpenRouterModelProvider implements ModelProvider {
+export class OpenRouterAIProvider implements AIProvider {
 	name: APIProviderName = "openrouter"
-	build(params: ModelProviderInput): ModelProviderOutput {
-		const { modelName, apiKey, baseUrl, reasoningBudget } = params
+	build(params: AIProviderInput): AIProviderOutput {
+		const {
+			provider: { apiKey, baseUrl },
+			modelName,
+			reasoningBudget,
+		} = params
 		const provider = createOpenRouter({
 			apiKey: apiKey,
 			baseURL: process.env["OPEN_ROUTER_LOCAL_SERVER_PROXY"] ?? baseUrl,
@@ -28,6 +39,16 @@ export class OpenRouterModelProvider implements ModelProvider {
 				? (messages) => addCacheControlToMessages(messages, this.name)
 				: undefined,
 		}
+	}
+	async listModels(params: ProviderConfig, referenceModels: ProviderModelFullInfo[]): Promise<ProviderModel[]> {
+		return referenceModels.map(
+			(model): ProviderModel => ({
+				...model,
+				providerId: model.id,
+				globalId: model.id,
+				max_completion_tokens: model.top_provider.max_completion_tokens,
+			}),
+		)
 	}
 }
 

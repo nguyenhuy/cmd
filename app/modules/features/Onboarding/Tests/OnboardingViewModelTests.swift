@@ -3,33 +3,26 @@
 
 import Combine
 import Dependencies
+import DependenciesTestSupport
 import Foundation
 import FoundationInterfaces
+import LLMServiceInterface
 import PermissionsServiceInterface
-import SettingsServiceInterface
 import SwiftTesting
 import Testing
 @testable import Onboarding
 
 // MARK: - OnboardingViewModelTests
 
+@Suite("OnboardingViewModelTests", .dependencies { $0.setupDefaultDependencies() })
 struct OnboardingViewModelTests {
 
   @MainActor
   @Test("initializing with default parameters starts at welcome step")
   func test_initialization_withDefaultParameters() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService()
     var onDoneCalled = false
 
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { onDoneCalled = true })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { onDoneCalled = true })
 
     #expect(viewModel.currentStep == .welcome)
     #expect(viewModel.isAccessibilityPermissionGranted == false)
@@ -38,19 +31,11 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("moving to next step from welcome updates hasSkippedWelcomeScreen")
+  @Test("moving to next step from welcome updates hasSkippedWelcomeScreen", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+  })
   func test_handleMoveToNextStep_fromWelcome() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
 
@@ -60,31 +45,22 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("moving to next step from setupComplete calls onDone and sets user defaults")
-  func test_handleMoveToNextStep_fromSetupComplete() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService(Settings(
-      pointReleaseXcodeExtensionToDebugApp: false,
-      llmProviderSettings: [
-        .openAI: LLMProviderSettings(
-          apiKey: "test",
-          baseUrl: nil,
-          executable: nil,
-          createdOrder: 1),
-      ]))
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+  @Test("moving to next step from setupComplete calls onDone and sets user defaults", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    $0.llmService = MockLLMService(activeModels: [.gpt])
+  })
+  func test_handleMoveToNextStep_fromSetupComplete() throws {
+    @Dependency(\.userDefaults) var userDefaults
+    let mockUserDefaults = try #require(userDefaults as? MockUserDefaults)
+
     var onDoneCalled = false
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { onDoneCalled = true })
 
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { onDoneCalled = true })
-    }
-
-    // Should go directly to setup complete since permissions are granted and models are available
-    viewModel.handleMoveToNextStep() // welcome -> setupComplete
+    // Should go directly to providers setup since permissions are granted
+    viewModel.handleMoveToNextStep() // welcome -> providersSetup
+    #expect(viewModel.currentStep == .providersSetup)
+    // Should go directly to setup complete since models are available
+    viewModel.handleMoveToNextStep() // providersSetup -> setupComplete
 
     #expect(viewModel.currentStep == .setupComplete)
     #expect(onDoneCalled == false)
@@ -98,17 +74,10 @@ struct OnboardingViewModelTests {
   @MainActor
   @Test("step progression follows correct order when permissions are missing")
   func test_stepProgression_withMissingPermissions() async throws {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [])
+    @Dependency(\.permissionsService) var permissionsService
+    let mockPermissionsService = try #require(permissionsService as? MockPermissionsService)
 
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
 
@@ -131,19 +100,11 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("step progression skips permissions when already granted")
+  @Test("step progression skips permissions when already granted", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+  })
   func test_stepProgression_withGrantedPermissions() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
 
@@ -152,48 +113,24 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("step progression moves to setupComplete when models are available")
-  func test_stepProgression_withAvailableModels() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService(Settings(
-      pointReleaseXcodeExtensionToDebugApp: false,
-      llmProviderSettings: [
-        .openAI: LLMProviderSettings(
-          apiKey: "test",
-          baseUrl: nil,
-          executable: nil,
-          createdOrder: 1),
-      ]))
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+  @Test("step progression doesn't skip provider setup when models are available", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    $0.llmService = MockLLMService(activeModels: [.gpt])
+  })
+  func test_stepProgression_withAvailableModels() async throws {
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
 
-    viewModel.handleMoveToNextStep() // welcome -> setupComplete (skipping providers)
-    #expect(viewModel.currentStep == .setupComplete)
+    viewModel
+      .handleMoveToNextStep() // welcome -> providersSetup (does not skip providers, even though they are already configured)
+    #expect(viewModel.currentStep == .providersSetup)
   }
 
   @MainActor
   @Test("skipAllRemainingSteps moves directly to setupComplete")
   func test_skipAllRemainingSteps() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [])
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     #expect(viewModel.currentStep == .welcome)
 
@@ -205,22 +142,14 @@ struct OnboardingViewModelTests {
   @MainActor
   @Test("handleRequestAccessibilityPermission calls permissions service")
   func test_handleRequestAccessibilityPermission() async throws {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService()
+    @Dependency(\.permissionsService) var permissionsService
+    let mockPermissionsService = try #require(permissionsService as? MockPermissionsService)
 
     let callbackExpectation = expectation(description: "Accessibility permission should be requested")
     mockPermissionsService.onRequestAccessibilityPermission = {
       callbackExpectation.fulfill()
     }
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     viewModel.handleRequestAccessibilityPermission()
 
@@ -231,22 +160,14 @@ struct OnboardingViewModelTests {
   @MainActor
   @Test("handleRequestXcodeExtensionPermission calls permissions service")
   func test_handleRequestXcodeExtensionPermission() async throws {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService()
+    @Dependency(\.permissionsService) var permissionsService
+    let mockPermissionsService = try #require(permissionsService as? MockPermissionsService)
 
     let callbackExpectation = expectation(description: "Xcode extension permission should be requested")
     mockPermissionsService.onRequestXcodeExtensionPermission = {
       callbackExpectation.fulfill()
     }
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     viewModel.handleRequestXcodeExtensionPermission()
 
@@ -257,17 +178,10 @@ struct OnboardingViewModelTests {
   @MainActor
   @Test("accessibility permission status changes trigger step updates")
   func test_accessibilityPermissionStatusChanges() async throws {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [])
+    @Dependency(\.permissionsService) var permissionsService
+    let mockPermissionsService = try #require(permissionsService as? MockPermissionsService)
 
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     // Move to accessibility permission step
     viewModel.handleMoveToNextStep()
@@ -284,19 +198,14 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("xcode extension permission status changes trigger step updates")
+  @Test("xcode extension permission status changes trigger step updates", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility])
+  })
   func test_xcodeExtensionPermissionStatusChanges() async throws {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility])
+    @Dependency(\.permissionsService) var permissionsService
+    let mockPermissionsService = try #require(permissionsService as? MockPermissionsService)
 
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     // Move to xcode extension permission step
     viewModel.handleMoveToNextStep()
@@ -313,32 +222,21 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("available models changes trigger step updates")
+  @Test("available models changes trigger step updates", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+  })
   func test_availableModelsChanges() async throws {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility, .xcodeExtension])
+    @Dependency(\.llmService) var llmService
+    let mockLLMService = try #require(llmService as? MockLLMService)
 
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     // Move to providers setup step
     viewModel.handleMoveToNextStep()
     #expect(viewModel.currentStep == .providersSetup)
 
-    // Add a provider with API key
-    var newSettings = mockSettingsService.value(for: \.llmProviderSettings)
-    newSettings[.openAI] = LLMProviderSettings(
-      apiKey: "test",
-      baseUrl: nil,
-      executable: nil,
-      createdOrder: 1)
-    mockSettingsService.update(setting: \.llmProviderSettings, to: newSettings)
+    // Add an active model
+    mockLLMService._activeModels.send([.gpt])
     try await viewModel.wait(for: \.canSkipProviderSetup, toBe: true)
 
     viewModel.handleMoveToNextStep()
@@ -349,19 +247,11 @@ struct OnboardingViewModelTests {
   }
 
   @MainActor
-  @Test("skipping xcode extension from permission step sets skipXcodeExtension flag")
+  @Test("skipping xcode extension from permission step sets skipXcodeExtension flag", .dependencies {
+    $0.permissionsService = MockPermissionsService(grantedPermissions: [.accessibility])
+  })
   func test_skipXcodeExtensionFromPermissionStep() {
-    let mockUserDefaults = MockUserDefaults()
-    let mockSettingsService = MockSettingsService()
-    let mockPermissionsService = MockPermissionsService(grantedPermissions: [.accessibility])
-
-    let viewModel = withDependencies {
-      $0.userDefaults = mockUserDefaults
-      $0.settingsService = mockSettingsService
-      $0.permissionsService = mockPermissionsService
-    } operation: {
-      OnboardingViewModel(bringWindowToFront: { }, onDone: { })
-    }
+    let viewModel = OnboardingViewModel(bringWindowToFront: { }, onDone: { })
 
     // Move to xcode extension permission step
     viewModel.handleMoveToNextStep()
@@ -371,5 +261,13 @@ struct OnboardingViewModelTests {
     viewModel.handleMoveToNextStep()
 
     #expect(viewModel.currentStep == .providersSetup)
+  }
+}
+
+extension DependencyValues {
+  fileprivate mutating func setupDefaultDependencies() {
+    userDefaults = MockUserDefaults()
+    permissionsService = MockPermissionsService()
+    llmService = MockLLMService()
   }
 }

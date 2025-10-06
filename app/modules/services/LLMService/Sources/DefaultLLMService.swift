@@ -2,7 +2,7 @@
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 import AppFoundation
-import Combine
+@preconcurrency import Combine
 import ConcurrencyFoundation
 import DependencyFoundation
 import Foundation
@@ -20,20 +20,32 @@ import ToolFoundation
 
 final class DefaultLLMService: LLMService {
 
-  init(server: LocalServer, settingsService: SettingsService, userDefaults: UserDefaultsI, shellService: ShellService) {
+  init(
+    server: LocalServer,
+    settingsService: SettingsService,
+    userDefaults: UserDefaultsI,
+    shellService: ShellService,
+    fileManager _: FileManagerI,
+    llmModelsManager: AIModelsManagerProtocol)
+  {
     self.server = server
     self.settingsService = settingsService
     self.shellService = shellService
+    self.llmModelsManager = llmModelsManager
 
     #if DEBUG
     repeatDebugHelper = RepeatDebugHelper(userDefaults: userDefaults)
     #endif
   }
 
+  let llmModelsManager: AIModelsManagerProtocol
+
+  let settingsService: SettingsService
+
   func sendMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
-    model: LLMModel,
+    model: AIModel,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (UpdateStream) -> Void)
@@ -112,7 +124,7 @@ final class DefaultLLMService: LLMService {
   func sendOneMessage(
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool] = [],
-    model: LLMModel,
+    model: AIModel,
     chatMode: ChatMode,
     context: any ChatContext,
     handleUpdateStream: (CurrentValueStream<AssistantMessage>) -> Void,
@@ -131,7 +143,7 @@ final class DefaultLLMService: LLMService {
       messageHistory: messageHistory,
       tools: tools,
       model: model,
-      enableReasoning: model.canReason && settings.reasoningModels[model]?.isEnabled == true,
+      enableReasoning: model.canReason && settings.reasoningModels[model.id]?.isEnabled == true,
       context: context,
       supportDebugStreamRepeatInDebug: true,
       handleUpdateStream: handleUpdateStream,
@@ -139,12 +151,11 @@ final class DefaultLLMService: LLMService {
   }
 
   func nameConversation(firstMessage: String) async throws -> String {
-    let settings = settingsService.values()
-    guard let lowTierModel = settings.lowTierModel else {
+    guard let lowTierModel = lowTierModel() else {
       defaultLogger.error("Unable to name conversation: no low tier model available")
       return "New conversation"
     }
-    if (try? settings.provider(for: lowTierModel))?.0.isExternalAgent == true {
+    if provider(for: lowTierModel.modelInfo)?.isExternalAgent == true {
       // extenal agent cannot be called to name conversations. The conversation name might however be read from their output.
       return "New conversation"
     }
@@ -160,7 +171,7 @@ final class DefaultLLMService: LLMService {
         role: .user,
         content: [.textMessage(.init(text: "Please write a 5-10 word title the following conversation:\n\n\(firstMessage)"))])],
       tools: [],
-      model: lowTierModel,
+      model: lowTierModel.modelInfo,
       enableReasoning: false,
       context: nil,
       handleUpdateStream: { _ in },
@@ -169,7 +180,7 @@ final class DefaultLLMService: LLMService {
     return assistantMessage.content.first?.asText?.content ?? "New conversation"
   }
 
-  func summarizeConversation(messageHistory: [Schema.Message], model: LLMModel) async throws -> String {
+  func summarizeConversation(messageHistory: [Schema.Message], model: AIModel) async throws -> String {
     var messages = messageHistory
     messages.append(.init(
       role: .user,
@@ -190,8 +201,6 @@ final class DefaultLLMService: LLMService {
 
     return assistantMessage.content.first?.asText?.content ?? ""
   }
-
-  private let settingsService: SettingsService
 
   private let shellService: ShellService
 
@@ -244,7 +253,7 @@ final class DefaultLLMService: LLMService {
     system: String,
     messageHistory: [Schema.Message],
     tools: [any ToolFoundation.Tool],
-    model: LLMModel,
+    model: AIModel,
     enableReasoning: Bool,
     context: (any ChatContext)?,
     supportDebugStreamRepeatInDebug: Bool = false,
@@ -253,7 +262,14 @@ final class DefaultLLMService: LLMService {
     async throws -> AssistantMessage
   {
     let settings = settingsService.values()
-    let (provider, providerSettings) = try settings.provider(for: model)
+    guard
+      let provider = provider(for: model),
+      let providerSettings = settings.llmProviderSettings[provider],
+      let providerModel = modelsAvailable(for: provider).first(where: { $0.modelInfo == model })
+    else {
+      throw AppError("Unsupported model \(model.id)")
+    }
+
     let params = try await Schema.SendMessageRequestParams(
       messages: messageHistory,
       system: system,
@@ -261,7 +277,7 @@ final class DefaultLLMService: LLMService {
       tools: tools
         .filter { !$0.isExternalTool }
         .map { .init(name: $0.name, description: $0.description, inputSchema: $0.inputSchema) },
-      model: provider.id(for: model),
+      model: providerModel.id,
       enableReasoning: enableReasoning,
       provider: .init(
         provider: provider,
@@ -345,7 +361,8 @@ extension BaseProviding where
   Self: LocalServerProviding,
   Self: SettingsServiceProviding,
   Self: UserDefaultsProviding,
-  Self: ShellServiceProviding
+  Self: ShellServiceProviding,
+  Self: FileManagerProviding
 {
   public var llmService: LLMService {
     shared {
@@ -353,7 +370,13 @@ extension BaseProviding where
         server: localServer,
         settingsService: settingsService,
         userDefaults: sharedUserDefaults,
-        shellService: shellService)
+        shellService: shellService,
+        fileManager: fileManager,
+        llmModelsManager: AIModelsManager(
+          localServer: localServer,
+          settingsService: settingsService,
+          fileManager: fileManager,
+          shellService: shellService))
     }
   }
 }
@@ -365,7 +388,7 @@ extension [AssistantMessageContent] {
 }
 
 extension Schema.APIProvider {
-  init(provider: LLMProvider, settings: LLMProviderSettings, shellService: ShellService, projectRoot: String?) async throws {
+  init(provider: AIProvider, settings: AIProviderSettings, shellService: ShellService, projectRoot: String?) async throws {
     let apiProviderName: Schema.APIProviderName = try {
       switch provider {
       case .anthropic:

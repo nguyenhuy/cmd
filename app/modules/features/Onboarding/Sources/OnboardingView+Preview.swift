@@ -27,28 +27,22 @@ func createMockPermissionService() -> MockPermissionsService {
   return service
 }
 
-struct ProvidersView: View {
-  let onDone: @MainActor () -> Void
+struct AIProvidersView: View {
 
   var body: some View {
     VStack {
       Text("Providers View")
-      HoveredButton(
-        action: onDone,
-        content: {
-          Text("Done")
-        })
     }
   }
 }
 
 extension OnboardingView {
   init(
-    createLLMProvidersView: @Sendable @escaping (@MainActor @escaping () -> Void) -> AnyView)
+    createAIAIProvidersView: @Sendable @escaping () -> AnyView)
   {
     self.init(
       viewModel: OnboardingViewModel(),
-      createLLMProvidersView: createLLMProvidersView)
+      createAIAIProvidersView: createAIAIProvidersView)
   }
 }
 
@@ -56,8 +50,8 @@ extension OnboardingView {
   withDependencies {
     $0.permissionsService = createMockPermissionService()
   } operation: {
-    OnboardingView(createLLMProvidersView: { onDone in
-      AnyView(ProvidersView(onDone: onDone))
+    OnboardingView(createAIAIProvidersView: {
+      AnyView(AIProvidersView())
     })
   }
 }

@@ -54,11 +54,13 @@ public final class SettingsViewModel {
       .store(in: &cancellables)
   }
 
+  public let llmSettings = LLMSettingsViewModel()
+
   public let toolConfigurationViewModel: ToolConfigurationViewModel
 
   // MARK: - Initialization
 
-  public var providerSettings: AllLLMProviderSettings {
+  public var providerSettings: AllAIProviderSettings {
     didSet {
       settings.llmProviderSettings = providerSettings
       settingsService.update(setting: \.llmProviderSettings, to: providerSettings)
@@ -108,7 +110,7 @@ public final class SettingsViewModel {
     didSet {
       userDefaults.set(!showOnboardingScreenAgain, forKey: .hasCompletedOnboardingUserDefaultsKey)
       if showOnboardingScreenAgain {
-        LLMProvider.allCases
+        AIProvider.allCases
           .compactMap(\.externalAgent)
           .forEach {
             $0.unmarkHasBeenEnabledOnce()
@@ -154,63 +156,6 @@ public final class SettingsViewModel {
   var showToolInputCopyButtonInRelease: Bool {
     didSet {
       userDefaults.set(showToolInputCopyButtonInRelease, forKey: .showToolInputCopyButtonInRelease)
-    }
-  }
-
-  /// For each available model, the associated provider.
-  var providerForModels: [LLMModel: LLMProvider] {
-    get {
-      var providerForModels = [LLMModel: LLMProvider]()
-      for model in availableModels {
-        providerForModels[model] = (try? settings.provider(for: model).0) ?? .anthropic
-      }
-      for (key, value) in settings.preferedProviders {
-        providerForModels[key] = value
-      }
-
-      return providerForModels
-    }
-    set {
-      let oldValue = providerForModels
-      for (model, provider) in newValue {
-        if oldValue[model] != provider {
-          settings.preferedProviders[model] = provider
-        }
-      }
-      settingsService.update(setting: \.preferedProviders, to: settings.preferedProviders)
-    }
-  }
-
-  /// Reasoning settings for the model that suport reasoning.
-  var reasoningModels: [LLMModel: LLMReasoningSetting] {
-    get {
-      var reasoningModels = [LLMModel: LLMReasoningSetting]()
-      for model in availableModels.filter(\.canReason) {
-        reasoningModels[model] = .init(isEnabled: false) // Default to disabled for all models
-      }
-      for (key, value) in settings.reasoningModels {
-        reasoningModels[key] = value
-      }
-      return reasoningModels
-    }
-    set {
-      let oldValue = settings.reasoningModels
-      for (model, provider) in newValue {
-        if oldValue[model] != provider {
-          settings.reasoningModels[model] = provider
-        }
-      }
-      settingsService.update(setting: \.reasoningModels, to: settings.reasoningModels)
-    }
-  }
-
-  var inactiveModels: [LLMModel] {
-    get {
-      settings.inactiveModels
-    }
-    set {
-      settings.inactiveModels = newValue
-      settingsService.update(setting: \.inactiveModels, to: newValue)
     }
   }
 
@@ -264,16 +209,6 @@ public final class SettingsViewModel {
     }
   }
 
-  /// All the models that are available, based on the available providers.
-  var availableModels: [LLMModel] {
-    settings.availableModels
-  }
-
-  /// The LLM providers that have been configured.
-  var availableProviders: [LLMProvider] {
-    Array(settings.llmProviderSettings.keys)
-  }
-
   private var cancellables = Set<AnyCancellable>()
 
   private let settingsService: SettingsService
@@ -281,11 +216,4 @@ public final class SettingsViewModel {
   private let releaseUserDefaults: UserDefaultsI?
   private let toolsPlugin: ToolsPlugin
   private let xcodeController: XcodeController
-}
-
-public typealias AllLLMProviderSettings = [LLMProvider: LLMProviderSettings]
-extension AllLLMProviderSettings {
-  var nextCreatedOrder: Int {
-    (values.map(\.createdOrder).max() ?? 0) + 1
-  }
 }

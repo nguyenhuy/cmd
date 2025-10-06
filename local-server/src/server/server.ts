@@ -8,16 +8,17 @@ import { registerEndpoint as registerListFilesEndpoint } from "./endpoints/tools
 import { registerEndpoint as registerSearchFilesEndpoint } from "./endpoints/tools/searchFiles/endpoint"
 import { registerEndpoints as registerCheckpointEndpoints } from "./endpoints/checkpoint"
 import { registerEndpoint as registerGetFileIconEndpoint } from "./endpoints/getFileIcon"
+import { registerEndpoint as registerListModelsEndpoint } from "./endpoints/listModels"
 import errorHandler from "./errorHandler"
 import fs from "fs"
 import path from "path"
 import { setupExpressErrorHandler } from "@sentry/node"
-import { AnthropicModelProvider } from "./providers/anthropic"
-import { OpenAIModelProvider } from "./providers/openai"
+import { AnthropicAIProvider } from "./providers/anthropic"
+import { OpenAIAIProvider } from "./providers/openai"
 import { startInterProcessesBridge } from "./endpoints/interProcessesBridge"
-import { OpenRouterModelProvider } from "./providers/open-router"
-import { GroqModelProvider } from "./providers/groq"
-import { GeminiModelProvider } from "./providers/gemini"
+import { OpenRouterAIProvider } from "./providers/open-router"
+import { GroqAIProvider } from "./providers/groq"
+import { GeminiAIProvider } from "./providers/gemini"
 
 const connectionInfo: ConnectionInfo = {
 	port: 3000, // Default port
@@ -38,20 +39,17 @@ app.get("/launch", (_, res) => {
 app.get("/error", () => {
 	throw new Error("test error")
 })
-
-registerSendMessageEndpoint(
-	router,
-	[
-		new AnthropicModelProvider(),
-		new OpenAIModelProvider(),
-		new OpenRouterModelProvider(),
-		new GroqModelProvider(),
-		new GeminiModelProvider(),
-	],
-	() => {
-		return connectionInfo.port
-	},
-)
+const aiProviders = [
+	new AnthropicAIProvider(),
+	new OpenAIAIProvider(),
+	new OpenRouterAIProvider(),
+	new GroqAIProvider(),
+	new GeminiAIProvider(),
+]
+registerSendMessageEndpoint(router, aiProviders, () => {
+	return connectionInfo.port
+})
+registerListModelsEndpoint(router, aiProviders)
 registerExtensionBridge(router)
 registerListFilesEndpoint(router)
 registerSearchFilesEndpoint(router)

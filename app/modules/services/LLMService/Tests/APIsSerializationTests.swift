@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import DependenciesTestSupport
 import Foundation
 import LLMFoundation
 import LocalServerServiceInterface
@@ -179,13 +180,13 @@ struct APIParamsEncodingTests {
     let settingsService = MockSettingsService(.init(
       pointReleaseXcodeExtensionToDebugApp: false,
       llmProviderSettings: [
-        .anthropic: LLMProviderSettings(
+        .anthropic: AIProviderSettings(
           apiKey: "anthropic-key",
           baseUrl: nil,
           executable: nil,
           createdOrder: 2),
       ],
-      reasoningModels: [.claudeSonnet: .init(isEnabled: true)]))
+      reasoningModels: .init([.claudeSonnet: .init(isEnabled: true)])))
     let service = DefaultLLMService(server: mockServer, settingsService: settingsService)
 
     mockServer.onPostRequest = { path, data, _ in
@@ -219,7 +220,7 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that supports reasoning
-    let reasoningModel = LLMModel.claudeSonnet
+    let reasoningModel = AIModel.claudeSonnet
     #expect(reasoningModel.canReason == true)
 
     _ = try await service.sendMessage(
@@ -270,7 +271,7 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that supports reasoning
-    let reasoningModel = LLMModel.claudeSonnet
+    let reasoningModel = AIModel.claudeSonnet
     #expect(reasoningModel.canReason == true)
 
     _ = try await service.sendMessage(
@@ -321,7 +322,8 @@ struct APIParamsEncodingTests {
     }
 
     // Use a model that doesn't support reasoning
-    let nonReasoningModel = LLMModel.claudeHaiku_3_5
+    // TODO: fix this test
+    let nonReasoningModel = AIModel.claudeHaiku_3_5
     #expect(nonReasoningModel.canReason == false)
 
     _ = try await service.sendMessage(

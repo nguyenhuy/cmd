@@ -366,9 +366,12 @@ final class DefaultLocalServer: LocalServer {
   }
 
   private func scheduleTimeout(for task: URLSessionDataTask, idleTimeout: TimeInterval) -> AnyCancellable? {
+    let isCancelled = Atomic(false)
     let task = Task { [weak self] in
       try await Task.sleep(for: .microseconds(Int(idleTimeout * 1_000_000)))
       try Task.checkCancellation()
+
+      print("Timeout task fired after cancellation? \(isCancelled.value)")
 
       // No data received during timeout period - fail with timeout error
       defaultLogger.error("Request timed out after \(idleTimeout)s of idle time")
@@ -380,6 +383,7 @@ final class DefaultLocalServer: LocalServer {
       task.cancel()
     }
     return AnyCancellable {
+      isCancelled.set(to: true)
       task.cancel()
     }
   }

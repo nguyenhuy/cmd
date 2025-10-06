@@ -19,8 +19,19 @@ struct SettingsCodableTests {
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
       automaticallyCheckForUpdates: false,
-      preferedProviders: [.claudeHaiku_3_5: .anthropic, .gpt: .openAI],
-      llmProviderSettings: [:])
+      preferedProviders: .init([.claudeHaiku_3_5: .anthropic, .gpt: .openAI]),
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+        .openAI: .init(
+          apiKey: "test-openai-api-key",
+          baseUrl: "https://api.openai.com",
+          executable: nil,
+          createdOrder: 2),
+      ])
 
     let json = """
       {
@@ -30,14 +41,25 @@ struct SettingsCodableTests {
         "customInstructions" : {},
         "keyboardShortcuts" : {},
         "fileEditMode": "direct I/O",
-        "inactiveModels" : [],
+        "enabledModels" : [],
         "userDefinedXcodeShortcuts" : [],
-        "llmProviderSettings" : {},
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          },
+          "openai" : {
+            "apiKey" : "test-openai-api-key",
+            "baseUrl" : "https://api.openai.com",
+            "createdOrder" : 2
+          }
+        },
         "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-haiku-35" : "anthropic",
-          "gpt-latest" : "openai"
+          "anthropic/claude-3.5-haiku" : "anthropic",
+          "openai/gpt-5" : "openai"
         },
         "reasoningModels": {},
         "toolPreferences" : [],
@@ -49,8 +71,8 @@ struct SettingsCodableTests {
   }
 
   @Test("Encode and decode settings with LLM provider settings")
-  func testSettingsWithLLMProviderSettings() throws {
-    let providerSettings = Settings.LLMProviderSettings(
+  func testSettingsWithAIProviderSettings() throws {
+    let providerSettings = Settings.AIProviderSettings(
       apiKey: "test-api-key",
       baseUrl: "https://api.example.com",
       executable: nil,
@@ -71,7 +93,7 @@ struct SettingsCodableTests {
         "customInstructions" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
-        "inactiveModels" : [],
+        "enabledModels" : [],
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "test-api-key",
@@ -92,14 +114,14 @@ struct SettingsCodableTests {
   }
 
   @Test("Encode and decode settings with multiple LLM providers")
-  func testSettingsWithMultipleLLMProviders() throws {
-    let anthropicSettings = Settings.LLMProviderSettings(
+  func testSettingsWithMultipleAIProviders() throws {
+    let anthropicSettings = Settings.AIProviderSettings(
       apiKey: "anthropic-key",
       baseUrl: nil,
       executable: nil,
       createdOrder: 1)
 
-    let openAISettings = Settings.LLMProviderSettings(
+    let openAISettings = Settings.AIProviderSettings(
       apiKey: "openai-key",
       baseUrl: "https://api.openai.com",
       executable: nil,
@@ -109,7 +131,7 @@ struct SettingsCodableTests {
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true,
       automaticallyCheckForUpdates: true,
-      preferedProviders: [.claudeHaiku_3_5: .anthropic],
+      preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
       llmProviderSettings: [
         .anthropic: anthropicSettings,
         .openAI: openAISettings,
@@ -123,7 +145,7 @@ struct SettingsCodableTests {
         "customInstructions" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
-        "inactiveModels" : [],
+        "enabledModels" : [],
         "llmProviderSettings" : {
           "anthropic" : {
             "apiKey" : "anthropic-key",
@@ -138,7 +160,7 @@ struct SettingsCodableTests {
         "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-haiku-35" : "anthropic"
+          "anthropic/claude-3.5-haiku" : "anthropic"
         },
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
@@ -171,8 +193,15 @@ struct SettingsCodableTests {
     let json = """
       {
         "pointReleaseXcodeExtensionToDebugApp" : true,
+        "llmProviderSettings" : {
+          "openai" : {
+            "apiKey" : "test-openai-api-key",
+            "baseUrl" : "https://api.openai.com",
+            "createdOrder" : 1
+          }
+        },
         "preferedProviders" : {
-          "gpt-latest" : "openai"
+          "openai/gpt-5" : "openai"
         }
       }
       """
@@ -181,16 +210,22 @@ struct SettingsCodableTests {
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true, // default
       automaticallyCheckForUpdates: true, // default
-      preferedProviders: [.gpt: .openAI],
-      llmProviderSettings: [:], // default,
-      inactiveModels: [], // default
+      preferedProviders: .init([.gpt: .openAI]),
+      llmProviderSettings: [
+        .openAI: .init(
+          apiKey: "test-openai-api-key",
+          baseUrl: "https://api.openai.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
+      enabledModels: [], // default
     )
 
     try testDecoding(expectedSettings, json)
   }
 
   @Test("Decode settings ignores invalid LLM provider keys")
-  func testDecodingIgnoresInvalidLLMProviderKeys() throws {
+  func testDecodingIgnoresInvalidAIProviderKeys() throws {
     let json = """
       {
         "allowAnonymousAnalytics" : false,
@@ -210,7 +245,7 @@ struct SettingsCodableTests {
       }
       """
 
-    let anthropicSettings = Settings.LLMProviderSettings(
+    let anthropicSettings = Settings.AIProviderSettings(
       apiKey: "anthropic-key",
       baseUrl: nil,
       executable: nil,
@@ -230,14 +265,19 @@ struct SettingsCodableTests {
     let originalSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: [.claudeHaiku_3_5: .anthropic, .gpt: .openAI],
+      preferedProviders: .init([.claudeHaiku_3_5: .anthropic, .gpt: .openAI]),
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(
+        .anthropic: Settings.AIProviderSettings(
           apiKey: "anthropic-key",
           baseUrl: nil,
           executable: nil,
           createdOrder: 1),
-        .openRouter: Settings.LLMProviderSettings(
+        .openAI: Settings.AIProviderSettings(
+          apiKey: "openai-key",
+          baseUrl: nil,
+          executable: nil,
+          createdOrder: 2),
+        .openRouter: Settings.AIProviderSettings(
           apiKey: "openrouter-key",
           baseUrl: "https://openrouter.ai/api/v1",
           executable: nil,
@@ -251,7 +291,7 @@ struct SettingsCodableTests {
   }
 
   @Test("Encoding handles empty LLM provider settings")
-  func testEncodingEmptyLLMProviderSettings() throws {
+  func testEncodingEmptyAIProviderSettings() throws {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: false,
       allowAnonymousAnalytics: true,
@@ -267,7 +307,7 @@ struct SettingsCodableTests {
         "customInstructions" : {},
         "keyboardShortcuts" : {},
         "toolPreferences" : [],
-        "inactiveModels" : [],
+        "enabledModels" : [],
         "llmProviderSettings" : {},
         "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
@@ -287,11 +327,18 @@ struct SettingsCodableTests {
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: true,
       automaticallyCheckForUpdates: true,
-      preferedProviders: [.claudeHaiku_3_5: .anthropic],
-      reasoningModels: [
+      preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
+      reasoningModels: .init([
         .claudeOpus: .init(isEnabled: true),
         .gpt: .init(isEnabled: false),
-      ])
+      ]))
 
     let json = """
       {
@@ -300,24 +347,30 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "keyboardShortcuts" : {},
-        "inactiveModels" : [],
-        "llmProviderSettings" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          }
+        },
         "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-haiku-35" : "anthropic"
+          "anthropic/claude-3.5-haiku" : "anthropic"
         },
         "reasoningModels" : {
-          "claude-opus-4" : {
+          "anthropic/claude-opus-4.1" : {
             "isEnabled" : true
           },
-          "gpt-latest" : {
+          "openai/gpt-5" : {
             "isEnabled" : false
           }
         },
         "toolPreferences": [],
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -348,7 +401,7 @@ struct SettingsCodableTests {
       allowAnonymousAnalytics: true,
       preferedProviders: [:],
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(
+        .anthropic: Settings.AIProviderSettings(
           apiKey: "test-key",
           baseUrl: nil,
           executable: nil,
@@ -382,10 +435,10 @@ struct SettingsCodableTests {
         },
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-sonnet-4" : "anthropic",
-          "gpt-latest" : "openai",
-          "gpt-mini-latest" : "openai",
-          "claude-haiku-35" : "anthropic"
+          "anthropic/claude-sonnet-4.5" : "anthropic",
+          "openai/gpt-5" : "openai",
+          "openai/gpt-3.5-turbo" : "openai",
+          "anthropic/claude-3.5-haiku" : "anthropic"
         }
       }
       """
@@ -393,24 +446,24 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: [
+      preferedProviders: .init([
         .claudeSonnet: .anthropic,
         .gpt: .openAI,
-        .gpt_mini: .openAI,
+        .gpt_turbo: .openAI,
         .claudeHaiku_3_5: .anthropic,
-      ],
+      ]),
       llmProviderSettings: [
-        .anthropic: Settings.LLMProviderSettings(
+        .anthropic: Settings.AIProviderSettings(
           apiKey: "anthropic-very-long-api-key-for-testing-purposes",
           baseUrl: "https://api.anthropic.com/v1/messages",
           executable: nil,
           createdOrder: 1),
-        .openAI: Settings.LLMProviderSettings(
+        .openAI: Settings.AIProviderSettings(
           apiKey: "openai-very-long-api-key-for-testing-purposes",
           baseUrl: "https://api.openai.com/v1/chat/completions",
           executable: nil,
           createdOrder: 2),
-        .openRouter: Settings.LLMProviderSettings(
+        .openRouter: Settings.AIProviderSettings(
           apiKey: "openrouter-very-long-api-key-for-testing-purposes",
           baseUrl: "https://openrouter.ai/api/v1",
           executable: nil,
@@ -454,7 +507,7 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "keyboardShortcuts" : {},
-        "inactiveModels" : [],
+        "enabledModels" : [],
         "llmProviderSettings" : {},
         "mcpServers" : {},
         "toolPreferences" : [],
@@ -478,8 +531,14 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: [.claudeHaiku_3_5: .anthropic],
-      llmProviderSettings: [:],
+      preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       customInstructions: customInstructions)
 
     let json = """
@@ -493,16 +552,22 @@ struct SettingsCodableTests {
           "askMode" : "Always be concise and helpful"
         },
         "keyboardShortcuts" : {},
-        "inactiveModels" : [],
-        "llmProviderSettings" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          }
+        },
         "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-haiku-35" : "anthropic"
+          "anthropic/claude-3.5-haiku" : "anthropic"
         },
         "reasoningModels": {},
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -517,7 +582,7 @@ struct SettingsCodableTests {
         "customInstructions" : {
           "askMode" : "Be brief and direct"
         },
-        "inactiveModels" : [],
+        "enabledModels" : [],
         "llmProviderSettings" : {},
         "pointReleaseXcodeExtensionToDebugApp" : false,
         "preferedProviders" : {}
@@ -542,11 +607,17 @@ struct SettingsCodableTests {
         "customInstructions" : {
           "agentMode" : "Prioritize performance and efficiency"
         },
-        "inactiveModels" : [],
-        "llmProviderSettings" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {
+          "openai" : {
+            "apiKey" : "test-openai-api-key",
+            "baseUrl" : "https://api.openai.com",
+            "createdOrder" : 1
+          }
+        },
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "gpt-latest" : "openai"
+          "openai/gpt-5" : "openai"
         }
       }
       """
@@ -554,8 +625,14 @@ struct SettingsCodableTests {
     let expectedSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: [.gpt: .openAI],
-      llmProviderSettings: [:],
+      preferedProviders: .init([.gpt: .openAI]),
+      llmProviderSettings: [
+        .openAI: .init(
+          apiKey: "test-openai-api-key",
+          baseUrl: "https://api.openai.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       customInstructions: Settings.CustomInstructions(
         askModePrompt: nil,
         agentModePrompt: "Prioritize performance and efficiency"))
@@ -574,8 +651,14 @@ struct SettingsCodableTests {
     let settings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: [.claudeHaiku_3_5: .anthropic],
-      llmProviderSettings: [:],
+      preferedProviders: .init([.claudeHaiku_3_5: .anthropic]),
+      llmProviderSettings: [
+        .anthropic: .init(
+          apiKey: "test-anthropic-api-key",
+          baseUrl: "https://api.anthropic.com",
+          executable: nil,
+          createdOrder: 1),
+      ],
       toolPreferences: toolPreferences)
 
     let json = """
@@ -585,12 +668,18 @@ struct SettingsCodableTests {
         "automaticallyUpdateXcodeSettings" : false,
         "customInstructions" : {},
         "keyboardShortcuts" : {},
-        "inactiveModels" : [],
-        "llmProviderSettings" : {},
+        "enabledModels" : [],
+        "llmProviderSettings" : {
+          "anthropic" : {
+            "apiKey" : "test-anthropic-api-key",
+            "baseUrl" : "https://api.anthropic.com",
+            "createdOrder" : 1
+          }
+        },
         "mcpServers" : {},
         "pointReleaseXcodeExtensionToDebugApp" : true,
         "preferedProviders" : {
-          "claude-haiku-35" : "anthropic"
+          "anthropic/claude-3.5-haiku" : "anthropic"
         },
         "reasoningModels": {},
         "toolPreferences" : [
@@ -608,7 +697,7 @@ struct SettingsCodableTests {
           }
         ],
         "userDefinedXcodeShortcuts" : [],
-        "fileEditMode": "direct I/O" 
+        "fileEditMode": "direct I/O"
       }
       """
 
@@ -666,9 +755,9 @@ struct SettingsCodableTests {
     let originalSettings = Settings(
       pointReleaseXcodeExtensionToDebugApp: true,
       allowAnonymousAnalytics: false,
-      preferedProviders: [.gpt: .openAI],
+      preferedProviders: .init([.gpt: .openAI]),
       llmProviderSettings: [
-        .openAI: Settings.LLMProviderSettings(
+        .openAI: Settings.AIProviderSettings(
           apiKey: "openai-key",
           baseUrl: nil,
           executable: nil,
@@ -740,7 +829,7 @@ struct SettingsCodableTests {
           },
         },
         "fileEditMode": "direct I/O",
-        "inactiveModels" : [],
+        "enabledModels" : [],
         "userDefinedXcodeShortcuts" : [],
         "llmProviderSettings" : {},
         "mcpServers" : {},
