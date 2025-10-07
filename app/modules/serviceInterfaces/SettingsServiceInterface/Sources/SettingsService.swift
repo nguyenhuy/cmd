@@ -177,8 +177,19 @@ public struct UserDefinedXcodeShortcut: Sendable, Codable, Equatable, Identifiab
     self.xcodeCommandIndex = xcodeCommandIndex
   }
 
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(
+      name: container.decode(String.self, forKey: .name),
+      command: container.decode(String.self, forKey: .command),
+      xcodeCommandIndex: container.decode(Int.self, forKey: .xcodeCommandIndex))
+  }
+
+  /// A transient ID that makes the shortcut identifiable. It is not persisted.
   public let id: UUID
+  /// The name of the Xcode shortcut. This will be displayed in Xcode's menu.
   public var name: String
+  /// The command to run when the shortcut is triggered.
   public var command: String
 
   public var keyBinding: Settings.KeyboardShortcut?
