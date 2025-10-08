@@ -69,7 +69,7 @@ public struct Settings: Sendable, Equatable {
     self.automaticallyCheckForUpdates = automaticallyCheckForUpdates
     self.automaticallyUpdateXcodeSettings = automaticallyUpdateXcodeSettings
     self.fileEditMode = fileEditMode
-    self.preferedProviders = preferedProviders
+    self.preferedProviders = preferedProviders.filter { llmProviderSettings[$0.value] != nil }
     self.llmProviderSettings = llmProviderSettings
     self.enabledModels = enabledModels
     self.reasoningModels = reasoningModels
@@ -130,7 +130,6 @@ public struct Settings: Sendable, Equatable {
   public var fileEditMode: FileEditMode
   // LLM settings
   public var preferedProviders: [AIModelID: AIProvider]
-  public var llmProviderSettings: [AIProvider: AIProviderSettings]
   public var reasoningModels: [AIModelID: LLMReasoningSetting]
 
   public var enabledModels: [AIModelID]
@@ -139,7 +138,16 @@ public struct Settings: Sendable, Equatable {
   public var keyboardShortcuts: KeyboardShortcuts
   public var userDefinedXcodeShortcuts: [UserDefinedXcodeShortcut]
   public var mcpServers: [String: MCPServerConfiguration]
+
   public var defaultLogLevel: LogLevel
+
+  public var llmProviderSettings: [AIProvider: AIProviderSettings] {
+    didSet {
+      // Ensure we don't keep prefered providers that are no longer configured.
+      preferedProviders = preferedProviders.filter { llmProviderSettings[$0.value] != nil }
+    }
+  }
+
 }
 
 // MARK: - Settings + Tool Preferences Helpers
