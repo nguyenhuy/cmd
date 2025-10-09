@@ -4,8 +4,7 @@
 import Dependencies
 import Foundation
 import FoundationInterfaces
-import SettingsService
-import SettingsServiceInterface
+import LoggingServiceInterface
 
 // TODO: find a way to ensure that all required dependencies are provided here.
 // One possible solution could be to grab the dependencies from this module's package.swift, search their code for any `*Providing` protocol, and ensure that they are all extended here.
@@ -13,32 +12,33 @@ import SettingsServiceInterface
 // MARK: - SharedUserDefaultsDependencyKey + DependencyKey
 
 extension SharedUserDefaultsDependencyKey: DependencyKey {
-  public static var liveValue: any UserDefaultsI { AppExtensionScope.shared.sharedUserDefaults }
+  public static var liveValue: any UserDefaultsI { AppLauncherScope.shared.sharedUserDefaults }
 }
 
-// MARK: - AppExtensionScope + UserDefaultsProviding
+// MARK: - AppLauncherScope + UserDefaultsProviding
 
-extension AppExtensionScope: UserDefaultsProviding {
+extension AppLauncherScope: UserDefaultsProviding {
   public var sharedUserDefaults: any UserDefaultsI {
     shared {
       do {
-        guard let userDefaults = try UserDefaults.shared(bundle: Bundle(for: AppExtensionScope.self)) else {
+        guard let userDefaults = try UserDefaults.shared(bundle: Bundle(for: AppLauncherScope.self)) else {
+          defaultLogger
+            .error(
+              "Failed to load shared UserDefaults, falling back to standard UserDefaults. This may cause issues with data consistency.")
           return Foundation.UserDefaults.standard
         }
         return userDefaults
       } catch {
+        defaultLogger.error(
+          "Failed to load shared UserDefaults, falling back to standard UserDefaults. This may cause issues with data consistency.",
+          error)
         return Foundation.UserDefaults.standard
       }
     }
   }
+
 }
 
-// MARK: - AppExtensionScope + SettingsServiceProviding
+// MARK: - AppLauncherScope + FileManagerProviding
 
-extension AppExtensionScope: SettingsServiceProviding { }
-
-// MARK: - AppExtensionScope + FileManagerProviding
-
-extension AppExtensionScope: FileManagerProviding {
-  public var fileManager: any FileManagerI { shared { SandboxedFileManager() } }
-}
+extension AppLauncherScope: FileManagerProviding { }
