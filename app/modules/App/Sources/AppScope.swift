@@ -1,8 +1,10 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 @preconcurrency import Combine
 import DependencyFoundation
+import Foundation
 import LoggingService
 import LoggingServiceInterface
 import ThreadSafe
@@ -31,6 +33,7 @@ final class AppScope: Sendable, BaseProviding {
     sharedDependencies = AppScopeStorage(initial: initialDependencies)
 
     setupLogging()
+    defaultLogger.log("Launching app (version: \(Bundle.main.version)")
   }
 
   func _shared<T: Sendable>(key: String, _ build: @Sendable () -> T) -> T {

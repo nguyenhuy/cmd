@@ -1,6 +1,7 @@
 // Copyright cmd app, Inc. Licensed under the Apache License, Version 2.0.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 
+import AppFoundation
 import DependencyFoundation
 import Foundation
 import LoggingService
@@ -14,6 +15,7 @@ public final class AppLauncherScope: Sendable, BaseProviding {
 
   init() {
     setupLogging()
+    defaultLogger.log("Launching app launcher (version: \(Bundle.main.version)")
   }
 
   public static let shared = AppLauncherScope()

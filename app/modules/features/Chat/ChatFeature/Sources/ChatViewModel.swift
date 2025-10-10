@@ -195,37 +195,35 @@ public class ChatViewModel {
     }
   }
 
-  private func handle(addCodeToChatEvent event: AddCodeToChatEvent) {
-    Task { @MainActor in
-      if !ProcessInfo.processInfo.isRunningInTestEnvironment {
-        NSApp.setActivationPolicy(.regular)
-        // TODO: make sure the app is activated. Sometimes it doesn't work.
-        Task { try await NSApplication.activateCurrentApp() }
-      }
+  private func handle(addCodeToChatEvent event: AddCodeToChatEvent) async {
+    if !ProcessInfo.processInfo.isRunningInTestEnvironment {
+      NSApp.setActivationPolicy(.regular)
+      // TODO: make sure the app is activated. Sometimes it doesn't work.
+      Task { try await NSApplication.activateCurrentApp() }
+    }
 
-      if event.newThread {
-        self.addTab()
-      }
-      if let chatMode = event.chatMode {
-        self.tab.input.mode = chatMode
-      }
+    if event.newThread {
+      addTab()
+    }
+    if let chatMode = event.chatMode {
+      tab.input.mode = chatMode
+    }
 
-      self.tab.input.textInputNeedsFocus = true
+    tab.input.textInputNeedsFocus = true
 
-      if let workspace = xcodeObserver.state.focusedWorkspace {
-        let handled = await addCodeSelection(from: workspace)
-        if !handled {
-          // Add log for debugging.
-          if
-            let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.wrappedValue?
-              .debugDescription
-          {
-            defaultLogger.log(axInfo as String)
-          }
+    if let workspace = xcodeObserver.state.focusedWorkspace {
+      let handled = await addCodeSelection(from: workspace)
+      if !handled {
+        // Add log for debugging.
+        if
+          let axInfo = xcodeObserver.state.wrapped?.xcodesState.first?.workspaces.first?.axElement.wrappedValue?
+            .debugDescription
+        {
+          defaultLogger.log(axInfo as String)
         }
-      } else {
-        defaultLogger.log("No workspace found to handle add to code to chat event")
       }
+    } else {
+      defaultLogger.log("No workspace found to handle add to code to chat event")
     }
   }
 
@@ -248,22 +246,8 @@ public class ChatViewModel {
       defaultLogger.log("No content found in the focus editor to handle add to code to chat event")
       return false
     }
-    var filePath: URL?
-    if let path = workspace.tabs.first(where: { $0.fileName == editor.fileName })?.knownPath {
-      filePath = path
-    } else if
-      // The Accessibility API, which xcode observer uses to set the `knownPath`,
-      // only gives the absolute path for the file focussed on the first editor tab.
-      // So in split screen mode, if the user focuses on the second tab, this value is missing.
-      // We therefore perform a more expensive operation to list all files in the workspace to find a match.
-      let matchingFiles = try? await xcodeObserver.listFiles(in: workspace.url).0
-        .filter({ $0.lastPathComponent == editor.fileName }),
-      matchingFiles.count == 1,
-      let path = matchingFiles.first
-    {
-      filePath = path
-    }
-    guard let filePath else {
+
+    guard let filePath = await xcodeObserver.focusedTabURL(in: workspace) else {
       defaultLogger.log("Could not resolve file path for file \(editor.fileName) to handle add to code to chat event")
       return false
     }
